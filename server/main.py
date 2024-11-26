@@ -1,21 +1,12 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
+from routes.auth_routes import auth_routes
 
 app = Flask(__name__)
-cors = CORS(app, origins="*")
+CORS(app, origins="*")
 
-@app.route("/api/users", methods=['GET'])
-def users():
-  return jsonify(
-    {
-      "users": [
-        "shoab",
-        "sayed",
-        "sherish",
-        "shoan" 
-      ]
-    }
-  )
+# Register Blueprints
+app.register_blueprint(auth_routes)
 
 if __name__ == "__main__":
-  app.run(debug=True, port=8080)
+    app.run(debug=True, port=8080)

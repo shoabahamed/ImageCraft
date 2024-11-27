@@ -1,24 +1,17 @@
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import apiClient from "./utils/appClient";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import Home from "./pages/Home";
 
-export default function Home() {
-  const fetchAPI = async () => {
-    try {
-      const response = await apiClient.get("/users");
-      console.log(response.data.users);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAPI();
-  }, []);
-
+export default function App() {
   return (
     <div>
-      <Button>Click me</Button>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+          </Routes>
+        </BrowserRouter>
+      </ThemeProvider>
     </div>
   );
 }

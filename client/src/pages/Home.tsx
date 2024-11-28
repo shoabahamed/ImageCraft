@@ -1,7 +1,24 @@
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Home = () => {
+  const createProjectFromDatabase = () => {
+    console.log("Project Created");
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen">
       <Navbar />
@@ -19,7 +36,42 @@ const Home = () => {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Button className="px-6 py-3">Start Editing</Button>
-          <Button className="px-6 py-3">Load Saved</Button>
+          <Drawer>
+            <DrawerTrigger>
+              <Button className="px-6 py-3">Load Saved</Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle className="text-center">
+                  Select a Project
+                </DrawerTitle>
+              </DrawerHeader>
+              <ScrollArea className="w-full h-[400px] px-4 py-2">
+                <DrawerDescription>
+                  <div className="w-full h-[80px] grid grid-cols-7 gap-2">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <Card className="w-full h-full">
+                        <CardContent className="flex h-full w-full items-center justify-center p-2">
+                          <img
+                            src={`./bg${index + 1}.jpg`}
+                            alt="test_image"
+                            className="w-full h-full object-fill"
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </DrawerDescription>
+              </ScrollArea>
+
+              <DrawerFooter>
+                <Button onClick={createProjectFromDatabase}>Submit</Button>
+                <DrawerClose>
+                  <Button variant="outline">Cancel</Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
         </div>
       </div>
     </div>

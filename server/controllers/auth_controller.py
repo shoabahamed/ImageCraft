@@ -12,9 +12,10 @@ def signup():
         data = request.get_json()
         email = data.get("email")
         password = data.get("password")
+        username = data.get("username")
 
-        if not email or not password:
-            return jsonify({"success": False, "message": "Email and password are required"}), 400
+        if not email or not password or username:
+            return jsonify({"success": False, "message": "Email and password and username are required"}), 400
 
         try:
             valid_email = validate_email(email).email
@@ -25,7 +26,7 @@ def signup():
             return jsonify({"success": False, "message": "Email already exists"}), 409
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        user_data = {"email": valid_email, "password": hashed_password.decode('utf-8')}
+        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))

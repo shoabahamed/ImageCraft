@@ -1,7 +1,8 @@
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Drawer,
   DrawerClose,
@@ -13,10 +14,30 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
+
   const createProjectFromDatabase = () => {
     console.log("Project Created");
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+
+      // Check if the selected file is an image
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file.");
+        return;
+      }
+
+      const imageUrl = URL.createObjectURL(file);
+
+      // Navigate to the display page and pass the image URL
+      navigate("/mainpage", { state: { imageUrl } });
+    }
   };
 
   return (
@@ -35,10 +56,27 @@ const Home = () => {
           Seamlessly integrate powerful tools to unlock unlimited possibilities.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <Button className="px-6 py-3">Start Editing</Button>
+          <form>
+            <Label
+              htmlFor="picture"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer"
+            >
+              Load Image
+            </Label>
+            <Input
+              id="picture"
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
+          </form>
+
           <Drawer>
             <DrawerTrigger>
-              <Button className="px-6 py-3">Load Saved</Button>
+              <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer">
+                Load Saved
+              </button>
             </DrawerTrigger>
             <DrawerContent>
               <DrawerHeader>

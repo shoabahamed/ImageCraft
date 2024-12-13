@@ -260,7 +260,7 @@ return (
           </CardContent>
         </Card>
       </div>
-      {/* <div className="w-[90%]">
+      <div className="w-[90%]">
         <Card>
           <CardHeader>
             <CardDescription className="text-center">Details</CardDescription>
@@ -310,7 +310,7 @@ return (
             </div>
           </CardContent>
         </Card>
-      </div> */}
+      </div>
     </div>
   );
 };

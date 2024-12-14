@@ -30,13 +30,6 @@ import {
   Brush,
   Eraser,
   PaintBucket,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Underline,
-  Bold,
-  CaseUpper,
-  Italic,
 } from "lucide-react";
 import {
   Crop,
@@ -50,18 +43,11 @@ import { useEffect, useRef, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CustomSlider from "@/components/custom-slider";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import * as fabric from "fabric";
 import { useLocation, useNavigate } from "react-router-dom";
 import ImageSize from "@/components/ImageSize";
 import AdjustSidebar from "@/components/AdjustSidebar";
+import AddText from "@/components/AddText";
 
 const MainPage = () => {
   const [sidebarName, setSidebarName] = useState("");
@@ -76,19 +62,13 @@ const MainPage = () => {
   const [fillOpacity, setFillOpacity] = useState(1);
   const [fillColor, setFillColor] = useState("#00ff00");
 
-  const [textValue, setTextValue] = useState("lorem emsem");
-  const [textColorValue, setTextColorValue] = useState("#00ff00");
-  const [textSize, setTextSize] = useState(0);
-  const [textOpacity, setTextOpacity] = useState(1);
-  const [textFont, setTextFont] = useState("arial");
-  const [textLineSpacing, setTextLineSpacing] = useState(0);
-  const [textLetterSpacing, setTextLetterSpacing] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
   const currentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const imageDim = useRef<{ width: number; height: number } | null>(null);
 
-  const [imageUrl, setImageUrl] = useState("./test3.png");
+  const [imageUrl, setImageUrl] = useState("./test2.jpg");
 
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -151,6 +131,8 @@ const MainPage = () => {
         const imageWidth = img.width ?? 1;
         const imageHeight = img.height ?? 1;
 
+        imageDim.current = { width: imageWidth, height: imageHeight };
+
         const needsScaling =
           imageWidth > containerWidth || imageHeight > containerHeight;
 
@@ -188,7 +170,6 @@ const MainPage = () => {
     }
   }, [imageUrl]);
 
-  //   if (canvasRef.current) {
   //     const container = document.getElementById("CanvasContainer");
   //     if (!container) return;
 
@@ -330,14 +311,46 @@ const MainPage = () => {
   // }, [imageWidth]);
 
   const downloadCanvas = () => {
-    const dataURL = mainCanvasRef.current!.toDataURL();
+    if (!mainCanvasRef.current || !currentImageRef.current) return;
+
+    // Save current canvas dimensions and image scale
+    const originalCanvasWidth = mainCanvasRef.current.width!;
+    const originalCanvasHeight = mainCanvasRef.current.height!;
+    const originalImageScaleX = currentImageRef.current.scaleX!;
+    const originalImageScaleY = currentImageRef.current.scaleY!;
+
+    // Retrieve the original image dimensions
+    const originalImageWidth = currentImageRef.current.width!;
+    const originalImageHeight = currentImageRef.current.height!;
+
+    // Temporarily set the canvas and image to their original size
+    mainCanvasRef.current.setDimensions({
+      width: originalImageWidth,
+      height: originalImageHeight,
+    });
+    currentImageRef.current.scaleX = 1; // Reset horizontal scale to original
+    currentImageRef.current.scaleY = 1; // Reset vertical scale to original
+    mainCanvasRef.current.renderAll();
+
+    // Generate the data URL for the download
+    const dataURL = mainCanvasRef.current.toDataURL();
 
     // Create a temporary link element to trigger the download
     const link = document.createElement("a");
     link.href = dataURL;
     link.download = "canvas-image.png"; // Name of the file to be saved
     link.click();
+
+    // Restore the canvas and image to their previous dimensions
+    mainCanvasRef.current.setDimensions({
+      width: originalCanvasWidth,
+      height: originalCanvasHeight,
+    });
+    currentImageRef.current.scaleX = originalImageScaleX; // Restore horizontal scale
+    currentImageRef.current.scaleY = originalImageScaleY; // Restore vertical scale
+    mainCanvasRef.current.renderAll();
   };
+
   return (
     <div className="h-screen max-w-screen flex items-center relative">
       {/* Sidebar */}
@@ -689,186 +702,7 @@ const MainPage = () => {
                 Text
               </div>
               <ScrollArea className="h-[90%]">
-                <div className="flex flex-col items-center justify-center w-full gap-4">
-                  <div className="w-[90%]">
-                    <Card className="py-2">
-                      <CardContent>
-                        <div className="flex flex-col gap-3 justify-center  w-full">
-                          <div className="flex flex-col gap-2 justify-center items-start">
-                            <p className="text-sm text-slate-400">Text</p>
-                            <Input
-                              id="text"
-                              name="text"
-                              type="text"
-                              value={textValue}
-                              onChange={(e) => setTextValue(e.target.value)}
-                            />
-                          </div>
-                          <div className="w-full">
-                            <Select
-                              onValueChange={(value) => setTextFont(value)}
-                              defaultValue={textFont}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a font" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem
-                                  value="arial"
-                                  className="font-arial"
-                                >
-                                  Arial
-                                </SelectItem>
-                                <SelectItem
-                                  value="times"
-                                  className="font-times"
-                                >
-                                  Times New Roman
-                                </SelectItem>
-                                <SelectItem
-                                  value="courier"
-                                  className="font-courier"
-                                >
-                                  Courier New
-                                </SelectItem>
-                                <SelectItem
-                                  value="georgia"
-                                  className="font-georgia"
-                                >
-                                  Georgia
-                                </SelectItem>
-                                <SelectItem
-                                  value="verdana"
-                                  className="font-verdana"
-                                >
-                                  Verdana
-                                </SelectItem>
-                                <SelectItem
-                                  value="tahoma"
-                                  className="font-tahoma"
-                                >
-                                  Tahoma
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="flex flex-col gap-2 justify-center items-start">
-                            <p className="text-sm text-slate-400">Color</p>
-                            <Input
-                              id="text_color_picker"
-                              name="text_color_picker"
-                              type="color"
-                              value={textColorValue}
-                              onChange={(e) =>
-                                setTextColorValue(e.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="w-[90%]">
-                    <Card className="py-2">
-                      <CardContent>
-                        <div className="flex flex-col gap-4 justify-center  w-full">
-                          <CustomSlider
-                            sliderName="Size"
-                            min={4}
-                            max={30}
-                            defaultValue={5}
-                            sliderValue={textSize}
-                            setSliderValue={setTextSize}
-                          />
-                          <CustomSlider
-                            sliderName="Opacity"
-                            min={0}
-                            max={1}
-                            defaultValue={1}
-                            step={0.01}
-                            sliderValue={textOpacity}
-                            setSliderValue={setTextOpacity}
-                          />
-                          <CustomSlider
-                            sliderName="Line Spacing"
-                            min={-100}
-                            max={100}
-                            defaultValue={0}
-                            sliderValue={textLineSpacing}
-                            setSliderValue={setTextLineSpacing}
-                          />
-                          <CustomSlider
-                            sliderName="Letter Spacing"
-                            min={-100}
-                            max={100}
-                            defaultValue={0}
-                            sliderValue={textLetterSpacing}
-                            setSliderValue={setTextLetterSpacing}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Alignment</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <IconComponent
-                            icon={<AlignLeft />}
-                            iconName="Align Left"
-                          />
-                          <IconComponent
-                            icon={<AlignCenter />}
-                            iconName="Align Center"
-                          />
-                          <IconComponent
-                            icon={<AlignRight />}
-                            iconName="Align Right"
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Style</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <IconComponent
-                            icon={<CaseUpper />}
-                            iconName="Upper Case"
-                          />
-                          <IconComponent icon={<Italic />} iconName="Italic" />
-                          <IconComponent icon={<Bold />} iconName="Bold" />
-                          <IconComponent
-                            icon={<Underline />}
-                            iconName="UnderLine"
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Mode</CardDescription>
-                      </CardHeader>
-                      <CardContent className="w-full">
-                        <div className="flex flex-col gap-3">
-                          <Button>Delete Text</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <AddText canvas={mainCanvasRef.current!} />
               </ScrollArea>
             </div>
           )}

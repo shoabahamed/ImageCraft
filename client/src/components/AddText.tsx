@@ -181,7 +181,7 @@ const AddText = ({ canvas }: AddTextProps) => {
       </div>
 
       {selectedObject && (
-        <div className="w-[90%]">
+        <div className="w-[90%] flex flex-col items-center justify-center gap-2">
           <div className="w-full">
             <Card className="py-2">
               <CardContent>
@@ -265,7 +265,7 @@ const AddText = ({ canvas }: AddTextProps) => {
                   />
                   <CustomSlider
                     sliderName="Line Spacing"
-                    min={0}
+                    min={1}
                     max={5}
                     defaultValue={textLineSpacing}
                     sliderValue={textLineSpacing}

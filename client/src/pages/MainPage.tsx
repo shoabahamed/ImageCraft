@@ -23,13 +23,6 @@ import {
   Undo,
   ZoomIn,
   ZoomOut,
-  UndoDot,
-  RedoDot,
-  UnfoldVertical,
-  UnfoldHorizontal,
-  Brush,
-  Eraser,
-  PaintBucket,
 } from "lucide-react";
 import {
   Crop,
@@ -48,19 +41,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ImageSize from "@/components/ImageSize";
 import AdjustSidebar from "@/components/AdjustSidebar";
 import AddText from "@/components/AddText";
+import Arrange from "@/components/Arrange";
+import Draw from "@/components/Draw";
 
 const MainPage = () => {
   const [sidebarName, setSidebarName] = useState("");
-  const [iconName, setIconName] = useState("");
 
   const [cropHeight, setCropHeight] = useState("0");
   const [cropWidth, setCropWidth] = useState("0");
-
-  const [brushSize, setBrushSize] = useState(0);
-  const [brushColor, setBrushColor] = useState("#00ff00");
-  const [eraserSize, setEraserSize] = useState(0);
-  const [fillOpacity, setFillOpacity] = useState(1);
-  const [fillColor, setFillColor] = useState("#00ff00");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -68,7 +56,7 @@ const MainPage = () => {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const imageDim = useRef<{ width: number; height: number } | null>(null);
 
-  const [imageUrl, setImageUrl] = useState("./test2.jpg");
+  const [imageUrl, setImageUrl] = useState("./test3.png");
 
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -351,6 +339,13 @@ const MainPage = () => {
     mainCanvasRef.current.renderAll();
   };
 
+  useEffect(() => {
+    if (mainCanvasRef.current) {
+      const enableDrawing = sidebarName === "PenTool" ? true : false;
+      mainCanvasRef.current.isDrawingMode = enableDrawing;
+    }
+  }, [sidebarName]);
+
   return (
     <div className="h-screen max-w-screen flex items-center relative">
       {/* Sidebar */}
@@ -499,55 +494,10 @@ const MainPage = () => {
                 Arrange Image
               </div>
               <ScrollArea className="h-[90%]">
-                <div className="flex flex-col items-center justify-center w-full gap-4">
-                  {/* <div className="w-[90%]">
-                    <ImageSize
-                      canvas={mainCanvas!}
-                      initialHeight={containerDimensions.height}
-                      initialWidth={containerDimensions.width}
-                    />
-                  </div> */}
-
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Roate&Flip</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <IconComponent
-                            icon={<UndoDot />}
-                            iconName="Rotate Left"
-                          />
-                          <IconComponent
-                            icon={<RedoDot />}
-                            iconName="Roate Right"
-                          />
-                          <IconComponent
-                            icon={<UnfoldVertical />}
-                            iconName="Vertial Flip"
-                          />
-                          <IconComponent
-                            icon={<UnfoldHorizontal />}
-                            iconName="Horizontal Flip"
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Mode</CardDescription>
-                      </CardHeader>
-                      <CardContent className="w-full">
-                        <div className="flex flex-col gap-3">
-                          <Button>Reset Image</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <Arrange
+                  canvas={mainCanvasRef.current!}
+                  image={currentImageRef.current!}
+                />
               </ScrollArea>
             </div>
           )}
@@ -572,126 +522,7 @@ const MainPage = () => {
                 Draw
               </div>
               <ScrollArea className="h-[90%]">
-                <div className="flex flex-col items-center justify-center w-full gap-4">
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Tool</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <IconComponent
-                            icon={<Brush />}
-                            iconName="Brush"
-                            sidebarName={iconName}
-                            setSidebarName={setIconName}
-                          />
-                          <IconComponent
-                            icon={<Eraser />}
-                            iconName="Eraser"
-                            sidebarName={iconName}
-                            setSidebarName={setIconName}
-                          />
-                          <IconComponent
-                            icon={<PaintBucket />}
-                            iconName="Fill"
-                            sidebarName={iconName}
-                            setSidebarName={setIconName}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {iconName == "Brush" && (
-                    <div className="w-[90%]">
-                      <Card>
-                        <CardContent>
-                          <div className="flex flex-col gap-3 justify-center  w-full">
-                            <div className="flex flex-col gap-2 justify-center items-start">
-                              <p className="text-sm text-slate-400">Color</p>
-                              <Input
-                                id="color_picker"
-                                name="color_picker"
-                                type="color"
-                                value={brushColor}
-                                onChange={(e) => setBrushColor(e.target.value)}
-                              />
-                            </div>
-                            <CustomSlider
-                              sliderName="Size"
-                              min={1}
-                              max={10}
-                              defaultValue={5}
-                              sliderValue={brushSize}
-                              setSliderValue={setBrushSize}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                  {iconName == "Eraser" && (
-                    <div className="w-[90%]">
-                      <Card>
-                        <CardContent>
-                          <div className="flex flex-col gap-3 justify-center  w-full">
-                            <CustomSlider
-                              sliderName="Size"
-                              min={1}
-                              max={10}
-                              defaultValue={5}
-                              sliderValue={eraserSize}
-                              setSliderValue={setEraserSize}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                  {iconName == "Fill" && (
-                    <div className="w-[90%]">
-                      <Card>
-                        <CardContent>
-                          <div className="flex flex-col gap-3 justify-center  w-full">
-                            <div className="flex flex-col gap-2 justify-center items-start">
-                              <p className="text-sm text-slate-400">Color</p>
-                              <Input
-                                id="color_picker"
-                                name="color_picker"
-                                type="color"
-                                value={fillColor}
-                                onChange={(e) => setFillColor(e.target.value)}
-                              />
-                            </div>
-                            <CustomSlider
-                              sliderName="Opacity"
-                              min={0}
-                              max={1}
-                              defaultValue={1}
-                              sliderValue={fillOpacity}
-                              setSliderValue={setFillOpacity}
-                              step={0.01}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Mode</CardDescription>
-                      </CardHeader>
-                      <CardContent className="w-full">
-                        <div className="flex flex-col gap-3">
-                          <Button>Reset Drawing</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <Draw canvas={mainCanvasRef.current!} />
               </ScrollArea>
             </div>
           )}

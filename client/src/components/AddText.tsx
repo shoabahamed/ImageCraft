@@ -84,7 +84,6 @@ const AddText = ({ canvas }: AddTextProps) => {
   // Update text properties
   const updateTextProperties = () => {
     if (selectedObject) {
-      console.log(textAlignValue);
       selectedObject.set({
         text: isUpper ? textValue.toUpperCase() : textValue,
         fill: textColorValue,

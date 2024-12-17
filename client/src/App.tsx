@@ -6,7 +6,7 @@ import MainPage from "./pages/MainPage";
 export default function App() {
   return (
     <div>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />

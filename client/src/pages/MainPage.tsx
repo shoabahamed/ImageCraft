@@ -11,19 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
-import {
-  Circle,
-  Heart,
-  Home,
-  Lasso,
-  Redo,
-  Square,
-  Star,
-  Triangle,
-  Undo,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
+import { Home, Redo, Undo, ZoomIn, ZoomOut } from "lucide-react";
 import {
   Crop,
   RotateCwSquare,
@@ -38,17 +26,14 @@ import CustomSlider from "@/components/custom-slider";
 
 import * as fabric from "fabric";
 import { useLocation, useNavigate } from "react-router-dom";
-import ImageSize from "@/components/ImageSize";
 import AdjustSidebar from "@/components/AdjustSidebar";
 import AddText from "@/components/AddText";
 import Arrange from "@/components/Arrange";
 import Draw from "@/components/Draw";
+import CropSidebar from "@/components/CropSidebar";
 
 const MainPage = () => {
   const [sidebarName, setSidebarName] = useState("");
-
-  const [cropHeight, setCropHeight] = useState("0");
-  const [cropWidth, setCropWidth] = useState("0");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -56,7 +41,9 @@ const MainPage = () => {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const imageDim = useRef<{ width: number; height: number } | null>(null);
 
-  const [imageUrl, setImageUrl] = useState("./test3.png");
+  const imageUrlFromState = useLocation().state?.imageUrl;
+
+  const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
 
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -413,77 +400,10 @@ const MainPage = () => {
                 Crop&Cut
               </div>
               <ScrollArea className="h-[90%]">
-                <div className="flex flex-col items-center justify-center w-full gap-4">
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Crop</CardDescription>
-                      </CardHeader>
-                      <CardContent className="w-full">
-                        <div className="flex flex-col w-full gap-3 items-center justify-center">
-                          <div className="grid grid-cols-2 justify-center items-center">
-                            <Label htmlFor="height">Height</Label>
-                            <Input
-                              id="height"
-                              type="number"
-                              name="height"
-                              value={cropHeight}
-                              onChange={(e) => setCropHeight(e.target.value)}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2  justify-center items-center">
-                            <Label htmlFor="width">Width</Label>
-                            <Input
-                              id="width"
-                              type="number"
-                              name="width"
-                              value={cropWidth}
-                              onChange={(e) => setCropWidth(e.target.value)}
-                            />
-                          </div>
-                          <Button>Interactive</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Shape</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <IconComponent icon={<Circle />} iconName="Circle" />
-                          <IconComponent icon={<Square />} iconName="Square" />
-                          <IconComponent
-                            icon={<Triangle />}
-                            iconName="Triangle"
-                          />
-                          <IconComponent icon={<Heart />} iconName="Heart" />
-                          <IconComponent icon={<Star />} iconName="Star" />
-                          <IconComponent icon={<Lasso />} iconName="Lasso" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div className="w-[90%]">
-                    <Card>
-                      <CardHeader>
-                        <CardDescription>Mode</CardDescription>
-                      </CardHeader>
-                      <CardContent className="w-full">
-                        <div className="flex flex-col gap-3 justify-center items-center">
-                          <Button className="text-sm md:text-sm">
-                            Invert Cutout
-                          </Button>
-                          <Button>Reset Cutout</Button>
-                          <Button>Reset Crop</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <CropSidebar
+                  canvas={mainCanvasRef.current!}
+                  image={currentImageRef.current!}
+                />
               </ScrollArea>
             </div>
           )}

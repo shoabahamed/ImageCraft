@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ const Home = () => {
                 <DrawerDescription>
                   <div className="w-full h-[80px] grid grid-cols-7 gap-2">
                     {Array.from({ length: 3 }).map((_, index) => (
-                      <Card className="w-full h-full">
+                      <Card className="w-full h-full cursor-pointer">
                         <CardContent className="flex h-full w-full items-center justify-center p-2">
                           <img
                             src={`./bg${index + 1}.jpg`}

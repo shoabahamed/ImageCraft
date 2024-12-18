@@ -21,8 +21,6 @@ import {
   Cpu,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import CustomSlider from "@/components/custom-slider";
 
 import * as fabric from "fabric";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -42,7 +40,7 @@ const MainPage = () => {
   const imageDim = useRef<{ width: number; height: number } | null>(null);
 
   const imageUrlFromState = useLocation().state?.imageUrl;
-
+  const navigate = useNavigate();
   const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
 
   const handleContainerResize = () => {
@@ -344,7 +342,9 @@ const MainPage = () => {
             icon={<Home />}
             iconName="Home"
             sidebarName={sidebarName}
-            setSidebarName={setSidebarName}
+            handleClick={() => {
+              navigate("/");
+            }}
           />
           <IconComponent
             icon={<RotateCwSquare />}
@@ -386,12 +386,12 @@ const MainPage = () => {
         <div
           className={`${
             sidebarName ? "w-full" : "w-0"
-          } transition-all duration-700 ease-in-out relative h-full  bg-slate-800`}
+          } transition-all duration-700 ease-in-out relative h-full  bg-gray-700`}
         >
           <div
             className={`${
               sidebarName ? "absolute w-[20px]" : "w-0"
-            } flex justify-center items-center bg-slate-800  -right-2 text-slate-300 top-[40%] cursor-pointer h-[100px] rounded-full `}
+            } flex justify-center items-center bg-gray-900  -right-2 text-slate-300 top-[40%] cursor-pointer h-[100px] rounded-full `}
             onClick={() => setSidebarName("")}
           ></div>
           {sidebarName === "Crop" && (
@@ -399,12 +399,12 @@ const MainPage = () => {
               <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                 Crop&Cut
               </div>
-              <ScrollArea className="h-[90%]">
+              <div className="h-[90%] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <CropSidebar
                   canvas={mainCanvasRef.current!}
                   image={currentImageRef.current!}
                 />
-              </ScrollArea>
+              </div>
             </div>
           )}
 
@@ -413,12 +413,12 @@ const MainPage = () => {
               <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                 Arrange Image
               </div>
-              <ScrollArea className="h-[90%]">
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <Arrange
                   canvas={mainCanvasRef.current!}
                   image={currentImageRef.current!}
                 />
-              </ScrollArea>
+              </div>
             </div>
           )}
 
@@ -427,12 +427,12 @@ const MainPage = () => {
               <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                 Adjust
               </div>
-              <ScrollArea className="h-[90%]">
+              <div className="h-[90%] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <AdjustSidebar
                   canvas={mainCanvasRef.current!}
                   image={currentImageRef.current!}
                 />
-              </ScrollArea>
+              </div>
             </div>
           )}
 
@@ -441,9 +441,9 @@ const MainPage = () => {
               <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                 Draw
               </div>
-              <ScrollArea className="h-[90%]">
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <Draw canvas={mainCanvasRef.current!} />
-              </ScrollArea>
+              </div>
             </div>
           )}
 
@@ -452,9 +452,9 @@ const MainPage = () => {
               <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                 Text
               </div>
-              <ScrollArea className="h-[90%]">
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <AddText canvas={mainCanvasRef.current!} />
-              </ScrollArea>
+              </div>
             </div>
           )}
         </div>

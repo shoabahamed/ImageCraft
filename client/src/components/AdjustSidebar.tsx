@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -143,8 +142,7 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
     setPredefinedFilter("");
   };
 
-
-return (
+  return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
       <div className="w-[90%]">
         <Card>
@@ -266,8 +264,7 @@ return (
             <CardDescription className="text-center">Details</CardDescription>
           </CardHeader>
 
-
-<CardContent className="w-full">
+          <CardContent className="w-full">
             <div className="flex flex-col gap-4 w-full">
               <CustomSlider
                 sliderName={"Opacity"}
@@ -291,8 +288,8 @@ return (
               <CustomSlider
                 sliderName={"Noise"}
                 min={0}
-                max={5000}
-                step={10}
+                max={100}
+                step={2}
                 sliderValue={noiseValue}
                 defaultValue={noiseValue}
                 setSliderValue={setNoiseValue}

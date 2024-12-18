@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 
-import { Canvas, IText, Text } from "fabric";
+import { Canvas, IText, Text, Textbox } from "fabric";
 import { Textarea } from "./ui/textarea";
 
 type AddTextProps = {
@@ -37,7 +37,7 @@ type AddTextProps = {
 };
 
 const AddText = ({ canvas }: AddTextProps) => {
-  const [selectedObject, setSelectedObject] = useState<Text | null>(null);
+  const [selectedObject, setSelectedObject] = useState<Textbox | null>(null);
   const [textValue, setTextValue] = useState("");
   const [textColorValue, setTextColorValue] = useState("#000000");
   const [textFont, setTextFont] = useState("arial");
@@ -56,7 +56,7 @@ const AddText = ({ canvas }: AddTextProps) => {
 
   // Add text to canvas
   const addText = () => {
-    const text = new Text("Sample Text", {
+    const text = new Textbox("Sample Text", {
       left: 10,
       top: 10,
       fill: textColorValue,
@@ -73,8 +73,8 @@ const AddText = ({ canvas }: AddTextProps) => {
     });
     text.set("isUpper", isUpper);
     text.set({
-      lockScalingX: true, // Disable horizontal scaling
-      lockScalingY: true, // Disable vertical scaling
+      // lockScalingX: true, // Disable horizontal scaling
+      // lockScalingY: true, // Disable vertical scaling
       selectable: true, // Ensure the object is selectable
     });
     canvas.add(text);
@@ -103,10 +103,10 @@ const AddText = ({ canvas }: AddTextProps) => {
   // Set up event listeners for object selection
   useEffect(() => {
     const handleObjectSelected = () => {
+      console.log("kdsjf");
       const activeObject = canvas.getActiveObject();
-
-      if (activeObject && activeObject.type === "text") {
-        const textObj = activeObject as Text;
+      if (activeObject && activeObject.type === "textbox") {
+        const textObj = activeObject as Textbox;
         setSelectedObject(textObj);
         setTextValue(textObj.text || "");
         setTextColorValue(textObj.fill as string);
@@ -131,12 +131,14 @@ const AddText = ({ canvas }: AddTextProps) => {
     };
     canvas.on("selection:created", handleObjectSelected);
     canvas.on("selection:updated", handleObjectSelected);
+    canvas.on("object:modified", handleObjectSelected);
     canvas.on("selection:cleared", handleObjectDeselected);
 
     return () => {
       canvas.off("selection:created", handleObjectSelected);
       canvas.off("selection:updated", handleObjectSelected);
       canvas.off("selection:cleared", handleObjectDeselected);
+      canvas.off("object:modified", handleObjectSelected);
     };
   }, [canvas]);
 

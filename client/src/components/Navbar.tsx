@@ -26,7 +26,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const signupformSchema = z.object({
@@ -57,6 +57,29 @@ const Navbar = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [user, setUser] = useState(localStorage.getItem("user"));
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Parse the query parameters from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get("email");
+    const token = urlParams.get("token");
+
+    // If email and token are present, store them and clear the query string
+    if (email && token) {
+      const userData = { email, token };
+      localStorage.setItem("user", JSON.stringify(userData));
+      setUser(JSON.stringify(userData));
+
+      toast({
+        description: "Login successful",
+        className: "bg-green-500 text-gray-900",
+        duration: 5000,
+      });
+
+      // Clear the query string from the URL
+      window.history.replaceState({}, document.title, "/");
+    }
+  }, []);
 
   // 1. Define your form.
   const signupform = useForm<z.infer<typeof signupformSchema>>({
@@ -90,9 +113,9 @@ const Navbar = () => {
         localStorage.setItem("user", JSON.stringify(response.data.data));
         setUser(JSON.stringify(response.data.data));
         toast({
-          description: "Log Out Successfull.",
+          description: "Log in Successfull.",
           className: "bg-green-500 text-gray-900",
-          duration: 1000,
+          duration: 2000,
         });
       } else {
         console.error("Signup failed:", response.data.message);
@@ -102,8 +125,20 @@ const Navbar = () => {
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
+        toast({
+          variant: "destructive",
+          description: "Sign up Failed." + error.response.data.message,
+          className: "text-gray-900",
+          duration: 3000,
+        });
         console.error("Error during signup:", error.response.data.message);
       } else {
+        toast({
+          variant: "destructive",
+          description: "Unexpected error",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
         console.error("Unexpected error:", error);
       }
     }
@@ -126,20 +161,69 @@ const Navbar = () => {
         toast({
           description: "Log Out Successfull.",
           className: "bg-green-500 text-gray-900",
-          duration: 1000,
+          duration: 2000,
         });
       } else {
+        toast({
+          variant: "destructive",
+          description: "Log in Failed.",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
         console.error("Login failed:", response.data.message);
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
+        toast({
+          variant: "destructive",
+          description: "Log in Failed." + error.response.data.message,
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
         console.error("Error during login:", error.response.data.message);
       } else {
+        toast({
+          variant: "destructive",
+          description: "Unexpected error",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
         console.error("Unexpected error:", error);
       }
     }
 
     setIsLoginOpen(false);
+  }
+
+  async function handleGoogleLogIn() {
+    try {
+      // Call the google_login API endpoint
+      const response = await apiClient.get("/google_login");
+
+      if (response.data.authorization_url) {
+        // Redirect the user to Google's OAuth page
+        window.location.href = response.data.authorization_url;
+      } else {
+        console.error("Authorization URL not found in response");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        toast({
+          variant: "destructive",
+          description: "Google Log in Failed." + error.response.data.message,
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          description: "Unexpected error",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
+        console.error("Unexpected error:", error);
+      }
+    }
   }
 
   const handleLogOut = () => {
@@ -148,7 +232,7 @@ const Navbar = () => {
     toast({
       description: "Log Out Successfull.",
       className: "bg-green-500 text-gray-900",
-      duration: 1000,
+      duration: 2000,
     });
   };
 
@@ -160,7 +244,7 @@ const Navbar = () => {
         </div>
         <div className="flex gap-5">
           {user ? (
-            <Button onClick={handleLogOut}>LogOut</Button>
+            <Button onClick={handleLogOut}>Log Out</Button>
           ) : (
             <>
               <Dialog open={isSignUpOpen} onOpenChange={setIsSignUpOpen}>
@@ -224,25 +308,32 @@ const Navbar = () => {
                             )}
                           />
                           <Button className="w-full">SignUp</Button>
-                          <Button variant="outline" className="w-full">
-                            Sign with Google
-                          </Button>
-                        </div>
-                        <div className="mt-4 text-center text-sm">
-                          Already have an account?{" "}
-                          <button
-                            type="button"
-                            className="underline underline-offset-4"
-                            onClick={() => {
-                              setIsSignUpOpen(false);
-                              setIsLoginOpen(true);
-                            }}
-                          >
-                            Login
-                          </button>
                         </div>
                       </form>
                     </Form>
+
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleGoogleLogIn}
+                      >
+                        Signup with Google
+                      </Button>
+                      <div className="mt-4 text-center text-sm">
+                        Already have an account?{" "}
+                        <button
+                          type="button"
+                          className="underline underline-offset-4"
+                          onClick={() => {
+                            setIsSignUpOpen(false);
+                            setIsLoginOpen(true);
+                          }}
+                        >
+                          Login
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -297,25 +388,32 @@ const Navbar = () => {
                             )}
                           />
                           <Button className="w-full">LogIn</Button>
-                          <Button variant="outline" className="w-full">
-                            Login with Google
-                          </Button>
-                        </div>
-                        <div className="mt-4 text-center text-sm">
-                          Don&apos;t have an account?{" "}
-                          <button
-                            type="button"
-                            className="underline underline-offset-4"
-                            onClick={() => {
-                              setIsLoginOpen(false);
-                              setIsSignUpOpen(true);
-                            }}
-                          >
-                            Sign Up
-                          </button>
                         </div>
                       </form>
                     </Form>
+
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleGoogleLogIn}
+                      >
+                        Login with Google
+                      </Button>
+                      <div className="mt-4 text-center text-sm">
+                        Don&apos;t have an account?{" "}
+                        <button
+                          type="button"
+                          className="underline underline-offset-4"
+                          onClick={() => {
+                            setIsLoginOpen(false);
+                            setIsSignUpOpen(true);
+                          }}
+                        >
+                          Sign Up
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>

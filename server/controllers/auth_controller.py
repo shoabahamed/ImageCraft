@@ -14,13 +14,12 @@ from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from pip._vendor import cachecontrol
 import google.auth.transport.requests
-
+from dotenv import load_dotenv
+load_dotenv()
 
 db = get_db()
 users_collection = db["Users"]
 
-
-GOOGLE_CLIENT_ID = "750760815459-cqfske2gojnl47kdeu7976hk7ms24odo.apps.googleusercontent.com"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -50,7 +49,7 @@ def callback():
         id_info = id_token.verify_oauth2_token(
             id_token=credentials._id_token,
             request=token_request,
-            audience=GOOGLE_CLIENT_ID
+            audience=os.getenv("GOOGLE_CLIENT_ID")
         )
 
         

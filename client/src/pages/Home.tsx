@@ -1,28 +1,15 @@
 import Navbar from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Home = () => {
   const navigate = useNavigate();
-
-  const createProjectFromDatabase = () => {
-    console.log("Project Created");
-  };
+  const { user } = useAuthContext();
+  const { toast } = useToast();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -57,60 +44,57 @@ const Home = () => {
           Seamlessly integrate powerful tools to unlock unlimited possibilities.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <form>
-            <Label
-              htmlFor="picture"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer"
+          {user ? (
+            <form>
+              <Label
+                htmlFor="picture"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer"
+              >
+                Load Image
+              </Label>
+              <Input
+                id="picture"
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+            </form>
+          ) : (
+            <button
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointe"
+              onClick={() =>
+                toast({
+                  description: "You need to log in first",
+                  className: "bg-green-500 text-gray-900",
+                  duration: 5000,
+                })
+              }
             >
               Load Image
-            </Label>
-            <Input
-              id="picture"
-              type="file"
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
-          </form>
+            </button>
+          )}
 
-          <Drawer>
-            <DrawerTrigger>
+          {user ? (
+            <Link to="/projects">
               <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer">
-                Load Saved
+                Saved Projects
               </button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle className="text-center">
-                  Select a Project
-                </DrawerTitle>
-              </DrawerHeader>
-              <ScrollArea className="w-full h-[400px] px-4 py-2">
-                <DrawerDescription>
-                  <div className="w-full h-[80px] grid grid-cols-7 gap-2">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                      <Card className="w-full h-full cursor-pointer">
-                        <CardContent className="flex h-full w-full items-center justify-center p-2">
-                          <img
-                            src={`./bg${index + 1}.jpg`}
-                            alt="test_image"
-                            className="w-full h-full object-fill"
-                          />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </DrawerDescription>
-              </ScrollArea>
-
-              <DrawerFooter>
-                <Button onClick={createProjectFromDatabase}>Submit</Button>
-                <DrawerClose>
-                  <Button variant="outline">Cancel</Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
+            </Link>
+          ) : (
+            <button
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointe"
+              onClick={() =>
+                toast({
+                  description: "You need to log in first",
+                  className: "bg-green-500 text-gray-900",
+                  duration: 5000,
+                })
+              }
+            >
+              Saved Project
+            </button>
+          )}
         </div>
       </div>
     </div>

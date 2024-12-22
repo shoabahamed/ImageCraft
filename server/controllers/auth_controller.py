@@ -53,17 +53,19 @@ def callback():
             audience=GOOGLE_CLIENT_ID
         )
 
-        # Generate JWT token
-        token = create_token(str(id_info["sub"]))
+        
         # Extract user email
         email = id_info["email"]
         user = users_collection.find_one({"email": email})
         if not user:
             username = id_info['name']
             valid_email = email
+            
             hashed_password = "gmail_login"
             user_data = {"username": username, "email": valid_email, "password": hashed_password}
             user = users_collection.insert_one(user_data)
+            # Generate JWT token
+            token = create_token(str(user.inserted_id))
 
         # Redirect to the frontend with the email and token as query parameters
         redirect_url = f"http://localhost:5173/?email={email}&token={token}"
@@ -81,8 +83,8 @@ def signup():
         email = data.get("email")
         password = data.get("password")
         username = data.get("username")
-
-        if not email or not password or username:
+        
+        if not email or not password or not username:
             return jsonify({"success": False, "message": "Email and password and username are required"}), 400
 
         try:

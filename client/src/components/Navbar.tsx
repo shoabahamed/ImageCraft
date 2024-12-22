@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 const signupformSchema = z.object({
   username: z.string().min(2, {
@@ -55,7 +56,8 @@ const loginformSchema = z.object({
 const Navbar = () => {
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [user, setUser] = useState(localStorage.getItem("user"));
+  const { user, dispatch } = useAuthContext();
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,7 +70,7 @@ const Navbar = () => {
     if (email && token) {
       const userData = { email, token };
       localStorage.setItem("user", JSON.stringify(userData));
-      setUser(JSON.stringify(userData));
+      dispatch({ type: "LOGIN", payload: userData });
 
       toast({
         description: "Login successful",
@@ -76,8 +78,11 @@ const Navbar = () => {
         duration: 5000,
       });
 
+      console.log(user);
+
       // Clear the query string from the URL
       window.history.replaceState({}, document.title, "/");
+      console.log(user);
     }
   }, []);
 
@@ -111,9 +116,9 @@ const Navbar = () => {
       if (response.data.success) {
         console.log("Signup successful:", response.data.data);
         localStorage.setItem("user", JSON.stringify(response.data.data));
-        setUser(JSON.stringify(response.data.data));
+        dispatch({ type: "LOGIN", payload: response.data.data });
         toast({
-          description: "Log in Successfull.",
+          description: "Sign up Successfull.",
           className: "bg-green-500 text-gray-900",
           duration: 2000,
         });
@@ -157,9 +162,9 @@ const Navbar = () => {
       if (response.data.success) {
         console.log("Login successful:", response.data.data);
         localStorage.setItem("user", JSON.stringify(response.data.data));
-        setUser(JSON.stringify(response.data.data));
+        dispatch({ type: "LOGIN", payload: response.data.data });
         toast({
-          description: "Log Out Successfull.",
+          description: "Log in Successfull.",
           className: "bg-green-500 text-gray-900",
           duration: 2000,
         });
@@ -228,7 +233,7 @@ const Navbar = () => {
 
   const handleLogOut = () => {
     localStorage.removeItem("user");
-    setUser(null);
+    dispatch({ type: "LOGOUT" });
     toast({
       description: "Log Out Successfull.",
       className: "bg-green-500 text-gray-900",

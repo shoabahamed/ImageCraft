@@ -1,16 +1,6 @@
 import IconComponent from "@/components/icon-component";
 import { Button } from "@/components/ui/button";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-
 import { Home, Redo, Undo, ZoomIn, ZoomOut } from "lucide-react";
 import {
   Crop,
@@ -30,6 +20,10 @@ import Arrange from "@/components/Arrange";
 import Draw from "@/components/Draw";
 import CropSidebar from "@/components/CropSidebar";
 
+import apiClient from "@/utils/appClient";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { useToast } from "@/hooks/use-toast";
+
 const MainPage = () => {
   const [sidebarName, setSidebarName] = useState("");
 
@@ -40,8 +34,13 @@ const MainPage = () => {
   const imageDim = useRef<{ width: number; height: number } | null>(null);
 
   const imageUrlFromState = useLocation().state?.imageUrl;
+  const idFromState = useLocation().state?.canvasId;
   const navigate = useNavigate();
   const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
+  const { user } = useAuthContext();
+  const { toast } = useToast();
+  const canvasIdRef = useRef(idFromState || crypto.randomUUID());
+  const [showUpdateButton, setShowUpdateButton] = useState(false);
 
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -331,6 +330,61 @@ const MainPage = () => {
     }
   }, [sidebarName]);
 
+  const onSaveCanvas = async () => {
+    if (!mainCanvasRef.current) return;
+
+    try {
+      // Get the JSON representation of the canvas
+      const canvasJSON = mainCanvasRef.current.toJSON();
+
+      // Post JSON data to the backend with JWT in headers
+      const response = await apiClient.post(
+        "/save_project",
+        {
+          canvasId: canvasIdRef.current,
+          canvasData: canvasJSON,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        toast({
+          description: "Canvas Successfully saved.",
+          className: "bg-green-500 text-gray-900",
+          duration: 2000,
+        });
+
+        setShowUpdateButton(true);
+      } else if (response.status === 200) {
+        toast({
+          description: "Canvas Updated Successfully.",
+          className: "bg-green-500 text-gray-900",
+          duration: 2000,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          description: "Save failed",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error saving canvas:", error);
+      toast({
+        variant: "destructive",
+        description: "Unexpected Error",
+        className: "bg-green-500 text-gray-900",
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <div className="h-screen max-w-screen flex items-center relative">
       {/* Sidebar */}
@@ -485,7 +539,9 @@ const MainPage = () => {
               <Button className="px-8" onClick={downloadCanvas}>
                 Download
               </Button>
-              <Button className="px-8">Save</Button>
+              <Button className="px-8" onClick={onSaveCanvas}>
+                {showUpdateButton ? "Update" : "Save"}
+              </Button>
             </div>
           </div>
         </div>

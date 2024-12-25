@@ -7,3 +7,6 @@ __pycache__/
 
 # Flask environment variables
 .env
+
+server/controllers/client_secret.json
+

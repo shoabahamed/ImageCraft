@@ -8,7 +8,7 @@ load_dotenv()
 def auth_middleware():
     def middleware():
         token = request.headers.get("Authorization")
-        print(f"Authorization header: {token}")
+        # print(f"Authorization header: {token}")
 
         if not token:
             return jsonify({"success": False, "message": "Token is missing"}), 401

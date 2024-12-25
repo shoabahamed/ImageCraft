@@ -96,6 +96,7 @@ def signup():
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
+        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))

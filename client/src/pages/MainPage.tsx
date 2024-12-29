@@ -40,6 +40,7 @@ const MainPage = () => {
   const idFromState = useLocation().state?.canvasId;
   const navigate = useNavigate();
   const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
+
   const { user } = useAuthContext();
   const { toast } = useToast();
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
@@ -230,6 +231,21 @@ const MainPage = () => {
     mainCanvasRef.current.renderAll();
   };
 
+  // Function to convert Blob to File
+  const convertBlobToFile = (url) => {
+    return new Promise((resolve, reject) => {
+      // Fetch the blob from the URL
+      fetch(url)
+        .then((res) => res.blob())
+        .then((blob) => {
+          // Create a new File object using the Blob
+          const file = new File([blob], "image.png", { type: "image/png" });
+          resolve(file); // Resolve with the File object
+        })
+        .catch(reject); // Reject if any error occurs
+    });
+  };
+
   const onSaveCanvas = async () => {
     if (!mainCanvasRef.current) return;
 
@@ -237,20 +253,21 @@ const MainPage = () => {
       // Get the JSON representation of the canvas
       const canvasJSON = mainCanvasRef.current.toJSON();
 
+      // Convert the image URL (blob URL) to a File object
+      const imageFile = await convertBlobToFile(imageUrl);
+
+      // Create FormData object and append the image and other canvas data
+      const formData = new FormData();
+      formData.append("canvasId", canvasIdRef.current);
+      formData.append("canvasData", JSON.stringify(canvasJSON)); // Add canvas data as a string
+      formData.append("image", imageFile); // Append the image file
+
       // Post JSON data to the backend with JWT in headers
-      const response = await apiClient.post(
-        "/save_project",
-        {
-          canvasId: canvasIdRef.current,
-          canvasData: canvasJSON,
+      const response = await apiClient.post("/save_project", formData, {
+        headers: {
+          Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
-          },
-        }
-      );
+      });
 
       if (response.status === 201) {
         toast({

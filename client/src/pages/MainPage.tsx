@@ -53,6 +53,8 @@ const MainPage = () => {
     const { width: containerWidth, height: containerHeight } =
       container.getBoundingClientRect();
 
+    const originalCanvasWidth = mainCanvasRef.current.width;
+    const originalCanvasHeight = mainCanvasRef.current.height;
     const imageWidth = currentImageRef.current.width ?? 1;
     const imageHeight = currentImageRef.current.height ?? 1;
 
@@ -79,6 +81,20 @@ const MainPage = () => {
       width: finalWidth,
       height: finalHeight,
     });
+
+    const objScaleX = finalWidth / originalCanvasWidth;
+    const objScaleY = finalHeight / originalCanvasHeight;
+    // Apply scaling factors to all other objects
+    mainCanvasRef.current.getObjects().forEach((obj) => {
+      if (obj !== currentImageRef.current) {
+        obj.scaleX *= objScaleX;
+        obj.scaleY *= objScaleY;
+        obj.left *= objScaleX;
+        obj.top *= objScaleY;
+        obj.setCoords();
+      }
+    });
+
     mainCanvasRef.current.renderAll();
   };
 
@@ -145,358 +161,42 @@ const MainPage = () => {
     }
   }, [imageUrl]);
 
-  // const handleContainerResize = () => {
-  //   const container = document.getElementById("CanvasContainer");
-  //   if (!container || !mainCanvasRef.current || !currentImageRef.current)
-  //     return;
-
-  //   const { width: containerWidth, height: containerHeight } =
-  //     container.getBoundingClientRect();
-
-  //   const imageWidth = currentImageRef.current.width ?? 1;
-  //   const imageHeight = currentImageRef.current.height ?? 1;
-
-  //   // Determine if the image needs scaling
-  //   const needsScaling =
-  //     imageWidth > containerWidth || imageHeight > containerHeight;
-
-  //   let scale = 0;
-  //   if (needsScaling) {
-  //     const scaleX = containerWidth / imageWidth;
-  //     const scaleY = containerHeight / imageHeight;
-  //     scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
-
-  //     currentImageRef.current.scale(scale); // Scale the image
-  //   }
-
-  //   const finalWidth = needsScaling
-  //     ? currentImageRef.current.getScaledWidth()
-  //     : imageWidth;
-  //   const finalHeight = needsScaling
-  //     ? currentImageRef.current.getScaledHeight()
-  //     : imageHeight;
-
-  //   mainCanvasRef.current.setDimensions({
-  //     width: finalWidth,
-  //     height: finalHeight,
-  //   });
-
-  //   mainCanvasRef.current.renderAll();
-  // };
-
-  // useEffect(() => {
-  //   if (canvasRef.current) {
-  //     const container = document.getElementById("CanvasContainer");
-  //     if (!container) return;
-
-  //     const resizeObserver = new ResizeObserver(() => {
-  //       handleContainerResize(); // Trigger resize handler
-  //     });
-  //     resizeObserver.observe(container);
-  //     resizeObserverRef.current = resizeObserver;
-
-  //     const { width: containerWidth, height: containerHeight } =
-  //       container.getBoundingClientRect();
-
-  //     const initCanvas = new fabric.Canvas(canvasRef.current, {
-  //       width: 300,
-  //       height: 300,
-  //     });
-  //     initCanvas.backgroundColor = "#fff";
-
-  //     fabric.FabricImage.fromURL(imageUrl).then((img) => {
-  //       const imageWidth = img.width ?? 1;
-  //       const imageHeight = img.height ?? 1;
-
-  //       imageDim.current = { width: imageWidth, height: imageHeight };
-
-  //       const needsScaling =
-  //         imageWidth > containerWidth || imageHeight > containerHeight;
-
-  //       if (needsScaling) {
-  //         const scaleX = containerWidth / imageWidth;
-  //         const scaleY = containerHeight / imageHeight;
-  //         const scale = Math.min(scaleX, scaleY);
-
-  //         img.scale(scale); // Scale the image
-  //       }
-
-  //       const finalWidth = needsScaling ? img.getScaledWidth() : imageWidth;
-  //       const finalHeight = needsScaling ? img.getScaledHeight() : imageHeight;
-
-  //       initCanvas.setDimensions({ width: finalWidth, height: finalHeight });
-  //       img.set({
-  //         left: 0,
-  //         top: 0,
-  //         selectable: false,
-  //         hoverCursor: "default",
-  //       });
-
-  //       initCanvas.add(img);
-  //       initCanvas.renderAll();
-  //       currentImageRef.current = img; // Set the ref directly
-  //       mainCanvasRef.current = initCanvas;
-  //     });
-
-  //     return () => {
-  //       initCanvas.dispose(); // Dispose of canvas
-  //       if (resizeObserverRef.current) {
-  //         resizeObserverRef.current.disconnect();
-  //       }
-  //     };
-  //   }
-  // }, [imageUrl]);
-
-  // const handleContainerResize = () => {
-  //   console.log("dynamic");
-  // };
-
-  // useEffect(() => {
-  //   if (canvasRef.current) {
-  //     const container = document.getElementById("CanvasContainer");
-  //     if (!container) return;
-
-  //     const resizeObserver = new ResizeObserver(() => {
-  //       handleContainerResize(); // Trigger resize handler
-  //     });
-  //     resizeObserver.observe(container);
-  //     resizeObserverRef.current = resizeObserver;
-
-  //     const { width: containerWidth, height: containerHeight } =
-  //       container.getBoundingClientRect();
-
-  //     const initCanvas = new fabric.Canvas(canvasRef.current, {
-  //       width: 300,
-  //       height: 300,
-  //     });
-  //     initCanvas.backgroundColor = "#ff0";
-
-  //     fabric.FabricImage.fromURL(imageUrl).then((img) => {
-  //       const imageWidth = img.width ?? 1;
-
-  //       const imageHeight = img.height ?? 1;
-
-  //       imageDim.current = { width: imageWidth, height: imageHeight };
-
-  //       // Calculate the initial scale to fit the image inside the container
-  //       let scale = 1;
-  //       let translateX = 0;
-  //       let translateY = 0;
-
-  //       if (imageWidth > containerWidth || imageHeight > containerHeight) {
-  //         // Scale down the canvas using MapInteractionCSS's scale
-  //         const scaleX = containerWidth / imageWidth;
-  //         const scaleY = containerHeight / imageHeight;
-  //         scale = Math.min(scaleX, scaleY);
-  //         console.log("scale ", scale);
-  //         // scale = 0.3;
-
-  //         // Position the scaled image inside the container
-  //         const scaledWidth = imageWidth * scale;
-  //         const scaledHeight = imageHeight * scale;
-
-  //         translateX = (containerWidth - scaledWidth) / 2;
-  //         translateY = (containerHeight - scaledHeight) / 2;
-  //       } else {
-  //         // Center smaller images directly
-  //         translateX = (containerWidth - imageWidth) / 2;
-  //         translateY = (containerHeight - imageHeight) / 2;
-  //       }
-
-  //       // Set initial MapInteractionCSS values
-  //       setValue({
-  //         scale,
-  //         translation: { x: translateX, y: translateY },
-  //       });
-
-  //       // Set canvas dimensions to match the image
-  //       initCanvas.setDimensions({
-  //         width: imageWidth + 30,
-  //         height: imageHeight + 30,
-  //       });
-
-  //       // Add the image to the canvas without scaling
-  //       img.set({
-  //         left: 0,
-  //         top: 0,
-  //         selectable: false,
-  //         hoverCursor: "default",
-  //       });
-
-  //       initCanvas.add(img);
-  //       initCanvas.renderAll();
-  //       currentImageRef.current = img; // Set the ref directly
-  //       mainCanvasRef.current = initCanvas;
-  //     });
-
-  //     return () => {
-  //       initCanvas.dispose(); // Dispose of canvas
-  //       if (resizeObserverRef.current) {
-  //         resizeObserverRef.current.disconnect();
-  //       }
-  //     };
-  //   }
-  // }, [imageUrl]);
-
-  //     if (!container) return;
-
-  //     let { width: containerWidth, height: containerHeight } =
-  //       container.getBoundingClientRect();
-
-  //     containerWidth = Math.floor(containerWidth);
-  //     containerHeight = Math.floor(containerHeight);
-
-  //     if (mainCanvas) {
-  //       console.log("old");
-
-  //       console.log(imageWidth);
-  //       console.log(imageHeight);
-  //       // mainCanvas.setDimensions({
-  //       //   width: 500,
-  //       //   height: 500,
-  //       // });
-
-  //       mainCanvas.setWidth(imageWidth);
-
-  //       // mainCanvas.renderAll();
-  //       // setMainCanvas(mainCanvas);
-  //       // console.log(currentImage);
-  //       // const imageWidth = currentImage.width ?? 1; // Fallback to 1
-  //       // const imageHeight = currentImage.height ?? 1;
-
-  //       // Determine if the image needs scaling
-  //       // const needsScaling =
-  //       //   imageWidth > containerWidth || imageHeight > containerHeight;
-
-  //       // if (needsScaling) {
-  //       //   // Calculate the scale to fit the image within the container
-  //       //   const scaleX = containerWidth / imageWidth;
-  //       //   const scaleY = containerHeight / imageHeight;
-  //       //   const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
-
-  //       //   // Scale the image
-  //       //   currentImage.scale(scale);
-  //       // }
-  //       // Get the dimensions to resize the canvas
-  //       // const finalWidth = needsScaling
-  //       //   ? currentImage.getScaledWidth()
-  //       //   : imageWidth;
-  //       // const finalHeight = needsScaling
-  //       //   ? currentImage.getScaledHeight()
-  //       //   : imageHeight;
-  //       // mainCanvas.setDimensions({ width: finalWidth, height: finalHeight });
-  //       // Resize the canvas to match the final image size
-  //       // mainCanvas.setWidth(finalWidth);
-  //       // mainCanvas.setHeight(finalHeight);
-  //       // console.log(mainCanvas);
-
-  //       // mainCanvas.remove(currentImage);
-  //       // Fix the image at position (0, 0) and disable interactions
-  //       // currentImage.set({
-  //       //   left: 0,
-  //       //   top: 0,
-  //       //   selectable: false, // Prevent selection
-  //       //   evented: false, // Disable event handling
-  //       //   hoverCursor: "default", // Remove hover effect
-  //       // });
-
-  //       // Add the image to the canvas
-
-  //       // Save the canvas and image references
-  //       // setCurrentImage(currentImage);
-  //       // setMainCanvas(mainCanvas);
-  //       return () => {
-  //         console.log("Cleaning up canvas...");
-  //         mainCanvas.dispose(); // Dispose of the local canvas instance
-  //       };
-  //     } else {
-  //       console.log("new");
-  //       const initCanvas = new fabric.Canvas(canvasRef.current, {
-  //         backgroundColor: "#fff",
-  //       });
-
-  //       // fabric.FabricImage.fromURL(imageUrl).then((img) => {
-  //       //   const imageWidth = img.width ?? 1; // Fallback to 1
-  //       //   const imageHeight = img.height ?? 1;
-
-  //       //   // Determine if the image needs scaling
-  //       //   const needsScaling =
-  //       //     imageWidth > containerWidth || imageHeight > containerHeight;
-
-  //       //   if (needsScaling) {
-  //       //     // Calculate the scale to fit the image within the container
-  //       //     const scaleX = containerWidth / imageWidth;
-  //       //     const scaleY = containerHeight / imageHeight;
-  //       //     const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
-
-  //       //     // Scale the image
-  //       //     img.scale(scale);
-  //       //   }
-
-  //       //   // Get the dimensions to resize the canvas
-  //       //   const finalWidth = needsScaling ? img.getScaledWidth() : imageWidth;
-  //       //   const finalHeight = needsScaling
-  //       //     ? img.getScaledHeight()
-  //       //     : imageHeight;
-
-  //       //   // Resize the canvas to match the final image size
-  //       //   initCanvas.setDimensions({ width: finalWidth, height: finalHeight });
-  //       //   // Fix the image at position (0, 0) and disable interactions
-  //       //   img.set({
-  //       //     left: 0,
-  //       //     top: 0,
-  //       //     selectable: false, // Prevent selection
-  //       //     evented: false, // Disable event handling
-  //       //     hoverCursor: "default", // Remove hover effect
-  //       //   });
-
-  //       //   // Add the image to the canvas
-  //       //   initCanvas.add(img);
-  //       //   initCanvas.renderAll();
-  //       //   // Save the canvas and image references
-  //       //   setCurrentImage(img);
-  //       //   setMainCanvas(initCanvas);
-  //       // });
-
-  //       initCanvas.setDimensions({
-  //         width: 300,
-  //         height: 300,
-  //       });
-
-  //       initCanvas.renderAll();
-  //       setMainCanvas(initCanvas);
-
-  //       // window.addEventListener("resize", () => {
-  //       //   setWindowWidth(window.innerWidth);
-  //       // });
-  //       return () => {
-  //         console.log("Cleaning up canvas...");
-  //         initCanvas.dispose(); // Dispose of the local canvas instance
-  //       };
-  //     }
-  //   }
-  // }, [imageWidth]);
-
   const downloadCanvas = () => {
     if (!mainCanvasRef.current || !currentImageRef.current) return;
 
     // Save current canvas dimensions and image scale
     const originalCanvasWidth = mainCanvasRef.current.width!;
     const originalCanvasHeight = mainCanvasRef.current.height!;
-    const originalImageScaleX = currentImageRef.current.scaleX!;
-    const originalImageScaleY = currentImageRef.current.scaleY!;
-
-    // Retrieve the original image dimensions
     const originalImageWidth = currentImageRef.current.width!;
     const originalImageHeight = currentImageRef.current.height!;
+    const currentImageWidth =
+      currentImageRef.current.scaleX! * originalImageWidth;
+    const currentImageHeight =
+      currentImageRef.current.scaleY! * originalImageHeight;
 
-    // Temporarily set the canvas and image to their original size
+    // Calculate scaling factors
+    const scaleX = originalImageWidth / currentImageWidth;
+    const scaleY = originalImageHeight / currentImageHeight;
+
+    // Scale the canvas to the original image size
     mainCanvasRef.current.setDimensions({
       width: originalImageWidth,
       height: originalImageHeight,
     });
-    currentImageRef.current.scaleX = 1; // Reset horizontal scale to original
-    currentImageRef.current.scaleY = 1; // Reset vertical scale to original
+    currentImageRef.current.scaleX = 1;
+    currentImageRef.current.scaleY = 1;
+
+    // Apply scaling factors to all other objects
+    mainCanvasRef.current.getObjects().forEach((obj) => {
+      if (obj !== currentImageRef.current) {
+        obj.scaleX *= scaleX;
+        obj.scaleY *= scaleY;
+        obj.left *= scaleX;
+        obj.top *= scaleY;
+        obj.setCoords();
+      }
+    });
+
     mainCanvasRef.current.renderAll();
 
     // Generate the data URL for the download
@@ -513,17 +213,22 @@ const MainPage = () => {
       width: originalCanvasWidth,
       height: originalCanvasHeight,
     });
-    currentImageRef.current.scaleX = originalImageScaleX; // Restore horizontal scale
-    currentImageRef.current.scaleY = originalImageScaleY; // Restore vertical scale
+    currentImageRef.current.scaleX = currentImageWidth / originalImageWidth;
+    currentImageRef.current.scaleY = currentImageHeight / originalImageHeight;
+
+    // Restore the scale and position of all other objects
+    mainCanvasRef.current.getObjects().forEach((obj) => {
+      if (obj !== currentImageRef.current) {
+        obj.scaleX /= scaleX;
+        obj.scaleY /= scaleY;
+        obj.left /= scaleX;
+        obj.top /= scaleY;
+        obj.setCoords();
+      }
+    });
+
     mainCanvasRef.current.renderAll();
   };
-
-  useEffect(() => {
-    if (mainCanvasRef.current) {
-      const enableDrawing = sidebarName === "PenTool" ? true : false;
-      mainCanvasRef.current.isDrawingMode = enableDrawing;
-    }
-  }, [sidebarName]);
 
   const onSaveCanvas = async () => {
     if (!mainCanvasRef.current) return;
@@ -579,6 +284,13 @@ const MainPage = () => {
       });
     }
   };
+
+  useEffect(() => {
+    if (mainCanvasRef.current) {
+      const enableDrawing = sidebarName === "PenTool" ? true : false;
+      mainCanvasRef.current.isDrawingMode = enableDrawing;
+    }
+  }, [sidebarName]);
 
   return (
     <div className="h-screen max-w-screen flex items-center relative">

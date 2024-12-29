@@ -128,8 +128,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
     canvas.on("object:modified", handleObjectSelected);
     canvas.on("object:scaling", handleObjectSelected);
 
-    const imgWidth = image.getScaledWidth();
-    const imgHeight = image.getScaledHeight();
+    const imgWidth = image.width;
+    const imgHeight = image.height;
 
     setCropHeight(Math.floor(imgHeight).toString());
     setCropWidth(Math.floor(imgWidth).toString());
@@ -146,6 +146,11 @@ const CropSidebar = ({ canvas, image }: Props) => {
   // add crop handler
   // Add crop handler to precisely surround the canvas
   const addCropHandler = () => {
+    if (selectedObject) {
+      image.clipPath = null; // Remove the clipping path
+      canvas.remove(selectedObject);
+    }
+
     // Get actual canvas dimensions
     const canvasWidth = canvas.getWidth();
     const canvasHeight = canvas.getHeight();
@@ -156,7 +161,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
       left: 0,
       width: canvasWidth, // Match canvas width
       height: canvasHeight, // Match canvas height
-      fill: null,
+      fill: "000",
+      opacity: 0.5,
       stroke: "#00ff00",
       strokeWidth: 5, // Border thickness
       selectable: true, // Allow selection
@@ -184,6 +190,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const shape = getShape(shapeType);
     canvas.add(shape);
     canvas.setActiveObject(shape); // Set the newly added shape as the active object
+    setSelectedObject(shape);
     canvas.renderAll();
   };
 
@@ -234,7 +241,9 @@ const CropSidebar = ({ canvas, image }: Props) => {
                   onChange={(e) => setCropWidth(e.target.value)}
                 />
               </div>
-              <Button onClick={addCropHandler}>Interactive</Button>
+              <Button onClick={addCropHandler} className="w-full">
+                Start Cropping
+              </Button>
             </div>
           </CardContent>
         </Card>

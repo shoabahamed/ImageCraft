@@ -65,6 +65,14 @@ def callback():
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id))
+            print(token)
+        else:
+            # Existing user: Generate token using the user's ObjectId
+            token = create_token(str(user["_id"]))
+            email = user['email']
+            print(token)
+        
+            
 
         # Redirect to the frontend with the email and token as query parameters
         redirect_url = f"http://localhost:5173/?email={email}&token={token}"

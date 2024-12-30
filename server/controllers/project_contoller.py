@@ -4,10 +4,15 @@ from config.db_config import get_db
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 db = get_db()
 projects_collection = db["Projects"]
-UPLOAD_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/static/uploads'
+ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/static/original'
+CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/static/canvas'
 
 
 
@@ -16,13 +21,13 @@ def save_project():
         user_id = str(g._id)  # Extracted by the middleware
         canvas_id = request.form.get('canvasId')
         canvas_data = request.form.get('canvasData')  # JSON string
-        image_file = request.files.get('image')  # Get the image file from the form
+        original_image_file = request.files.get('originalImage')  # Get the original image file from the form
+        canvas_image_file = request.files.get('canvasImage')
 
         
-        if not canvas_data or not image_file:
+        if not canvas_data or not original_image_file and not canvas_image_file:
             return jsonify({"success": False, "message": "Missing canvas data or image file"}), 400
-        
-                # Parse the canvas_data (JSON string) to a Python dictionary
+
         try:
             canvas_data = json.loads(canvas_data)  # Convert the string to a JSON object
         except json.JSONDecodeError:
@@ -31,14 +36,16 @@ def save_project():
         
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png") 
-        image_path = f"{UPLOAD_FOLDER}/{image_filename}"
+        original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+        canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
         
-        image_file.save(image_path)
+        original_image_file.save(original_image_path)
+        canvas_image_file.save(canvas_image_path)
         
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
             if obj.get("type").lower() == "image":
-                obj["src"] = image_path
+                obj["src"] = os.getenv("BACKEND_SERVER") + "/static/original/" + image_filename
 
 
         # Check if a project with the given project_id already exists
@@ -57,7 +64,8 @@ def save_project():
                 "user_id": user_id,
                 "project_id": canvas_id,
                 "project_data": canvas_data,
-                "image_url": image_path
+                "original_image_url": os.getenv("BACKEND_SERVER") + "/static/original/" + image_filename,
+                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/static/canvas/"  + image_filename
             }
             projects_collection.insert_one(new_project)
             response_message = "Project created successfully"
@@ -94,4 +102,46 @@ def get_projects():
   
   except Exception as e:
     return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+  
+
+def get_all_projects():
+  try:
+
+    # data = request.get_json()
+    
+    user_id = str(g._id)  # Extracted by the middleware
+
+    # Query the database for projects, excluding the `_id` field
+    projects_cursor = projects_collection.find()
+    
+    # Convert the cursor to a list of dictionaries
+    projects = list(projects_cursor)
+    
+    # Convert the MongoDB ObjectId to string for JSON serialization
+    for project in projects:
+        project["_id"] = str(project["_id"])  # MongoDB ObjectId needs to be converted to string
+
+
+    response = {"projects": projects}
+    print(len(projects))
+    return jsonify({"success": True, "message": "Projects retrieved successfully", "data": response}), 201
+  
+  except Exception as e:
+    return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+  
+
+
+def get_project_by_id(project_id):
+    # Fetch project by project_id from the database
+    project = projects_collection.find_one({"project_id": project_id})
+    
+    if not project:
+        return jsonify({"message": "Project not found"}), 404
+
+    # Assuming the Project model has these fields: original_image_url, canvas_image_url
+    return jsonify({
+        "original_image_url": project["original_image_url"],
+        "canvas_image_url": project["canvas_image_url"]
+        
+    })
  

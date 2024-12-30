@@ -10,6 +10,7 @@ import {
 interface User {
   email: string;
   token: string;
+  role: string;
   // Add more fields as necessary based on your application
 }
 

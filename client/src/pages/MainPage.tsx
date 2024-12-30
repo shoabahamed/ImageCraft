@@ -254,13 +254,19 @@ const MainPage = () => {
       const canvasJSON = mainCanvasRef.current.toJSON();
 
       // Convert the image URL (blob URL) to a File object
-      const imageFile = await convertBlobToFile(imageUrl);
+      const originalImageFile = await convertBlobToFile(imageUrl);
+
+      // save the canvas as image
+      const canvasDataUrl = mainCanvasRef.current.toDataURL(); // Canvas as data URL
+      // Convert canvas image (Data URL) to a Blob and then to a File
+      const canvasImageFile = await convertBlobToFile(canvasDataUrl);
 
       // Create FormData object and append the image and other canvas data
       const formData = new FormData();
       formData.append("canvasId", canvasIdRef.current);
       formData.append("canvasData", JSON.stringify(canvasJSON)); // Add canvas data as a string
-      formData.append("image", imageFile); // Append the image file
+      formData.append("originalImage", originalImageFile); // Append the oringalimage file
+      formData.append("canvasImage", canvasImageFile); // Append the oringalimage file
 
       // Post JSON data to the backend with JWT in headers
       const response = await apiClient.post("/save_project", formData, {

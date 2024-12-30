@@ -17,13 +17,14 @@ interface Project {
   user_id: string;
   project_id: string;
   project_data: object;
-  image_url: string; // Assuming the backend returns an imageUrl property
+  origial_image_url: string;
+  canvas_image_url: string;
 }
 
 const Projects = () => {
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const BACKEND_URL = "http://127.0.0.1:5000";
+  // const BACKEND_URL = "http://127.0.0.1:5000";
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +101,7 @@ const Projects = () => {
           >
             <CardContent className="p-4">
               <img
-                src={`${BACKEND_URL}/static/uploads/${project.project_id}.png`}
+                src={project.canvas_image_url}
                 alt={`Image for project ${project.project_id}`}
                 className="object-cover w-full h-48 rounded-t-lg cursor-pointer"
               />

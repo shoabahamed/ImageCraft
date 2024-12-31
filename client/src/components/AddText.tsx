@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 
-import { Canvas, IText, Text, Textbox } from "fabric";
+import { Canvas, Textbox } from "fabric";
 import { Textarea } from "./ui/textarea";
 
 type AddTextProps = {
@@ -103,7 +103,6 @@ const AddText = ({ canvas }: AddTextProps) => {
   // Set up event listeners for object selection
   useEffect(() => {
     const handleObjectSelected = () => {
-      console.log("kdsjf");
       const activeObject = canvas.getActiveObject();
       if (activeObject && activeObject.type === "textbox") {
         const textObj = activeObject as Textbox;

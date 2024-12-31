@@ -146,6 +146,34 @@ const AdminPanel: React.FC = () => {
     navigate("/admin/compare_img", { state: { projectId } });
   };
 
+  const grantLogs = async (reportId: string) => {
+    try {
+      await apiClient.post(
+        "/grant_logs",
+        { reportId },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token}`,
+          },
+        }
+      );
+
+      toast({
+        description: "Logs granted successfully.",
+        className: "bg-green-500 text-gray-900",
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({
+        description: "Failed to grant logs.",
+        className: "bg-red-500 text-gray-900",
+        duration: 3000,
+      });
+      console.error(error);
+    }
+  };
+
   const renderReportDetails = (report: Report) => (
     <div>
       <p>
@@ -191,7 +219,7 @@ const AdminPanel: React.FC = () => {
                     <CardDescription>{report.description}</CardDescription>
                   </CardHeader>
                   <CardContent>{renderReportDetails(report)}</CardContent>
-                  <CardFooter className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2">
+                  <CardFooter className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-8 gap-2">
                     <Button
                       onClick={() => {
                         goToComparePage(report.project_id);
@@ -199,8 +227,13 @@ const AdminPanel: React.FC = () => {
                     >
                       Compare Images
                     </Button>
-                    <Button onClick={() => {}}>View Logs</Button>
-                    <Button onClick={() => {}}>Grant Log</Button>
+                    <Button
+                      onClick={() => {
+                        grantLogs(report.id);
+                      }}
+                    >
+                      Grant Logs
+                    </Button>
                     <Button onClick={() => resolveReport(report.id)}>
                       Mark as Resolved
                     </Button>

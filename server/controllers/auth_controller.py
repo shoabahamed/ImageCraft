@@ -71,12 +71,13 @@ def callback():
             token = create_token(str(user["_id"]))
             email = user['email']
             role = user['role']
+            username = user['username']
             print(token)
         
             
 
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}"
+        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}"
         return redirect(redirect_url)
 
     except Exception as e:
@@ -110,7 +111,7 @@ def signup():
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))
-        response = {"email": valid_email, "token": token, "role": role}
+        response = {"email": valid_email, "token": token, "role": role, "username": username}
 
         return jsonify({"success": True, "message": "User added successfully", "data": response}), 201
     except Exception as e:
@@ -149,10 +150,12 @@ def login():
         # Generate JWT token
         token = create_token(str(user["_id"]))
         role = str(user['role'])
+        username = str(user['username'])
         response = {
             "email": valid_email,
             "token": token,
-            "role": role
+            "role": role,
+            'username': username
         }
 
         return jsonify({"success": True, "message": "Login successful", "data": response}), 200

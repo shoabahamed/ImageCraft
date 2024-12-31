@@ -9,6 +9,7 @@ import Projects from "./pages/Projects";
 import Gallery from "./pages/Gallery";
 import AdminPanel from "./pages/Admin";
 import ComparePage from "./pages/ComparePage";
+import UserDashboard from "./pages/UserProfile";
 
 export default function App() {
   const { user } = useAuthContext();
@@ -22,6 +23,12 @@ export default function App() {
           </Routes>
           <Routes>
             <Route path="/mainpage" element={user ? <MainPage /> : <Home />} />
+          </Routes>
+          <Routes>
+            <Route
+              path="/profile"
+              element={user ? <UserDashboard /> : <Home />}
+            />
           </Routes>
           <Routes>
             <Route path="/gallery" element={<Gallery />} />

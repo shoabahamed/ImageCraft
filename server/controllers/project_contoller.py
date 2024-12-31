@@ -141,7 +141,7 @@ def get_project_by_id(project_id):
     # Assuming the Project model has these fields: original_image_url, canvas_image_url
     return jsonify({
         "original_image_url": project["original_image_url"],
-        "canvas_image_url": project["canvas_image_url"]
-        
+        "canvas_image_url": project["canvas_image_url"],
+        "project_data": project['project_data']
     })
  

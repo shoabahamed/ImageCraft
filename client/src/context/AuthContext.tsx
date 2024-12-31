@@ -11,6 +11,7 @@ interface User {
   email: string;
   token: string;
   role: string;
+  username: string;
   // Add more fields as necessary based on your application
 }
 

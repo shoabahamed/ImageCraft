@@ -59,15 +59,25 @@ def callback():
         if not user:
             username = id_info['name']
             valid_email = email
-            
+            role = "user"
             hashed_password = "gmail_login"
-            user_data = {"username": username, "email": valid_email, "password": hashed_password}
+            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role}
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id))
+            print(token)
+        else:
+            # Existing user: Generate token using the user's ObjectId
+            token = create_token(str(user["_id"]))
+            email = user['email']
+            role = user['role']
+            username = user['username']
+            print(token)
+        
+            
 
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"http://localhost:5173/?email={email}&token={token}"
+        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}"
         return redirect(redirect_url)
 
     except Exception as e:
@@ -82,6 +92,7 @@ def signup():
         email = data.get("email")
         password = data.get("password")
         username = data.get("username")
+        role = "user"
         
         if not email or not password or not username:
             return jsonify({"success": False, "message": "Email and password and username are required"}), 400
@@ -95,12 +106,12 @@ def signup():
             return jsonify({"success": False, "message": "Email already exists"}), 409
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
-        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
+        # user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
+        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role}
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))
-        response = {"email": valid_email, "token": token}
+        response = {"email": valid_email, "token": token, "role": role, "username": username}
 
         return jsonify({"success": True, "message": "User added successfully", "data": response}), 201
     except Exception as e:
@@ -138,10 +149,13 @@ def login():
 
         # Generate JWT token
         token = create_token(str(user["_id"]))
-
+        role = str(user['role'])
+        username = str(user['username'])
         response = {
             "email": valid_email,
-            "token": token
+            "token": token,
+            "role": role,
+            'username': username
         }
 
         return jsonify({"success": True, "message": "Login successful", "data": response}), 200

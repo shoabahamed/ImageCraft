@@ -29,6 +29,7 @@ import {
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useNavigate } from "react-router-dom";
 
 const signupformSchema = z.object({
   username: z.string().min(2, {
@@ -57,6 +58,7 @@ const Navbar = () => {
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { user, dispatch } = useAuthContext();
+  const navigate = useNavigate();
 
   const { toast } = useToast();
 
@@ -65,10 +67,11 @@ const Navbar = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const email = urlParams.get("email");
     const token = urlParams.get("token");
+    const role = urlParams.get("role");
 
     // If email and token are present, store them and clear the query string
-    if (email && token) {
-      const userData = { email, token };
+    if (email && token && role) {
+      const userData = { email, token, role };
       localStorage.setItem("user", JSON.stringify(userData));
       dispatch({ type: "LOGIN", payload: userData });
 
@@ -77,8 +80,6 @@ const Navbar = () => {
         className: "bg-green-500 text-gray-900",
         duration: 5000,
       });
-
-      console.log(user);
 
       // Clear the query string from the URL
       window.history.replaceState({}, document.title, "/");
@@ -241,6 +242,10 @@ const Navbar = () => {
     });
   };
 
+  const navigateToGallery = () => {
+    navigate("/gallery");
+  };
+
   return (
     <nav className="w-full pt-3">
       <div className="flex items-center justify-between mx-3 border-b-2 border-slate-300 pb-3">
@@ -248,8 +253,13 @@ const Navbar = () => {
           <p className="text-3xl font-bold italic">StyleForge</p>
         </div>
         <div className="flex gap-5">
+          <Button className="px-8" onClick={navigateToGallery}>
+            Gallery
+          </Button>
           {user ? (
-            <Button onClick={handleLogOut}>Log Out</Button>
+            <Button onClick={handleLogOut} className="px-8">
+              Log Out
+            </Button>
           ) : (
             <>
               <Dialog open={isSignUpOpen} onOpenChange={setIsSignUpOpen}>

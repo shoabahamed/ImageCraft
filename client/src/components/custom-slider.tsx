@@ -1,3 +1,4 @@
+import { useLogContext } from "@/hooks/useLogContext";
 import { Slider } from "./ui/slider";
 
 type SlideProps = {
@@ -8,6 +9,7 @@ type SlideProps = {
   sliderValue: number;
   setSliderValue: (value: number) => void;
   step?: number;
+  logName?: string;
 };
 
 const CustomSlider = ({
@@ -18,7 +20,9 @@ const CustomSlider = ({
   sliderValue,
   setSliderValue,
   step = 1,
+  logName = "",
 }: SlideProps) => {
+  const { addLog } = useLogContext(); // Use log contextuseLogContext
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center text-slate-400 text-sm">
@@ -30,7 +34,14 @@ const CustomSlider = ({
         min={min}
         max={max}
         step={step}
-        onValueChange={(e) => setSliderValue(e[0])}
+        onValueChange={(e) => {
+          addLog(
+            `${
+              logName === "" ? sliderName : logName
+            } value changed from ${sliderValue} to ${e[0]}`
+          );
+          setSliderValue(e[0]);
+        }}
       />
     </div>
   );

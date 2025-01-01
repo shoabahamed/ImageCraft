@@ -10,6 +10,8 @@ import Gallery from "./pages/Gallery";
 import AdminPanel from "./pages/Admin";
 import ComparePage from "./pages/ComparePage";
 import UserDashboard from "./pages/UserProfile";
+import { CanvasObjectsProvider } from "./context/CanvasObjectContext";
+import { LogProvider } from "./context/LogContext";
 
 export default function App() {
   const { user } = useAuthContext();
@@ -22,7 +24,20 @@ export default function App() {
             <Route path="/" element={<Home />} />
           </Routes>
           <Routes>
-            <Route path="/mainpage" element={user ? <MainPage /> : <Home />} />
+            <Route
+              path="/mainpage"
+              element={
+                user ? (
+                  <LogProvider>
+                    <CanvasObjectsProvider>
+                      <MainPage />
+                    </CanvasObjectsProvider>
+                  </LogProvider>
+                ) : (
+                  <Home />
+                )
+              }
+            />
           </Routes>
           <Routes>
             <Route

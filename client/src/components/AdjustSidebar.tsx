@@ -9,6 +9,7 @@ import CustomSlider from "@/components/custom-slider";
 import { useEffect, useState } from "react";
 import { Canvas, FabricImage, filters } from "fabric";
 import { Button } from "./ui/button";
+import { useLogContext } from "@/hooks/useLogContext";
 
 type AdjustSidebarProps = {
   canvas: Canvas;
@@ -16,6 +17,8 @@ type AdjustSidebarProps = {
 };
 
 const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
+  const { addLog } = useLogContext(); // Use log context
+
   const [brightnessValue, setBrightnessValue] = useState(0);
   const [contrastValue, setContrastValue] = useState(0);
   const [saturationValue, setSaturationValue] = useState(0);
@@ -97,9 +100,14 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   const applyPredefinedFilter = (filterType: string) => {
+    if (predefinedFilter) {
+      addLog(`Removed image filter ${predefinedFilter}`);
+    }
     if (predefinedFilter && filterType === predefinedFilter) {
       setPredefinedFilter("");
     } else {
+      addLog(`applied image filter ${filterType}`);
+
       setPredefinedFilter(filterType);
     }
   };
@@ -124,6 +132,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   }, [opacityValue]);
 
   const handleColorReset = () => {
+    addLog(`Reseted all Image color properties`);
+
     setBrightnessValue(0);
     setVibranceValue(0);
     setContrastValue(0);
@@ -132,6 +142,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   const handleDetailReset = () => {
+    addLog(`Reseted all Image Details properties`);
+
     setOpacityValue(1);
     setPixelateValue(0);
     setNoiseValue(0);
@@ -139,8 +151,14 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   const handleFilterReset = () => {
+    addLog(`Removed image filters`);
     setPredefinedFilter("");
   };
+
+  // const handleBrightnessChange = (newValue: number) => {
+  //   addLog("brightness", brightnessValue, newValue); // Log brightness change
+  //   setBrightnessValue(newValue);
+  // };
 
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">

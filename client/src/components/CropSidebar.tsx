@@ -42,6 +42,10 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const stroke_color = "red";
     const stroke_width = 1;
     const stroke_array = [5, 5];
+    const frameName = `Frame ${
+      canvas.getObjects(shapeType).length + 1
+    } shapeType`;
+    console.log(frameName);
     if (shapeType === "circle") {
       return new Circle({
         top: 100,
@@ -51,6 +55,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else if (shapeType === "rect") {
       return new Rect({
@@ -62,6 +67,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else if (shapeType === "triangle") {
       return new Triangle({
@@ -73,6 +79,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else if (shapeType === "elipse") {
       return new Ellipse({
@@ -84,6 +91,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else {
       return new Rect({
@@ -95,6 +103,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     }
   };
@@ -135,6 +144,15 @@ const CropSidebar = ({ canvas, image }: Props) => {
     setCropWidth(Math.floor(imgWidth).toString());
 
     return () => {
+      if (!image.clipPath) {
+        canvas.getObjects().forEach((obj) => {
+          if (obj.name?.startsWith("Frame")) {
+            canvas.remove(obj);
+          }
+        });
+        canvas.renderAll();
+      }
+
       canvas.off("selection:created", handleObjectSelected);
       canvas.off("selection:updated", handleObjectSelected);
       canvas.off("selection:cleared", handleObjectCleared);
@@ -214,7 +232,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
-      <div className="w-[90%]">
+      {/* <div className="w-[90%]">
         <Card>
           <CardHeader>
             <CardDescription>Crop</CardDescription>
@@ -247,7 +265,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       <div className="w-[90%]">
         <Card>
@@ -293,7 +311,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
             <div className="flex flex-col gap-3 justify-center">
               <Button className="text-sm md:text-sm">Invert Cutout</Button>
               <Button onClick={resetClip}>Reset Cutout</Button>
-              <Button>Reset Crop</Button>
             </div>
           </CardContent>
         </Card>

@@ -46,6 +46,8 @@ const MainPage = () => {
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
   const [showUpdateButton, setShowUpdateButton] = useState(false);
 
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
+
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
     if (!container || !mainCanvasRef.current || !currentImageRef.current)
@@ -339,16 +341,88 @@ const MainPage = () => {
     });
 
     mainCanvasRef.current.renderAll();
-    // Generate the data URL for the download
-    const dataURL = mainCanvasRef.current.toDataURL();
 
-    // Create a temporary link element to trigger the download
-    const link = document.createElement("a");
-    link.href = dataURL;
-    link.download = "canvas-image.png"; // Name of the file to be saved
-    link.click();
+    // Find the object named "Frame" or starting with "Frame"
+    const frameObject = mainCanvasRef.current
+      .getObjects()
+      .find((obj) => obj.name?.startsWith("Frame"));
 
-    // Restore the canvas and image to their previous dimensions
+    if (frameObject) {
+      // const frameWidth = frameObject.getScaledWidth();
+      // const frameHeight = frameObject.getScaledHeight();
+
+      // const dataURL = mainCanvasRef.current.toDataURL({
+      //   left: frameObject.left,
+      //   top: frameObject.top,
+      //   width: frameWidth + 500,
+      //   height: frameHeight + 500,
+      // });
+
+      // const link = document.createElement("a");
+      // link.href = dataURL;
+      // link.download = "frame-image.png";
+      // link.click();
+
+      // // Get the clipPath object
+      // const clipPath = currentImageRef.current.clipPath;
+
+      // mainCanvasRef.current.backgroundColor = "000"
+
+      const clipBoundingBox = frameObject.getBoundingRect();
+
+      // Create a temporary canvas element using fabric's rendering
+      const tempCanvas = mainCanvasRef.current.toCanvasElement();
+
+      const tempContext = tempCanvas.getContext("2d");
+      if (!tempContext) return;
+
+      // Create a new canvas for the clipped region
+      const outputCanvas = document.createElement("canvas");
+      const outputContext = outputCanvas.getContext("2d");
+
+      if (!outputContext) return;
+
+      // Set dimensions of the output canvas to match the clipBoundingBox
+      outputCanvas.width = clipBoundingBox.width;
+      outputCanvas.height = clipBoundingBox.height;
+
+      // Draw the clipped region onto the output canvas
+      outputContext.drawImage(
+        tempCanvas, // Source canvas
+        clipBoundingBox.left, // Source x
+        clipBoundingBox.top, // Source y
+        clipBoundingBox.width, // Source width
+        clipBoundingBox.height, // Source height
+        0, // Destination x
+        0, // Destination y
+        clipBoundingBox.width, // Destination width
+        clipBoundingBox.height // Destination height
+      );
+
+      // Generate a data URL for the clipped image
+      const dataURL = outputCanvas.toDataURL();
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = "clipped-image.png";
+      link.click();
+
+      // Clean up output canvas
+      outputCanvas.remove();
+
+      // mainCanvasRef.current.backgroundColor = "fff"
+    } else {
+      // Generate the data URL for the download
+      const dataURL = mainCanvasRef.current.toDataURL();
+
+      // Create a temporary link element to trigger the download
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = "canvas-image.png"; // Name of the file to be saved
+      link.click();
+    }
+
     // Restore the canvas and image to their previous dimensions
     mainCanvasRef.current.setDimensions({
       width: originalCanvasWidth,
@@ -373,8 +447,9 @@ const MainPage = () => {
 
   useEffect(() => {
     if (mainCanvasRef.current) {
-      const enableDrawing = sidebarName === "PenTool" ? true : false;
-      mainCanvasRef.current.isDrawingMode = enableDrawing;
+      if (sidebarName !== "PenTool") {
+        mainCanvasRef.current.isDrawingMode = false;
+      }
     }
   }, [sidebarName]);
 
@@ -537,6 +612,14 @@ const MainPage = () => {
               <Button className="px-8" onClick={onSaveCanvas}>
                 {showUpdateButton ? "Update" : "Save"}
               </Button>
+              {showDeleteButton && (
+                <Button
+                  className="px-8 bg-red-500 hover:bg-red-600"
+                  onClick={downloadCanvas}
+                >
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
         </div>

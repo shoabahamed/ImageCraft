@@ -130,8 +130,13 @@ const Draw = ({ canvas }: DrawProps) => {
 
   useEffect(() => {
     if (canvas) {
-      const brush = createBrush(canvas, brushType, brushColor, brushSize);
-      canvas.freeDrawingBrush = brush;
+      if (brushType !== "none") {
+        canvas.isDrawingMode = true;
+        const brush = createBrush(canvas, brushType, brushColor, brushSize);
+        canvas.freeDrawingBrush = brush;
+      } else {
+        canvas.isDrawingMode = false;
+      }
     }
   }, [canvas, brushType, brushColor, brushSize]);
 
@@ -172,6 +177,7 @@ const Draw = ({ canvas }: DrawProps) => {
                 <SelectValue placeholder="Select a brush" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">None</SelectItem>
                 <SelectItem value="pencil">Pencil</SelectItem>
                 <SelectItem value="circle">Circle</SelectItem>
                 <SelectItem value="spray">Spray</SelectItem>

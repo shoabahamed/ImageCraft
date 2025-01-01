@@ -123,6 +123,7 @@ const AddText = ({ canvas }: AddTextProps) => {
       } else {
         setSelectedObject(null);
       }
+      console.log("TEXT SELETECTED");
     };
 
     const handleObjectDeselected = () => {

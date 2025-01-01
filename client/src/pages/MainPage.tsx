@@ -1,7 +1,6 @@
 import IconComponent from "@/components/icon-component";
-import { Button } from "@/components/ui/button";
 
-import { Home, Redo, Undo, ZoomIn, ZoomOut } from "lucide-react";
+import { Home } from "lucide-react";
 import {
   Crop,
   RotateCwSquare,
@@ -20,11 +19,11 @@ import Arrange from "@/components/Arrange";
 import Draw from "@/components/Draw";
 import CropSidebar from "@/components/CropSidebar";
 
-import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import Footer from "@/components/Footer";
 
-import { MapInteractionCSS, MapInteraction } from "react-map-interaction";
+// import { MapInteractionCSS, MapInteraction } from "react-map-interaction";
 
 const MainPage = () => {
   const [sidebarName, setSidebarName] = useState("");
@@ -32,7 +31,6 @@ const MainPage = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
   const currentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
-  const currentGroupRef = useRef<fabric.Group | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const imageDim = useRef<{ width: number; height: number } | null>(null);
 
@@ -44,9 +42,6 @@ const MainPage = () => {
   const { user } = useAuthContext();
   const { toast } = useToast();
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
-  const [showUpdateButton, setShowUpdateButton] = useState(false);
-
-  const [showDeleteButton, setShowDeleteButton] = useState(false);
 
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -155,295 +150,63 @@ const MainPage = () => {
         mainCanvasRef.current = initCanvas;
       });
 
+      // initCanvas.on("mouse:wheel", function (opt) {
+      //   const delta = opt.e.deltaY;
+      //   let zoom = initCanvas.getZoom();
+
+      //   // Adjust zoom based on mouse wheel delta
+      //   zoom *= 0.999 ** delta;
+
+      //   // Constrain zoom level to minimum and maximum values
+      //   if (zoom > 2) zoom = 2;
+      //   if (zoom < 1) zoom = 1;
+
+      //   // Get the mouse position relative to the canvas
+      //   const mouse = initCanvas.getPointer(opt.e);
+      //   const mousePoint = new fabric.Point(mouse.x, mouse.y);
+
+      //   // Set zoom to the mouse point (focus on mouse position)
+      //   initCanvas.zoomToPoint(mousePoint, zoom);
+
+      //   // Ensure the canvas is re-rendered after zooming
+      //   initCanvas.requestRenderAll();
+
+      //   opt.e.preventDefault();
+      //   opt.e.stopPropagation();
+      // });
+
       return () => {
         initCanvas.dispose(); // Dispose of canvas
         if (resizeObserverRef.current) {
           resizeObserverRef.current.disconnect();
         }
+        // initCanvas.off("mouse:wheel", function (opt) {
+        //   const delta = opt.e.deltaY;
+        //   let zoom = initCanvas.getZoom();
+
+        //   // Adjust zoom based on mouse wheel delta
+        //   zoom *= 0.999 ** delta;
+
+        //   // Constrain zoom level to minimum and maximum values
+        //   if (zoom > 2) zoom = 2;
+        //   if (zoom < 1) zoom = 1;
+
+        //   // Get the mouse position relative to the canvas
+        //   const mouse = initCanvas.getPointer(opt.e);
+        //   const mousePoint = new fabric.Point(mouse.x, mouse.y);
+
+        //   // Set zoom to the mouse point (focus on mouse position)
+        //   initCanvas.zoomToPoint(mousePoint, zoom);
+
+        //   // Ensure the canvas is re-rendered after zooming
+        //   initCanvas.requestRenderAll();
+
+        //   opt.e.preventDefault();
+        //   opt.e.stopPropagation();
+        // });
       };
     }
   }, [imageUrl]);
-
-  // Function to convert Blob to File
-  const convertBlobToFile = (url) => {
-    return new Promise((resolve, reject) => {
-      // Fetch the blob from the URL
-      fetch(url)
-        .then((res) => res.blob())
-        .then((blob) => {
-          // Create a new File object using the Blob
-          const file = new File([blob], "image.png", { type: "image/png" });
-          resolve(file); // Resolve with the File object
-        })
-        .catch(reject); // Reject if any error occurs
-    });
-  };
-
-  const onSaveCanvas = async () => {
-    if (!mainCanvasRef.current) return;
-
-    try {
-      if (!mainCanvasRef.current || !currentImageRef.current) return;
-
-      // save the canvas as image
-      // converting canvas to original image size
-
-      const originalCanvasWidth = mainCanvasRef.current.width!;
-      const originalCanvasHeight = mainCanvasRef.current.height!;
-      // Save current canvas dimensions and image scale
-      const originalImageWidth = currentImageRef.current.width!;
-      const originalImageHeight = currentImageRef.current.height!;
-      const currentImageWidth =
-        currentImageRef.current.scaleX! * originalImageWidth;
-      const currentImageHeight =
-        currentImageRef.current.scaleY! * originalImageHeight;
-
-      // Calculate scaling factors
-      const scaleX = originalImageWidth / currentImageWidth;
-      const scaleY = originalImageHeight / currentImageHeight;
-
-      // Scale the canvas to the original image size
-      mainCanvasRef.current.setDimensions({
-        width: originalImageWidth,
-        height: originalImageHeight,
-      });
-      currentImageRef.current.scaleX = 1;
-      currentImageRef.current.scaleY = 1;
-
-      // Apply scaling factors to all other objects
-      mainCanvasRef.current.getObjects().forEach((obj) => {
-        if (obj !== currentImageRef.current) {
-          obj.scaleX *= scaleX;
-          obj.scaleY *= scaleY;
-          obj.left *= scaleX;
-          obj.top *= scaleY;
-          obj.setCoords();
-        }
-      });
-
-      // mainCanvasRef.current.renderAll();
-
-      // Get the JSON representation of the canvas
-      const canvasJSON = mainCanvasRef.current.toJSON();
-      const canvasDataUrl = mainCanvasRef.current.toDataURL(); // Canvas as data URL
-
-      mainCanvasRef.current.setDimensions({
-        width: originalCanvasWidth,
-        height: originalCanvasHeight,
-      });
-      currentImageRef.current.scaleX = currentImageWidth / originalImageWidth;
-      currentImageRef.current.scaleY = currentImageHeight / originalImageHeight;
-
-      // Restore the scale and position of all other objects
-      mainCanvasRef.current.getObjects().forEach((obj) => {
-        if (obj !== currentImageRef.current) {
-          obj.scaleX /= scaleX;
-          obj.scaleY /= scaleY;
-          obj.left /= scaleX;
-          obj.top /= scaleY;
-          obj.setCoords();
-        }
-      });
-
-      mainCanvasRef.current.renderAll();
-
-      // Convert canvas image (Data URL) to a Blob and then to a File
-      const canvasImageFile = await convertBlobToFile(canvasDataUrl);
-      // Convert the image URL (blob URL) to a File object
-      const originalImageFile = await convertBlobToFile(imageUrl);
-
-      // Create FormData object and append the image and other canvas data
-      const formData = new FormData();
-      formData.append("canvasId", canvasIdRef.current);
-      formData.append("canvasData", JSON.stringify(canvasJSON)); // Add canvas data as a string
-      formData.append("originalImage", originalImageFile); // Append the oringalimage file
-      formData.append("canvasImage", canvasImageFile); // Append the oringalimage file
-
-      // Post JSON data to the backend with JWT in headers
-      const response = await apiClient.post("/save_project", formData, {
-        headers: {
-          Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
-        },
-      });
-
-      if (response.status === 201) {
-        console.log("canvas saved successfully");
-        toast({
-          description: "Canvas Successfully saved.",
-          className: "bg-green-500 text-gray-900",
-          duration: 2000,
-        });
-        // Restore the canvas and image to their previous dimensions
-        setShowUpdateButton(true);
-      } else if (response.status === 200) {
-        toast({
-          description: "Canvas Updated Successfully.",
-          className: "bg-green-500 text-gray-900",
-          duration: 2000,
-        });
-        console.log("updated canvas");
-      } else {
-        console.log("save failed");
-        toast({
-          variant: "destructive",
-          description: "Save failed",
-          className: "bg-green-500 text-gray-900",
-          duration: 3000,
-        });
-      }
-
-      // mainCanvasRef.current.renderAll();
-    } catch (error) {
-      console.error("Error saving canvas:", error);
-      toast({
-        variant: "destructive",
-        description: "Unexpected Error",
-        className: "bg-green-500 text-gray-900",
-        duration: 3000,
-      });
-    }
-  };
-
-  const downloadCanvas = () => {
-    if (!mainCanvasRef.current || !currentImageRef.current) return;
-
-    const originalCanvasWidth = mainCanvasRef.current.width!;
-    const originalCanvasHeight = mainCanvasRef.current.height!;
-    // Save current canvas dimensions and image scale
-    const originalImageWidth = currentImageRef.current.width!;
-    const originalImageHeight = currentImageRef.current.height!;
-    const currentImageWidth =
-      currentImageRef.current.scaleX! * originalImageWidth;
-    const currentImageHeight =
-      currentImageRef.current.scaleY! * originalImageHeight;
-
-    // Calculate scaling factors
-    const scaleX = originalImageWidth / currentImageWidth;
-    const scaleY = originalImageHeight / currentImageHeight;
-
-    // Scale the canvas to the original image size
-    mainCanvasRef.current.setDimensions({
-      width: originalImageWidth,
-      height: originalImageHeight,
-    });
-    currentImageRef.current.scaleX = 1;
-    currentImageRef.current.scaleY = 1;
-
-    // Apply scaling factors to all other objects
-    mainCanvasRef.current.getObjects().forEach((obj) => {
-      if (obj !== currentImageRef.current) {
-        obj.scaleX *= scaleX;
-        obj.scaleY *= scaleY;
-        obj.left *= scaleX;
-        obj.top *= scaleY;
-        obj.setCoords();
-      }
-    });
-
-    mainCanvasRef.current.renderAll();
-
-    // Find the object named "Frame" or starting with "Frame"
-    const frameObject = mainCanvasRef.current
-      .getObjects()
-      .find((obj) => obj.name?.startsWith("Frame"));
-
-    if (frameObject) {
-      // const frameWidth = frameObject.getScaledWidth();
-      // const frameHeight = frameObject.getScaledHeight();
-
-      // const dataURL = mainCanvasRef.current.toDataURL({
-      //   left: frameObject.left,
-      //   top: frameObject.top,
-      //   width: frameWidth + 500,
-      //   height: frameHeight + 500,
-      // });
-
-      // const link = document.createElement("a");
-      // link.href = dataURL;
-      // link.download = "frame-image.png";
-      // link.click();
-
-      // // Get the clipPath object
-      // const clipPath = currentImageRef.current.clipPath;
-
-      // mainCanvasRef.current.backgroundColor = "000"
-
-      const clipBoundingBox = frameObject.getBoundingRect();
-
-      // Create a temporary canvas element using fabric's rendering
-      const tempCanvas = mainCanvasRef.current.toCanvasElement();
-
-      const tempContext = tempCanvas.getContext("2d");
-      if (!tempContext) return;
-
-      // Create a new canvas for the clipped region
-      const outputCanvas = document.createElement("canvas");
-      const outputContext = outputCanvas.getContext("2d");
-
-      if (!outputContext) return;
-
-      // Set dimensions of the output canvas to match the clipBoundingBox
-      outputCanvas.width = clipBoundingBox.width;
-      outputCanvas.height = clipBoundingBox.height;
-
-      // Draw the clipped region onto the output canvas
-      outputContext.drawImage(
-        tempCanvas, // Source canvas
-        clipBoundingBox.left, // Source x
-        clipBoundingBox.top, // Source y
-        clipBoundingBox.width, // Source width
-        clipBoundingBox.height, // Source height
-        0, // Destination x
-        0, // Destination y
-        clipBoundingBox.width, // Destination width
-        clipBoundingBox.height // Destination height
-      );
-
-      // Generate a data URL for the clipped image
-      const dataURL = outputCanvas.toDataURL();
-
-      // Trigger download
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "clipped-image.png";
-      link.click();
-
-      // Clean up output canvas
-      outputCanvas.remove();
-
-      // mainCanvasRef.current.backgroundColor = "fff"
-    } else {
-      // Generate the data URL for the download
-      const dataURL = mainCanvasRef.current.toDataURL();
-
-      // Create a temporary link element to trigger the download
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "canvas-image.png"; // Name of the file to be saved
-      link.click();
-    }
-
-    // Restore the canvas and image to their previous dimensions
-    mainCanvasRef.current.setDimensions({
-      width: originalCanvasWidth,
-      height: originalCanvasHeight,
-    });
-    currentImageRef.current.scaleX = currentImageWidth / originalImageWidth;
-    currentImageRef.current.scaleY = currentImageHeight / originalImageHeight;
-
-    // Restore the scale and position of all other objects
-    mainCanvasRef.current.getObjects().forEach((obj) => {
-      if (obj !== currentImageRef.current) {
-        obj.scaleX /= scaleX;
-        obj.scaleY /= scaleY;
-        obj.left /= scaleX;
-        obj.top /= scaleY;
-        obj.setCoords();
-      }
-    });
-
-    mainCanvasRef.current.renderAll();
-  };
 
   useEffect(() => {
     if (mainCanvasRef.current) {
@@ -597,31 +360,12 @@ const MainPage = () => {
         </div>
         {/* Footer */}
         <div className="flex flex-none w-full">
-          <div className="flex w-full h-full items-center justify-center rounded-none border-slate-800 border-t-2 gap-4">
-            <div className="flex">
-              <IconComponent icon={<ZoomIn />} iconName={"ZoomIn"} />
-              <IconComponent icon={<Undo />} iconName={"Undo"} />
-              <IconComponent icon={<Redo />} iconName={"Redo"} />
-              <IconComponent icon={<ZoomOut />} iconName={"ZoomOut"} />
-            </div>
-
-            <div className="flex flex-none gap-1">
-              <Button className="px-8" onClick={downloadCanvas}>
-                Download
-              </Button>
-              <Button className="px-8" onClick={onSaveCanvas}>
-                {showUpdateButton ? "Update" : "Save"}
-              </Button>
-              {showDeleteButton && (
-                <Button
-                  className="px-8 bg-red-500 hover:bg-red-600"
-                  onClick={downloadCanvas}
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
-          </div>
+          <Footer
+            canvas={mainCanvasRef.current!}
+            image={currentImageRef.current!}
+            canvasId={canvasIdRef.current}
+            imageUrl={imageUrl}
+          />
         </div>
       </div>
     </div>

@@ -16,12 +16,16 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import CustomSlider from "./custom-slider";
 import * as fabric from "fabric";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { useLogContext } from "@/hooks/useLogContext";
 
 type DrawProps = {
   canvas: fabric.Canvas;
 };
 
 const Draw = ({ canvas }: DrawProps) => {
+  const { selectedObject, setSelectedObject } = useCanvasObjects();
+  const { addLog } = useLogContext();
   const [brushSize, setBrushSize] = useState(3);
   const [brushColor, setBrushColor] = useState("#00ff00");
   const [brushType, setBrushType] = useState("pencil");
@@ -130,14 +134,19 @@ const Draw = ({ canvas }: DrawProps) => {
 
   useEffect(() => {
     if (canvas) {
-      const brush = createBrush(canvas, brushType, brushColor, brushSize);
-      canvas.freeDrawingBrush = brush;
+      if (brushType !== "none") {
+        canvas.isDrawingMode = true;
+        const brush = createBrush(canvas, brushType, brushColor, brushSize);
+        canvas.freeDrawingBrush = brush;
+      } else {
+        canvas.isDrawingMode = false;
+      }
     }
   }, [canvas, brushType, brushColor, brushSize]);
 
   const clearBrushStrokes = () => {
     if (!canvas) return;
-
+    addLog("Cleared all created brush strokes");
     // Filter objects that are created in drawing mode
     const objectsToRemove = canvas.getObjects().filter((obj) => {
       // Exclude objects that are not part of brush strokes
@@ -155,6 +164,75 @@ const Draw = ({ canvas }: DrawProps) => {
     canvas.renderAll(); // Refresh the canvas
   };
 
+  useEffect(() => {
+    if (!canvas) return;
+
+    // Function to handle selection of an object
+    const handleObjectCreated = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        addLog("Selected brush stokes");
+        setSelectedObject(activeObject); // Update the context with the selected object
+      }
+    };
+
+    const handleObjectUpdated = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Updated object: ${objectName}`);
+        setSelectedObject(activeObject); // Update the context with the selected object
+      }
+    };
+
+    const handleObjectModified = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Modified object: ${objectName}`);
+        setSelectedObject(activeObject); // Update the context with the selected object
+      }
+    };
+
+    const handleObjectScaled = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog(
+          `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
+        );
+
+        addLog("Scaled brush strokes");
+        setSelectedObject(activeObject); // Update the context with the selected object
+      }
+    };
+
+    // Function to handle deselection of objects
+    const handleObjectDeselected = () => {
+      addLog("Deselected brush strokes");
+      setSelectedObject(null); // Clear the selected object in the context
+    };
+
+    // Attach event listeners
+    canvas.on("selection:created", handleObjectCreated);
+    canvas.on("selection:updated", handleObjectUpdated);
+    canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:scaling", handleObjectScaled);
+    canvas.on("selection:cleared", handleObjectDeselected);
+
+    // Cleanup event listeners on unmount or canvas changes
+    return () => {
+      canvas.off("selection:created", handleObjectCreated);
+      canvas.off("selection:updated", handleObjectUpdated);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
+      canvas.off("selection:cleared", handleObjectDeselected);
+    };
+  }, [canvas, setSelectedObject]);
+
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
       {/* Brush Selector */}
@@ -165,13 +243,17 @@ const Draw = ({ canvas }: DrawProps) => {
           </CardHeader>
           <CardContent>
             <Select
-              onValueChange={(value) => setBrushType(value)}
+              onValueChange={(value) => {
+                addLog("Changed brush type " + brushType + " to " + value);
+                setBrushType(value);
+              }}
               defaultValue={brushType}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a brush" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">None</SelectItem>
                 <SelectItem value="pencil">Pencil</SelectItem>
                 <SelectItem value="circle">Circle</SelectItem>
                 <SelectItem value="spray">Spray</SelectItem>
@@ -193,7 +275,7 @@ const Draw = ({ canvas }: DrawProps) => {
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="color_picker"
-                  className="text-sm text-slate-400"
+                  className="text-sm text-slate-400 mt-2"
                 >
                   Color
                 </label>
@@ -201,7 +283,15 @@ const Draw = ({ canvas }: DrawProps) => {
                   id="color_picker"
                   type="color"
                   value={brushColor}
-                  onChange={(e) => setBrushColor(e.target.value)}
+                  onChange={(e) => {
+                    addLog(
+                      "Changed brush color " +
+                        brushColor +
+                        " to " +
+                        e.target.value
+                    );
+                    setBrushColor(e.target.value);
+                  }}
                 />
               </div>
               <CustomSlider
@@ -211,6 +301,7 @@ const Draw = ({ canvas }: DrawProps) => {
                 defaultValue={brushSize}
                 sliderValue={brushSize}
                 setSliderValue={setBrushSize}
+                logName="BrushSize"
               />
             </div>
           </CardContent>

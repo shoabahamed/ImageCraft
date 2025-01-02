@@ -16,16 +16,10 @@ import {
   Circle as IconCircle,
 } from "lucide-react";
 
-import {
-  Canvas,
-  FabricImage,
-  Rect,
-  Circle,
-  Triangle,
-  Ellipse,
-  Object,
-} from "fabric";
+import { Canvas, FabricImage, Rect, Circle, Triangle, Ellipse } from "fabric";
 import { useEffect, useState } from "react";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { useLogContext } from "@/hooks/useLogContext";
 
 type Props = {
   canvas: Canvas;
@@ -33,7 +27,8 @@ type Props = {
 };
 
 const CropSidebar = ({ canvas, image }: Props) => {
-  const [selectedObject, setSelectedObject] = useState<Object | null>(null);
+  const { addLog } = useLogContext();
+  const { selectedObject, setSelectedObject } = useCanvasObjects();
   const [cropHeight, setCropHeight] = useState("0");
   const [cropWidth, setCropWidth] = useState("0");
 
@@ -42,6 +37,10 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const stroke_color = "red";
     const stroke_width = 1;
     const stroke_array = [5, 5];
+    const frameName = `Frame ${
+      canvas.getObjects(shapeType).length + 1
+    } shapeType`;
+    console.log(frameName);
     if (shapeType === "circle") {
       return new Circle({
         top: 100,
@@ -51,6 +50,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else if (shapeType === "rect") {
       return new Rect({
@@ -62,6 +62,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else if (shapeType === "triangle") {
       return new Triangle({
@@ -73,6 +74,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else if (shapeType === "elipse") {
       return new Ellipse({
@@ -84,6 +86,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     } else {
       return new Rect({
@@ -95,16 +98,22 @@ const CropSidebar = ({ canvas, image }: Props) => {
         stroke: stroke_color,
         strokeWidth: stroke_width,
         strokeDashArray: stroke_array,
+        name: frameName,
       });
     }
   };
 
   useEffect(() => {
     const handleObjectCleared = () => {
+      addLog("Deselected and removed shape for clipping");
+      if (image.clipPath) {
+        addLog("Removed clipping");
+        image.clipPath = null; // Remove the clipping path
+      }
       setSelectedObject(null);
     };
 
-    const handleObjectSelected = () => {
+    const handleObjectCreated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
         setSelectedObject(activeObject);
@@ -122,11 +131,77 @@ const CropSidebar = ({ canvas, image }: Props) => {
       }
     };
 
-    canvas.on("selection:created", handleObjectSelected);
-    canvas.on("selection:updated", handleObjectSelected);
+    const handleObjectUpdated = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Updated object: ${objectName}`);
+        setSelectedObject(activeObject);
+        if (activeObject.cropRect != undefined) {
+          const newWidth = Math.floor(
+            activeObject.width! * activeObject.scaleX!
+          );
+          const newHeight = Math.floor(
+            activeObject.height! * activeObject.scaleY!
+          );
+
+          setCropWidth(newWidth.toString());
+          setCropHeight(newHeight.toString());
+        }
+      }
+    };
+
+    const handleObjectModified = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Modified object: ${objectName}`);
+        setSelectedObject(activeObject);
+        if (activeObject.cropRect != undefined) {
+          const newWidth = Math.floor(
+            activeObject.width! * activeObject.scaleX!
+          );
+          const newHeight = Math.floor(
+            activeObject.height! * activeObject.scaleY!
+          );
+
+          setCropWidth(newWidth.toString());
+          setCropHeight(newHeight.toString());
+        }
+      }
+    };
+
+    const handleObjectScaled = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog(
+          `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
+        );
+
+        setSelectedObject(activeObject);
+        if (activeObject.cropRect != undefined) {
+          const newWidth = Math.floor(
+            activeObject.width! * activeObject.scaleX!
+          );
+          const newHeight = Math.floor(
+            activeObject.height! * activeObject.scaleY!
+          );
+
+          setCropWidth(newWidth.toString());
+          setCropHeight(newHeight.toString());
+        }
+      }
+    };
+
+    canvas.on("selection:created", handleObjectCreated);
+    canvas.on("selection:updated", handleObjectUpdated);
     canvas.on("selection:cleared", handleObjectCleared);
-    canvas.on("object:modified", handleObjectSelected);
-    canvas.on("object:scaling", handleObjectSelected);
+    canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:scaling", handleObjectScaled);
 
     const imgWidth = image.width;
     const imgHeight = image.height;
@@ -135,15 +210,24 @@ const CropSidebar = ({ canvas, image }: Props) => {
     setCropWidth(Math.floor(imgWidth).toString());
 
     return () => {
-      canvas.off("selection:created", handleObjectSelected);
-      canvas.off("selection:updated", handleObjectSelected);
+      if (!image.clipPath) {
+        canvas.getObjects().forEach((obj) => {
+          if (obj.name?.startsWith("Frame")) {
+            addLog("Removed unused clipped shape");
+            canvas.remove(obj);
+          }
+        });
+        canvas.renderAll();
+      }
+
+      canvas.off("selection:created", handleObjectCreated);
+      canvas.off("selection:updated", handleObjectUpdated);
       canvas.off("selection:cleared", handleObjectCleared);
-      canvas.off("object:modified", handleObjectSelected);
-      canvas.off("object:scaling", handleObjectSelected);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
     };
   }, [canvas]);
 
-  // add crop handler
   // Add crop handler to precisely surround the canvas
   const addCropHandler = () => {
     if (selectedObject) {
@@ -187,6 +271,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
       image.clipPath = null; // Remove the clipping path
       canvas.remove(selectedObject);
     }
+    addLog("created and selected shape " + shapeType + " for clipping");
     const shape = getShape(shapeType);
     canvas.add(shape);
     canvas.setActiveObject(shape); // Set the newly added shape as the active object
@@ -197,6 +282,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
   // Function to apply clipping
   const handleShapeClip = () => {
     if (selectedObject) {
+      addLog("Applying clipping according to selected shape");
       selectedObject.absolutePositioned = true; // Required for proper clipping
       image.clipPath = selectedObject;
       canvas.renderAll();
@@ -206,6 +292,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
   // Reset clipping
   const resetClip = () => {
     if (image.clipPath && selectedObject) {
+      addLog("Reseted clipping");
       image.clipPath = null; // Remove the clipping path
       canvas.remove(selectedObject);
       canvas.renderAll();
@@ -214,7 +301,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
-      <div className="w-[90%]">
+      {/* <div className="w-[90%]">
         <Card>
           <CardHeader>
             <CardDescription>Crop</CardDescription>
@@ -247,7 +334,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       <div className="w-[90%]">
         <Card>
@@ -291,9 +378,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
           </CardHeader>
           <CardContent className="w-full">
             <div className="flex flex-col gap-3 justify-center">
-              <Button className="text-sm md:text-sm">Invert Cutout</Button>
+              {/* <Button className="text-sm md:text-sm">Invert Cutout</Button> */}
               <Button onClick={resetClip}>Reset Cutout</Button>
-              <Button>Reset Crop</Button>
             </div>
           </CardContent>
         </Card>

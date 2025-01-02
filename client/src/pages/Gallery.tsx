@@ -20,8 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 interface Project {
   _id: string;
   user_id: string;
+  username: string;
   project_id: string;
-  project_data: object;
   original_image_url: string;
   canvas_image_url: string;
 }
@@ -56,6 +56,7 @@ const Gallery: React.FC = () => {
             Authorization: `Bearer ${user?.token}`,
           },
         });
+        console.log(response.data.data.projects);
         setProjects(response.data.data.projects);
       } catch (err) {
         setError("Failed to fetch projects");
@@ -120,6 +121,7 @@ const Gallery: React.FC = () => {
           project_user_id: selectedProjectUserId,
           title: reportData.title,
           description: reportData.description,
+          reporter_name: user?.username,
         },
         {
           headers: {
@@ -147,7 +149,7 @@ const Gallery: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen min-w-full flex flex-col gap-3 bg-gray-50">
+    <div className="max-h-screen min-w-full flex flex-col gap-3 ">
       <div className="text-4xl text-center text-zinc-400 py-6 underline">
         Gallery
       </div>
@@ -166,7 +168,7 @@ const Gallery: React.FC = () => {
               />
               <CardDescription className="mt-4 text-sm text-gray-600">
                 Created by:{" "}
-                <span className="font-semibold">{project.user_id}</span>
+                <span className="font-semibold">{project.username}</span>
               </CardDescription>
 
               <div className="mt-4 flex space-x-2 w-full">
@@ -227,7 +229,7 @@ const Gallery: React.FC = () => {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button type="submit">Save changes</Button>
+                        <Button type="submit">Report</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>

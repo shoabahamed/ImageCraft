@@ -14,14 +14,30 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
 // Define the Report type
 interface Report {
   id: string;
+  reporter_name: string;
   reporter_user_id: string;
   project_id: string;
+  project_user_name: string;
   project_user_id: string;
   title: string;
   description: string;
+  has_admin_response: string;
   status: "pending" | "resolved";
   created_at: string | null;
 }
@@ -32,6 +48,26 @@ const AdminPanel: React.FC = () => {
   const { toast } = useToast();
   const [pendingReports, setPendingReports] = useState<Report[]>([]);
   const [resolvedReports, setResolvedReports] = useState<Report[]>([]);
+
+  const [openMessage, setOpenMessage] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+  // State to store report form data
+  const [messageData, setMessageData] = useState({
+    title: "",
+    message: "",
+  });
+
+  // Handle changes in the report form
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setMessageData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
 
   // Fetch reports from the backend
   useEffect(() => {
@@ -44,6 +80,7 @@ const AdminPanel: React.FC = () => {
           },
         });
         const reports = response.data.data;
+        console.log(reports);
 
         // Separate reports into pending and resolved based on their status
         setPendingReports(
@@ -140,17 +177,38 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const goToComparePage = (projectId: string) => {
+  const goToComparePage = (projectId: string, reportId: string) => {
     // Open the Compare Images page in a new tab/window
 
-    navigate("/admin/compare_img", { state: { projectId } });
+    navigate("/admin/compare_img", { state: { projectId, reportId } });
   };
 
-  const grantLogs = async (reportId: string) => {
+  const goToViewLogsPage = (projectId: string, reportId: string) => {
+    // Open the Compare Images page in a new tab/window
+
+    navigate("/admin/view_logs", { state: { projectId, reportId } });
+  };
+
+  const handleMessage = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent page refresh
+
+    if (!selectedReportId) {
+      toast({
+        description: "Report ID is missing.",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Make the API call to submit the report
     try {
-      await apiClient.post(
-        "/grant_logs",
-        { reportId },
+      const response = await apiClient.post(
+        "/send_message",
+        {
+          reportId: selectedReportId, // Include the project_id
+          title: messageData.message,
+          message: messageData.message,
+        },
         {
           headers: {
             "Content-Type": "application/json",
@@ -158,41 +216,23 @@ const AdminPanel: React.FC = () => {
           },
         }
       );
-
       toast({
-        description: "Logs granted successfully.",
+        description: "Message sent successfully!",
         className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
+      setOpenMessage(false); // Close the dialog after submission
+      setMessageData({ title: "", message: "" }); // Clear the form data
+      setSelectedReportId(null); // Reset selected project
     } catch (error) {
       toast({
-        description: "Failed to grant logs.",
-        className: "bg-red-500 text-gray-900",
+        description: "Failed to send message.",
+        className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
       console.error(error);
     }
   };
-
-  const renderReportDetails = (report: Report) => (
-    <div>
-      <p>
-        <strong>Reporter User ID:</strong> {report.reporter_user_id}
-      </p>
-      <p>
-        <strong>Project ID:</strong> {report.project_id}
-      </p>
-      <p>
-        <strong>Project User ID:</strong> {report.project_user_id}
-      </p>
-      <p>
-        <strong>Created At:</strong>{" "}
-        {report.created_at
-          ? new Date(report.created_at).toLocaleString()
-          : "N/A"}
-      </p>
-    </div>
-  );
 
   return (
     <div className="min-h-screen p-8">
@@ -214,34 +254,112 @@ const AdminPanel: React.FC = () => {
                 <Card key={report.id} className="border rounded-lg shadow-md">
                   <CardHeader>
                     <CardTitle className="text-lg font-medium text-gray-800">
-                      {report.title}
+                      Report Title : {report.title}
                     </CardTitle>
-                    <CardDescription>{report.description}</CardDescription>
+                    <CardDescription className="text-3sm">
+                      Report Description: {report.description}
+                    </CardDescription>
+                    <p className="italic text-sm">
+                      Reported by {report.reporter_name}
+                      <br></br> Created At:{" "}
+                      {report.created_at
+                        ? new Date(report.created_at).toLocaleString()
+                        : "N/A"}
+                    </p>
                   </CardHeader>
-                  <CardContent>{renderReportDetails(report)}</CardContent>
                   <CardFooter className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-8 gap-2">
-                    <Button
-                      onClick={() => {
-                        goToComparePage(report.project_id);
-                      }}
-                    >
-                      Compare Images
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        grantLogs(report.id);
-                      }}
-                    >
-                      Grant Logs
-                    </Button>
+                    {report.has_admin_response === "true" ? (
+                      <>
+                        <Button
+                          className="opacity-50 cursor-not-allowed"
+                          onClick={() => {
+                            goToComparePage(report.project_id, report.id);
+                          }}
+                          disabled={true}
+                        >
+                          Compare Images
+                        </Button>
+
+                        <Button
+                          className="opacity-50 cursor-not-allowed"
+                          onClick={() => {
+                            goToViewLogsPage(report.project_id, report.id);
+                          }}
+                          disabled={true}
+                        >
+                          View Logs
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {" "}
+                        <Button
+                          onClick={() => {
+                            goToComparePage(report.project_id, report.id);
+                          }}
+                        >
+                          Compare Images
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            goToViewLogsPage(report.project_id, report.id);
+                          }}
+                        >
+                          View Logs
+                        </Button>
+                      </>
+                    )}
+
+                    <Dialog open={openMessage} onOpenChange={setOpenMessage}>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="flex-1 text-sm"
+                          onClick={() => {
+                            setOpenMessage(true);
+                            setSelectedReportId(report.id);
+                          }}
+                        >
+                          Message
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Message To User</DialogTitle>
+                        </DialogHeader>
+
+                        <form onSubmit={handleMessage}>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid w-full gap-1.5">
+                              <Label htmlFor="title">Message Title</Label>
+                              <Input
+                                placeholder="Write a short title"
+                                id="title"
+                                className="mt-2"
+                                required
+                                value={messageData.title}
+                                onChange={handleChange}
+                              />
+                            </div>
+                            <div className="grid w-full gap-1.5">
+                              <Label htmlFor="description">Message</Label>
+                              <Textarea
+                                placeholder="Write a short description"
+                                id="message"
+                                className="mt-2"
+                                required
+                                value={messageData.message}
+                                onChange={handleChange}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="submit">Report</Button>
+                          </DialogFooter>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                     <Button onClick={() => resolveReport(report.id)}>
                       Mark as Resolved
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => deleteReport(report.id, "pending")}
-                    >
-                      Delete
                     </Button>
                   </CardFooter>
                 </Card>
@@ -259,11 +377,19 @@ const AdminPanel: React.FC = () => {
                 <Card key={report.id} className="border rounded-lg shadow-md">
                   <CardHeader>
                     <CardTitle className="text-lg font-medium text-gray-800">
-                      {report.title}
+                      Report Title : {report.title}
                     </CardTitle>
-                    <CardDescription>{report.description}</CardDescription>
+                    <CardDescription className="text-3sm">
+                      Report Description: {report.description}
+                    </CardDescription>
+                    <p className="italic text-sm">
+                      Reported by {report.reporter_name}
+                      <br></br> Created At:{" "}
+                      {report.created_at
+                        ? new Date(report.created_at).toLocaleString()
+                        : "N/A"}
+                    </p>
                   </CardHeader>
-                  <CardContent>{renderReportDetails(report)}</CardContent>
                   <CardFooter className="flex space-x-2">
                     <Button
                       variant="destructive"

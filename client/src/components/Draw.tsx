@@ -179,7 +179,8 @@ const Draw = ({ canvas }: DrawProps) => {
     const handleObjectUpdated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        addLog("Updated brush strokes");
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Updated object: ${objectName}`);
         setSelectedObject(activeObject); // Update the context with the selected object
       }
     };
@@ -187,7 +188,8 @@ const Draw = ({ canvas }: DrawProps) => {
     const handleObjectModified = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        addLog("Modified brush strokes");
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Modified object: ${objectName}`);
         setSelectedObject(activeObject); // Update the context with the selected object
       }
     };
@@ -195,6 +197,14 @@ const Draw = ({ canvas }: DrawProps) => {
     const handleObjectScaled = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog(
+          `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
+        );
+
         addLog("Scaled brush strokes");
         setSelectedObject(activeObject); // Update the context with the selected object
       }

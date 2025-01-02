@@ -1,10 +1,12 @@
+import React, { useEffect, useState } from "react";
+import apiClient from "@/utils/appClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import apiClient from "@/utils/appClient";
-import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface AdminResponse {
   granted_log: boolean | null;
+  title: string | null;
   message: string | null;
   logs: string | null;
   original_image_url: string | null;
@@ -20,12 +22,13 @@ interface Report {
   description: string;
   status: "pending" | "resolved";
   created_at: string | null;
+  has_admin_response: string;
   admin_response: AdminResponse | null;
 }
 
 const UserDashboard: React.FC = () => {
-  const [reports, setReports] = useState<Report[]>([]);
   const { user } = useAuthContext();
+  const [reports, setReports] = useState<Report[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,6 +40,7 @@ const UserDashboard: React.FC = () => {
             Authorization: `Bearer ${user?.token}`,
           },
         });
+        console.log(response.data.data);
         setReports(response.data.data);
       } catch (error) {
         console.error("Failed to fetch reports:", error);
@@ -49,25 +53,16 @@ const UserDashboard: React.FC = () => {
 
   const downloadAsFile = (content: any, filename: string) => {
     try {
-      // Convert content to a JSON string if it's an object
       const fileContent =
         typeof content === "object"
           ? JSON.stringify(content, null, 2)
           : content;
-
-      // Create a Blob from the string content
       const file = new Blob([fileContent], { type: "application/json" });
-
-      // Create a temporary link element for downloading the file
       const element = document.createElement("a");
       element.href = URL.createObjectURL(file);
-      element.download = filename; // Filename for the download
+      element.download = filename;
       document.body.appendChild(element);
-
-      // Trigger the download
       element.click();
-
-      // Clean up by removing the element
       document.body.removeChild(element);
     } catch (error) {
       console.error("Failed to download file:", error);
@@ -76,122 +71,129 @@ const UserDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">User Dashboard</h1>
-        <p className="text-gray-500">Welcome back, {user?.username}</p>
-      </div>
+    <div className="min-h-screen bg-[hsl(var(--background))] p-6">
+      {/* User Profile Section */}
+      <section className="bg-[hsl(var(--card))] p-8 rounded-lg shadow-lg max-w-4xl mx-auto mb-8">
+        <h1 className="text-3xl font-bold text-[hsl(var(--foreground))] mb-4">
+          {user?.username}'s Dashboard
+        </h1>
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Email: {user?.email || "N/A"}
+        </p>
+      </section>
 
       {/* Reports Section */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">My Reports</h2>
+      <section className="max-w-7xl mx-auto">
+        <h2 className="text-2xl font-semibold text-[hsl(var(--foreground))] mb-6">
+          My Reports
+        </h2>
         {reports.length === 0 ? (
-          <p className="text-gray-500">You have not submitted any reports.</p>
+          <div className="text-center text-[hsl(var(--muted-foreground))]">
+            <p>You have not submitted any reports.</p>
+          </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {reports.map((report) => (
               <div
                 key={report.id}
-                className="bg-white shadow-md rounded-lg p-6 border border-gray-200"
+                className="bg-[hsl(var(--card))] p-6 rounded-lg shadow-lg"
               >
                 {/* Report Header */}
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-md font-semibold text-gray-800">
-                      {report.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {report.description}
-                    </p>
-                  </div>
+                <h3 className="text-lg font-bold text-[hsl(var(--card-foreground))]">
+                  <strong>Title:</strong> {report.title}
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  <strong>Description:</strong> {report.description}
+                </p>
+
+                {/* Report Metadata */}
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                  Status:{" "}
                   <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      report.status === "resolved"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-yellow-100 text-yellow-600"
+                    className={`font-medium px-2 py-1 rounded ${
+                      report.has_admin_response === "false"
+                        ? "bg-yellow-100 text-yellow-600"
+                        : "bg-green-100 text-green-600"
                     }`}
                   >
-                    {report.status.charAt(0).toUpperCase() +
-                      report.status.slice(1)}
+                    {report.has_admin_response === "false"
+                      ? "Pending"
+                      : "Resolved"}
                   </span>
-                </div>
-
-                {/* Report Details */}
-                <p className="text-xs text-gray-400 mt-2">
+                </p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
                   Submitted:{" "}
                   {report.created_at
                     ? new Date(report.created_at).toLocaleString()
                     : "N/A"}
                 </p>
 
-                {/* Admin Response */}
-                {report.admin_response && (
-                  <div className="mt-4 p-4 bg-gray-50 border rounded-md">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      Admin Response
-                    </h4>
-                    <p className="text-sm text-gray-600 mb-1">
-                      <strong>Message:</strong>{" "}
-                      {report.admin_response.message || "No message provided"}
+                {/* Admin Response Section */}
+                <div className="mt-4 p-4 bg-[hsl(var(--popover))] border border-[hsl(var(--border))] rounded-md">
+                  {report.has_admin_response === "false" ? (
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      <strong>Admin Response:</strong> Admin has not responded
+                      yet.
                     </p>
-                    <p className="text-sm text-gray-600 mb-3">
-                      <strong>Logs:</strong>
-                      {report.admin_response.logs ? (
-                        <button
-                          onClick={() =>
-                            downloadAsFile(
-                              report.admin_response.logs,
-                              `logs-${report.id}.txt`
-                            )
-                          }
-                          className="text-blue-600 underline"
-                        >
-                          Download Logs
-                        </button>
-                      ) : (
-                        "No logs available"
+                  ) : (
+                    <>
+                      <h4 className="text-sm font-semibold text-[hsl(var(--card-foreground))] mb-2">
+                        Admin Response
+                      </h4>
+                      {report.admin_response?.title && (
+                        <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2">
+                          <strong>Title:</strong> {report.admin_response.title}
+                        </p>
                       )}
-                    </p>
-                    <div className="flex space-x-4">
-                      {report.admin_response.original_image_url && (
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">
-                            Original Image:
-                          </p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2">
+                        <strong>Message:</strong>{" "}
+                        {report.admin_response?.message ||
+                          "No message provided"}
+                      </p>
+                      <div className="mt-3 flex flex-col space-y-2">
+                        {report.admin_response?.logs && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              downloadAsFile(
+                                report.admin_response.logs,
+                                `logs-${report.id}.txt`
+                              )
+                            }
+                          >
+                            Download Logs
+                          </Button>
+                        )}
+                        {report.admin_response?.original_image_url && (
                           <a
                             href={report.admin_response.original_image_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-blue-600 underline"
                           >
-                            View Original
+                            View Original Image
                           </a>
-                        </div>
-                      )}
-                      {report.admin_response.canvas_image_url && (
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">
-                            Canvas Image:
-                          </p>
+                        )}
+                        {report.admin_response?.canvas_image_url && (
                           <a
                             href={report.admin_response.canvas_image_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-blue-600 underline"
                           >
-                            View Canvas
+                            View Canvas Image
                           </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

@@ -134,7 +134,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const handleObjectUpdated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        addLog("Updated selected shape");
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Updated object: ${objectName}`);
         setSelectedObject(activeObject);
         if (activeObject.cropRect != undefined) {
           const newWidth = Math.floor(
@@ -153,7 +154,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const handleObjectModified = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        addLog("Modified selected shape");
+        const objectName = activeObject.type || "Unknown Object";
+        addLog(`Modified object: ${objectName}`);
         setSelectedObject(activeObject);
         if (activeObject.cropRect != undefined) {
           const newWidth = Math.floor(
@@ -172,7 +174,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const handleObjectScaled = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        addLog("Scaled selected shape");
+        const objectName = activeObject.type || "Unknown Object";
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog(
+          `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
+        );
+
         setSelectedObject(activeObject);
         if (activeObject.cropRect != undefined) {
           const newWidth = Math.floor(

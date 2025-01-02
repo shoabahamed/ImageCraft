@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import apiClient from "@/utils/appClient";
-import { useLocation } from "react-router-dom"; // For route parameters
+import { useLocation, useNavigate } from "react-router-dom"; // For route parameters
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Button } from "@/components/ui/button";
 
 interface Project {
   original_image_url: string;
@@ -12,11 +11,13 @@ interface Project {
 }
 
 const CompareImagesPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuthContext();
   const [project, setProject] = useState<Project | null>(null);
   const { toast } = useToast();
 
   const projectId = useLocation().state?.projectId;
+  const reportId = useLocation().state?.reportId;
 
   // Fetch project images from backend
   useEffect(() => {
@@ -49,36 +50,70 @@ const CompareImagesPage: React.FC = () => {
     return <p>Loading...</p>;
   }
 
+  const deleteProject = async (projectId: string, reportId: string) => {
+    try {
+      await apiClient.post(
+        `/delete_report_project`,
+        { projectId, reportId },
+        {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        }
+      );
+      toast({
+        description: "Project deleted successfully.",
+        duration: 3000,
+        className: "bg-green-500 text-gray-900",
+      });
+
+      navigate("/admin");
+    } catch {
+      toast({
+        description: "Failed to delete project.",
+        duration: 3000,
+        className: "bg-red-500 text-gray-900",
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen p-8">
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Section: Images */}
-        <div className="flex flex-col w-full lg:w-1/2 space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Original Image</h2>
+    <div className="min-h-screen p-8 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex flex-col items-center">
+      {/* Header Section */}
+      <div className="w-full max-w-6xl flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-extrabold text-[hsl(var(--foreground))]">
+          Compare Images
+        </h1>
+        <button
+          onClick={() => deleteProject(projectId, reportId)}
+          className="bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] px-4 py-2 rounded-md font-semibold shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--destructive))] focus:ring-offset-2"
+        >
+          Delete Project
+        </button>
+      </div>
+
+      {/* Images Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-6xl">
+        <div className="flex flex-col items-center">
+          <h2 className="text-xl font-semibold text-[hsl(var(--muted-foreground))] mb-4">
+            Original Image
+          </h2>
+          <div className="w-full bg-[hsl(var(--card))] p-4 rounded-lg shadow-md">
             <img
               src={project.original_image_url}
               alt="Original"
-              className="w-full max-h-96 object-contain border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Canvas Image</h2>
-            <img
-              src={project.canvas_image_url}
-              alt="Canvas"
-              className="w-full max-h-96 object-contain border border-gray-300 rounded-md"
+              className="w-full max-h-96 object-contain border border-[hsl(var(--border))] rounded-lg"
             />
           </div>
         </div>
-
-        {/* Right Section: Project Data */}
-        <div className="w-full lg:w-1/2 flex flex-col  h-[90vh]">
-          <div className="bg-gray-100 p-4 rounded-md shadow-md flex-1 overflow-auto">
-            <h2 className="text-lg font-semibold mb-2">Project Data</h2>
-            <pre className="text-sm">
-              {JSON.stringify(project.project_data, null, 2)}
-            </pre>
+        <div className="flex flex-col items-center">
+          <h2 className="text-xl font-semibold text-[hsl(var(--muted-foreground))] mb-4">
+            Modified Image
+          </h2>
+          <div className="w-full bg-[hsl(var(--card))] p-4 rounded-lg shadow-md">
+            <img
+              src={project.canvas_image_url}
+              alt="Canvas"
+              className="w-full max-h-96 object-contain border border-[hsl(var(--border))] rounded-lg"
+            />
           </div>
         </div>
       </div>

@@ -30,7 +30,7 @@ def submit_report():
             "project_id": project_id,
             "reporter_user_id": user_id
         })
-
+        
         # Get the project username for the reported project
         reported_project = projects_collection.find_one({'project_id': project_id}, {'_id': 0, 'username': 1})
         project_user_name = reported_project['username']

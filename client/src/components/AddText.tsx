@@ -131,8 +131,92 @@ const AddText = ({ canvas }: AddTextProps) => {
         setUpper(textObj.get("isUpper") || false);
 
         setTimeout(() => {
-          addLog(`Selected object with ID: ${textObj.get("id")}`);
+          addLog(`Selected texbox object with ID: ${textObj.get("id")}`);
         }, 0);
+      } else {
+        setSelectedObject(null);
+      }
+    };
+
+    const handleObjectUpdated = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.type === "textbox") {
+        const textObj = activeObject as Textbox;
+        setSelectedObject(textObj);
+        setTextValue(textObj.text || "");
+        setTextColorValue(textObj.fill as string);
+        setTextSize(textObj.fontSize || 14);
+        setTextFont(textObj.fontFamily || "arial");
+        setTextOpacity(textObj.opacity || 1);
+
+        setTextAlignValue(textObj.textAlign);
+        setTextLineSpacing(textObj.lineHeight);
+
+        setItalic(textObj.fontStyle === "italic" ? true : false);
+        setUnderLine(textObj.underline ? true : false);
+        setBold(textObj.fontWeight === "bold" ? true : false);
+        setUpper(textObj.get("isUpper") || false);
+
+        setTimeout(() => {
+          addLog(`Updated texbox object with ID: ${textObj.get("id")}`);
+        }, 0);
+      } else {
+        setSelectedObject(null);
+      }
+    };
+
+    const handleObjectModified = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.type === "textbox") {
+        const textObj = activeObject as Textbox;
+        setSelectedObject(textObj);
+        setTextValue(textObj.text || "");
+        setTextColorValue(textObj.fill as string);
+        setTextSize(textObj.fontSize || 14);
+        setTextFont(textObj.fontFamily || "arial");
+        setTextOpacity(textObj.opacity || 1);
+
+        setTextAlignValue(textObj.textAlign);
+        setTextLineSpacing(textObj.lineHeight);
+
+        setItalic(textObj.fontStyle === "italic" ? true : false);
+        setUnderLine(textObj.underline ? true : false);
+        setBold(textObj.fontWeight === "bold" ? true : false);
+        setUpper(textObj.get("isUpper") || false);
+
+        setTimeout(() => {
+          addLog(`Modified texbox object with ID: ${textObj.get("id")}`);
+        }, 0);
+      } else {
+        setSelectedObject(null);
+      }
+    };
+
+    const handleObjectScaled = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.type === "textbox") {
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog(
+          `Scaled selected object: textbox. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
+        );
+
+        const textObj = activeObject as Textbox;
+        setSelectedObject(textObj);
+        setTextValue(textObj.text || "");
+        setTextColorValue(textObj.fill as string);
+        setTextSize(textObj.fontSize || 14);
+        setTextFont(textObj.fontFamily || "arial");
+        setTextOpacity(textObj.opacity || 1);
+
+        setTextAlignValue(textObj.textAlign);
+        setTextLineSpacing(textObj.lineHeight);
+
+        setItalic(textObj.fontStyle === "italic" ? true : false);
+        setUnderLine(textObj.underline ? true : false);
+        setBold(textObj.fontWeight === "bold" ? true : false);
+        setUpper(textObj.get("isUpper") || false);
       } else {
         setSelectedObject(null);
       }
@@ -142,14 +226,16 @@ const AddText = ({ canvas }: AddTextProps) => {
       setSelectedObject(null);
     };
     canvas.on("selection:created", handleObjectSelected);
-    canvas.on("selection:updated", handleObjectSelected);
-    canvas.on("object:modified", handleObjectSelected);
+    canvas.on("selection:updated", handleObjectUpdated);
+    canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:scaling", handleObjectScaled);
     canvas.on("selection:cleared", handleObjectDeselected);
 
     return () => {
       canvas.off("selection:created", handleObjectSelected);
-      canvas.off("selection:updated", handleObjectSelected);
-      canvas.off("selection:cleared", handleObjectDeselected);
+      canvas.off("selection:updated", handleObjectUpdated);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
       canvas.off("object:modified", handleObjectSelected);
     };
   }, [canvas]);

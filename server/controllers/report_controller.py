@@ -212,6 +212,7 @@ def get_user_reports():
                 "title": report["title"],
                 "description": report["description"],
                 "status": report["status"],
+                "has_admin_response": report['has_admin_response'],
                 "created_at": report["created_at"].isoformat()
                 if isinstance(report["created_at"], datetime.datetime)
                 else None,

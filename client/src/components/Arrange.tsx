@@ -14,6 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { Canvas, FabricImage } from "fabric";
 import { useEffect, useState } from "react";
+import { useLogContext } from "@/hooks/useLogContext";
 
 type ArrangeProps = {
   canvas: Canvas;
@@ -21,6 +22,7 @@ type ArrangeProps = {
 };
 
 const Arrange = ({ canvas, image }: ArrangeProps) => {
+  const { addLog } = useLogContext();
   const [rotateX, setRotateX] = useState(false);
   const [rotateY, setRotateY] = useState(false);
 
@@ -34,6 +36,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
   }, [rotateX, rotateY]);
 
   const handleReset = () => {
+    addLog("Reseted back to original image orientation");
     setRotateX(false);
     setRotateY(false);
   };
@@ -57,25 +60,53 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
               <IconComponent
                 icon={<UndoDot />}
                 iconName="Rotate Left"
-                handleClick={() => setRotateX(!rotateX)}
+                handleClick={() => {
+                  if (rotateX) {
+                    addLog("Rotated 180 degress right");
+                  } else {
+                    addLog("Rotated 180 degress left");
+                  }
+                  setRotateX(!rotateX);
+                }}
               />
 
               <IconComponent
                 icon={<RedoDot />}
                 iconName="Roate Right"
-                handleClick={() => setRotateX(!rotateX)}
+                handleClick={() => {
+                  if (rotateX) {
+                    addLog("Rotated 180 degress left");
+                  } else {
+                    addLog("Rotated 180 degress right");
+                  }
+                  setRotateX(!rotateX);
+                }}
               />
 
               <IconComponent
                 icon={<UnfoldVertical />}
                 iconName="Vertial Flip"
-                handleClick={() => setRotateY(!rotateY)}
+                handleClick={() => {
+                  if (rotateY) {
+                    addLog("Rotated 180 degress down");
+                  } else {
+                    addLog("Rotated 180 degress up");
+                  }
+                  setRotateX(!rotateY);
+                }}
               />
 
               <IconComponent
                 icon={<UnfoldHorizontal />}
-                iconName="Horizontal Flip"
-                handleClick={() => setRotateY(!rotateY)}
+                iconName="Vertical  Flip"
+                handleClick={() => {
+                  if (rotateY) {
+                    addLog("Rotated 180 degress up");
+                  } else {
+                    addLog("Rotated 180 degress down");
+                  }
+                  setRotateX(!rotateY);
+                }}
               />
             </div>
           </CardContent>

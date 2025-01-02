@@ -5,6 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { CircleUserRound } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -97,6 +105,26 @@ const Home = () => {
           )}
         </div>
       </div>
+
+      {user && (
+        <div className="absolute bottom-4 right-4">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <button
+                  className="p-3 bg-primary rounded-full text-primary-foreground shadow-lg hover:bg-primary/90"
+                  onClick={() => navigate("/profile")}
+                >
+                  <CircleUserRound size={28} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>UserProfile</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
     </div>
   );
 };

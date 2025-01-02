@@ -75,7 +75,7 @@ def callback():
             print(token)
         
             
-
+    
         # Redirect to the frontend with the email and token as query parameters
         redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}"
         return redirect(redirect_url)

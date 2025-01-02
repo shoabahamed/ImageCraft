@@ -12,6 +12,7 @@ import ComparePage from "./pages/ComparePage";
 import UserDashboard from "./pages/UserProfile";
 import { CanvasObjectsProvider } from "./context/CanvasObjectContext";
 import { LogProvider } from "./context/LogContext";
+import LogsPage from "./pages/LogsPage";
 
 export default function App() {
   const { user } = useAuthContext();
@@ -62,6 +63,12 @@ export default function App() {
               element={
                 user && user.role === "admin" ? <ComparePage /> : <Home />
               }
+            />
+          </Routes>
+          <Routes>
+            <Route
+              path="/admin/view_logs"
+              element={user && user.role === "admin" ? <LogsPage /> : <Home />}
             />
           </Routes>
           <Routes>

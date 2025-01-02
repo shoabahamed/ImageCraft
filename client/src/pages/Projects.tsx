@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 interface Project {
   _id: string;
   user_id: string;
+  is_public: string;
   project_id: string;
   project_data: object;
   origial_image_url: string;
@@ -66,22 +67,67 @@ const Projects = () => {
     return <div>{error}</div>;
   }
 
-  const shareProject = (projectId) => {
-    navigator.clipboard.writeText(`${BACKEND_URL}/projects/${projectId}`);
-    toast({ description: "Project link copied to clipboard!", duration: 3000 });
+  const updateProjectVisibility = async (
+    projectId: string,
+    isPublic: boolean
+  ) => {
+    try {
+      const response = await apiClient.post(
+        "/projects/update_visibility",
+        { projectId, isPublic },
+        { headers: { Authorization: `Bearer ${user?.token}` } }
+      );
+
+      if (response.status === 200) {
+        toast({
+          description: isPublic
+            ? "Project made public successfully"
+            : "Project made private successfully",
+          className: "bg-green-500 text-gray-900",
+        });
+
+        // Update the project visibility in state
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            project.project_id === projectId
+              ? { ...project, is_public: isPublic ? "true" : "false" }
+              : project
+          )
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Error making project ${isPublic ? "public" : "private"}:`,
+        error
+      );
+      toast({
+        description: `Failed to make project ${
+          isPublic ? "public" : "private"
+        }`,
+        className: "bg-red-500 text-white",
+      });
+    }
   };
 
   const deleteProject = async (projectId) => {
     try {
-      await apiClient.delete(`/projects/${projectId}`, {
+      await apiClient.delete(`/delete_project/${projectId}`, {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
       setProjects(
         projects.filter((project) => project.project_id !== projectId)
       );
-      toast({ description: "Project deleted successfully.", duration: 3000 });
+      toast({
+        description: "Project deleted successfully.",
+        duration: 3000,
+        className: "bg-green-500 text-gray-900",
+      });
     } catch {
-      toast({ description: "Failed to delete project.", duration: 3000 });
+      toast({
+        description: "Failed to delete project.",
+        duration: 3000,
+        className: "bg-red-500 text-gray-900",
+      });
     }
   };
 
@@ -106,9 +152,24 @@ const Projects = () => {
                 className="object-cover w-full h-48 rounded-t-lg cursor-pointer"
               />
               <div className="flex justify-between mt-4">
-                <Button onClick={() => shareProject(project.project_id)}>
-                  Share
-                </Button>
+                {project.is_public === "true" ? (
+                  <Button
+                    onClick={() =>
+                      updateProjectVisibility(project.project_id, false)
+                    }
+                  >
+                    Make Private
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() =>
+                      updateProjectVisibility(project.project_id, true)
+                    }
+                  >
+                    Make Public
+                  </Button>
+                )}
+
                 <Button
                   className="bg-red-500 text-white hover:bg-red-600"
                   onClick={() => deleteProject(project.project_id)}

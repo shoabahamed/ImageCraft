@@ -20,7 +20,7 @@ type Props = {
 const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
   const { selectedObject, setSelectedObject } = useCanvasObjects();
   const { user } = useAuthContext();
-  const { addLog } = useLogContext();
+  const { logs, addLog } = useLogContext();
   const { toast } = useToast();
   const [showUpdateButton, setShowUpdateButton] = useState(false);
 
@@ -114,7 +114,11 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
       // Create FormData object and append the image and other canvas data
       const formData = new FormData();
       formData.append("canvasId", canvasId);
+      formData.append("username", user?.username); // Append the oringalimage file
+      formData.append("isPublic", "false"); // Append the oringalimage file
       formData.append("canvasData", JSON.stringify(canvasJSON)); // Add canvas data as a string
+      formData.append("canvasLogs", JSON.stringify(logs)); // Append the oringalimage file
+
       formData.append("originalImage", originalImageFile); // Append the oringalimage file
       formData.append("canvasImage", canvasImageFile); // Append the oringalimage file
 
@@ -146,7 +150,7 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
         toast({
           variant: "destructive",
           description: "Save failed",
-          className: "bg-green-500 text-gray-900",
+          className: "bg-red-500 text-gray-900",
           duration: 3000,
         });
       }

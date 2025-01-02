@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports
+from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message
 from middleware.auth import auth_middleware
 
 report_routes = Blueprint("report_routes", __name__)
@@ -101,4 +101,34 @@ def grant_logs_route():
 
     # For POST requests, proceed with save_report logic
     return grant_logs()
+
+
+
+@report_routes.route("/api/delete_report_project", methods=["OPTIONS", "POST"])
+def delete_project_route():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+    
+
+    return delete_report_project()
+
+
+
+@report_routes.route("/api/send_message", methods=["OPTIONS", "POST"])
+def sende_message_route():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+    
+
+    return send_message()
+
+
 

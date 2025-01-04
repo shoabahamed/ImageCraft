@@ -78,9 +78,9 @@ def save_project():
             response_message = "Project created successfully"
             status_code = 201
 
-            
+
         # Prepare the response
-        response = {"user_id": user_id, "project_id": canvas_id}
+        response = {"user_id": user_id, "project_id": canvas_id, "project_data": canvas_data}
         return jsonify({"success": True, "message": response_message, "data": response}), status_code
 
     except Exception as e:

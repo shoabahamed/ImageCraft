@@ -241,6 +241,7 @@ const Navbar = () => {
       className: "bg-green-500 text-gray-900",
       duration: 2000,
     });
+    navigate("/");
   };
 
   const navigateToGallery = () => {

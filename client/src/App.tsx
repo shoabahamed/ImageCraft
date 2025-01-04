@@ -32,6 +32,8 @@ export default function App() {
                   <LogProvider>
                     <CanvasObjectsProvider>
                       <MainPage />
+
+                      {/* <Test /> */}
                     </CanvasObjectsProvider>
                   </LogProvider>
                 ) : (

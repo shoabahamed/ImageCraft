@@ -120,7 +120,7 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
       formData.append("canvasLogs", JSON.stringify(logs)); // Append the oringalimage file
 
       formData.append("originalImage", originalImageFile); // Append the oringalimage file
-      formData.append("canvasImage", canvasImageFile); // Append the oringalimage file
+      formData.append("canvasImage", canvasImageFile); // Append the oringalimage
 
       // Post JSON data to the backend with JWT in headers
       const response = await apiClient.post("/save_project", formData, {
@@ -128,6 +128,12 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
           Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
         },
       });
+
+      localStorage.setItem("canvasId", canvasId);
+      localStorage.setItem(
+        "project_data",
+        JSON.stringify(response.data.data.project_data)
+      );
 
       if (response.status === 201) {
         console.log("canvas saved successfully");
@@ -212,26 +218,6 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
       .getObjects()
       .find((obj) => obj.name?.startsWith("Frame"));
     if (frameObject) {
-      // const frameWidth = frameObject.getScaledWidth();
-      // const frameHeight = frameObject.getScaledHeight();
-
-      // const dataURL = canvas.toDataURL({
-      //   left: frameObject.left,
-      //   top: frameObject.top,
-      //   width: frameWidth + 500,
-      //   height: frameHeight + 500,
-      // });
-
-      // const link = document.createElement("a");
-      // link.href = dataURL;
-      // link.download = "frame-image.png";
-      // link.click();
-
-      // // Get the clipPath object
-      // const clipPath = image.clipPath;
-
-      // canvas.backgroundColor = "000"
-
       const clipBoundingBox = frameObject.getBoundingRect();
 
       // Create a temporary canvas element using fabric's rendering
@@ -321,10 +307,10 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
   return (
     <div className="flex w-full h-full items-center justify-center rounded-none border-slate-800 border-t-2 gap-4">
       <div className="flex">
-        <IconComponent icon={<ZoomIn />} iconName={"ZoomIn"} />
-        <IconComponent icon={<Undo />} iconName={"Undo"} />
-        <IconComponent icon={<Redo />} iconName={"Redo"} />
-        <IconComponent icon={<ZoomOut />} iconName={"ZoomOut"} />
+        {/* <IconComponent icon={<ZoomIn />} iconName={"ZoomIn"} /> */}
+        {/* <IconComponent icon={<Undo />} iconName={"Undo"} />
+        <IconComponent icon={<Redo />} iconName={"Redo"} /> */}
+        {/* <IconComponent icon={<ZoomOut />} iconName={"ZoomOut"} /> */}
       </div>
 
       <div className="flex flex-none gap-1">

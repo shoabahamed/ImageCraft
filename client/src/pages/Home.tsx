@@ -13,11 +13,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useEffect } from "react";
 
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // localStorage.removeItem("project_data");
+    // localStorage.removeItem("canvasId");
+  });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

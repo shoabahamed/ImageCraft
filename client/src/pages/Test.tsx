@@ -1,113 +1,397 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useAuthContext } from "@/hooks/useAuthContext";
-import apiClient from "@/utils/appClient";
-import * as fabric from "fabric";
-import { Card, CardContent } from "@/components/ui/card";
+import IconComponent from "@/components/icon-component";
 
-interface Project {
-  _id: string;
-  user_id: string;
-  project_id: string;
-  project_data: object; // Serialized Fabric.js data
-}
+import { Home } from "lucide-react";
+import {
+  Crop,
+  RotateCwSquare,
+  ListPlus,
+  Type,
+  PenTool,
+  Cpu,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+import * as fabric from "fabric";
+import { useLocation, useNavigate } from "react-router-dom";
+import AdjustSidebar from "@/components/AdjustSidebar";
+import AddText from "@/components/AddText";
+import Arrange from "@/components/Arrange";
+import Draw from "@/components/Draw";
+import CropSidebar from "@/components/CropSidebar";
+
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { useToast } from "@/hooks/use-toast";
+import Footer from "@/components/Footer";
+
+// import { MapInteractionCSS, MapInteraction } from "react-map-interaction";
 
 const Test = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [previewUrls, setPreviewUrls] = useState<{ [key: string]: string }>({});
-  const { user } = useAuthContext();
+  const [sidebarName, setSidebarName] = useState("");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mainCanvasRef = useRef<fabric.Canvas | null>(null);
+  const currentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const imageDim = useRef<{ width: number; height: number } | null>(null);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await apiClient.get("/get_projects", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
-          },
-        });
-        setProjects(response.data.data.projects);
-        console.log(response.data.data.projects);
-      } catch (err) {
-        setError("Failed to fetch projects");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const imageUrlFromState = useLocation().state?.imageUrl;
+  const idFromState = useLocation().state?.canvasId;
+  const navigate = useNavigate();
+  const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
 
-    if (user) {
-      fetchProjects();
-    } else {
-      setProjects([]);
+  const { user } = useAuthContext();
+  const { toast } = useToast();
+  const canvasIdRef = useRef(idFromState || crypto.randomUUID());
+
+  const handleContainerResize = () => {
+    const container = document.getElementById("CanvasContainer");
+    if (!container || !mainCanvasRef.current || !currentImageRef.current)
+      return;
+
+    const { width: containerWidth, height: containerHeight } =
+      container.getBoundingClientRect();
+
+    const originalCanvasWidth = mainCanvasRef.current.width;
+    const originalCanvasHeight = mainCanvasRef.current.height;
+    const imageWidth = currentImageRef.current.width ?? 1;
+    const imageHeight = currentImageRef.current.height ?? 1;
+
+    // Determine if the image needs scaling
+    const needsScaling =
+      imageWidth > containerWidth || imageHeight > containerHeight;
+
+    if (needsScaling) {
+      const scaleX = containerWidth / imageWidth;
+      const scaleY = containerHeight / imageHeight;
+      const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
+
+      currentImageRef.current.scale(scale); // Scale the image
     }
-  }, [user]);
 
-  const renderCanvasPreview = async (projectId: string, canvasData: object) => {
-    const canvasElement = canvasRef.current;
+    const finalWidth = needsScaling
+      ? currentImageRef.current.getScaledWidth()
+      : imageWidth;
+    const finalHeight = needsScaling
+      ? currentImageRef.current.getScaledHeight()
+      : imageHeight;
 
-    if (!canvasElement) {
-      return "";
-    }
-
-    const fabricCanvas = new fabric.Canvas(canvasElement);
-    await new Promise<void>((resolve) => {
-      fabricCanvas.loadFromJSON(canvasData, () => {
-        fabricCanvas.renderAll();
-        resolve();
-      });
+    mainCanvasRef.current.setDimensions({
+      width: finalWidth,
+      height: finalHeight,
     });
 
-    const previewUrl = canvasElement.toDataURL("image/png", 0.8);
+    const objScaleX = finalWidth / originalCanvasWidth;
+    const objScaleY = finalHeight / originalCanvasHeight;
+    // Apply scaling factors to all other objects
+    mainCanvasRef.current.getObjects().forEach((obj) => {
+      if (obj !== currentImageRef.current) {
+        obj.scaleX *= objScaleX;
+        obj.scaleY *= objScaleY;
+        obj.left *= objScaleX;
+        obj.top *= objScaleY;
+        obj.setCoords();
+      }
+    });
 
-    // Update the state with the preview URL for the given project ID
-    setPreviewUrls((prevState) => ({
-      ...prevState,
-      [projectId]: previewUrl,
-    }));
+    mainCanvasRef.current.renderAll();
   };
 
+  // useEffect(() => {
+  //   if (canvasRef.current) {
+  //     const container = document.getElementById("CanvasContainer");
+  //     if (!container) return;
+
+  //     const resizeObserver = new ResizeObserver(() => {
+  //       handleContainerResize(); // Trigger resize handler
+  //     });
+  //     resizeObserver.observe(container);
+  //     resizeObserverRef.current = resizeObserver;
+
+  //     const { width: containerWidth, height: containerHeight } =
+  //       container.getBoundingClientRect();
+
+  //     const initCanvas = new fabric.Canvas(canvasRef.current, {
+  //       width: 300,
+  //       height: 300,
+  //     });
+  //     initCanvas.backgroundColor = "#fff";
+
+  //     fabric.FabricImage.fromURL(imageUrl).then((img) => {
+  //       const imageWidth = img.width ?? 1;
+  //       const imageHeight = img.height ?? 1;
+
+  //       imageDim.current = { width: imageWidth, height: imageHeight };
+
+  //       const needsScaling =
+  //         imageWidth > containerWidth || imageHeight > containerHeight;
+
+  //       if (needsScaling) {
+  //         const scaleX = containerWidth / imageWidth;
+  //         const scaleY = containerHeight / imageHeight;
+  //         const scale = Math.min(scaleX, scaleY);
+
+  //         img.scale(scale); // Scale the image
+  //       }
+
+  //       const finalWidth = needsScaling ? img.getScaledWidth() : imageWidth;
+  //       const finalHeight = needsScaling ? img.getScaledHeight() : imageHeight;
+
+  //       initCanvas.setDimensions({ width: finalWidth, height: finalHeight });
+  //       img.set({
+  //         left: 0,
+  //         top: 0,
+  //         selectable: false,
+  //         hoverCursor: "default",
+  //       });
+
+  //       initCanvas.add(img);
+  //       initCanvas.renderAll();
+  //       currentImageRef.current = img; // Set the ref directly
+  //       mainCanvasRef.current = initCanvas;
+  //     });
+
+  //     return () => {
+  //       initCanvas.dispose(); // Dispose of canvas
+  //       if (resizeObserverRef.current) {
+  //         resizeObserverRef.current.disconnect();
+  //       }
+  //     };
+  //   }
+  // }, [imageUrl]);
   useEffect(() => {
-    // Generate preview for each project once the projects are loaded
-    projects.forEach((project) => {
-      renderCanvasPreview(project._id, project.project_data);
-    });
-  }, [projects]);
+    if (canvasRef.current) {
+      const container = document.getElementById("CanvasContainer");
+      if (!container) return;
+
+      const { width: containerWidth, height: containerHeight } =
+        container.getBoundingClientRect();
+
+      const initCanvas = new fabric.Canvas(canvasRef.current, {
+        width: containerWidth,
+        height: containerHeight,
+      });
+
+      initCanvas.backgroundColor = "#fff";
+
+      const savedData = localStorage.getItem("project_data");
+      if (savedData) {
+        try {
+          const canvasJSON = JSON.parse(savedData);
+
+          const waitForImagesToLoad = (canvas: fabric.Canvas) => {
+            return new Promise<void>((resolve) => {
+              const objects = canvasJSON.objects || [];
+              const imageObjects = objects.filter(
+                (obj) => obj.type === "Image"
+              );
+
+              if (imageObjects.length === 0) {
+                resolve();
+                return;
+              }
+
+              let loadedCount = 0;
+
+              imageObjects.forEach((imgData) => {
+                const imgElement = new Image();
+                imgElement.src = imgData.src;
+
+                imgElement.onload = () => {
+                  loadedCount++;
+                  if (loadedCount === imageObjects.length) {
+                    resolve();
+                  }
+                };
+
+                imgElement.onerror = () => {
+                  console.warn("Failed to load image:", imgData.src);
+                  loadedCount++;
+                  if (loadedCount === imageObjects.length) {
+                    resolve();
+                  }
+                };
+              });
+            });
+          };
+
+          initCanvas.loadFromJSON(canvasJSON, async () => {
+            await waitForImagesToLoad(initCanvas);
+            initCanvas.renderAll();
+            console.log("Canvas fully loaded and rendered.");
+          });
+        } catch (error) {
+          console.error("Failed to load canvas data:", error);
+        }
+      } else {
+        console.warn("No project data found in localStorage.");
+      }
+
+      return () => {
+        initCanvas.dispose();
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mainCanvasRef.current) {
+      if (sidebarName !== "PenTool") {
+        mainCanvasRef.current.isDrawingMode = false;
+      }
+    }
+  }, [sidebarName]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-2xl font-bold mb-6">Your Projects</h1>
-      <div className="grid grid-cols-4 gap-6">
-        {projects.map((project) => {
-          // Access the preview URL for each project from the state
-          const previewImage = previewUrls[project._id];
+    <div className="h-screen max-w-screen flex items-center relative">
+      {/* Sidebar */}
+      <div
+        className={`flex items-center h-full ${sidebarName ? "w-[25%]" : ""}`}
+      >
+        <nav className="flex flex-col gap-5  h-full justify-center items-center border-slate-800 border-r-2 rounded-none">
+          <IconComponent
+            icon={<Home />}
+            iconName="Home"
+            sidebarName={sidebarName}
+            handleClick={() => {
+              navigate("/");
+            }}
+          />
+          <IconComponent
+            icon={<RotateCwSquare />}
+            iconName="Arrange"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
+          <IconComponent
+            icon={<Crop />}
+            iconName="Crop"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
+          <IconComponent
+            icon={<ListPlus />}
+            iconName="Adjust"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
+          <IconComponent
+            icon={<PenTool />}
+            iconName="PenTool"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
+          <IconComponent
+            icon={<Type />}
+            iconName="Text"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
+          <IconComponent
+            icon={<Cpu />}
+            iconName="AI"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
+        </nav>
+        <div
+          className={`${
+            sidebarName ? "w-full" : "w-0"
+          } transition-all duration-700 ease-in-out relative h-full  bg-gray-700`}
+        >
+          <div
+            className={`${
+              sidebarName ? "absolute w-[20px]" : "w-0"
+            } flex justify-center items-center bg-gray-900  -right-2 text-slate-300 top-[40%] cursor-pointer h-[100px] rounded-full `}
+            onClick={() => setSidebarName("")}
+          ></div>
+          {sidebarName === "Crop" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                Crop&Cut
+              </div>
+              <div className="h-[90%] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <CropSidebar
+                  canvas={mainCanvasRef.current!}
+                  image={currentImageRef.current!}
+                />
+              </div>
+            </div>
+          )}
 
-          return (
-            <Card
-              key={project._id}
-              className="w-full h-64 cursor-pointer transition hover:shadow-lg"
-            >
-              <CardContent className="h-full flex items-center justify-center">
-                {previewImage ? (
-                  <img
-                    src={previewImage}
-                    alt={`Preview of ${project.project_id}`}
-                    className="w-full h-full object-cover rounded"
-                  />
-                ) : (
-                  <div>Loading...</div> // Display loading message while preview is being generated
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+          {sidebarName === "Arrange" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                Arrange Image
+              </div>
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <Arrange
+                  canvas={mainCanvasRef.current!}
+                  image={currentImageRef.current!}
+                />
+              </div>
+            </div>
+          )}
+
+          {sidebarName === "Adjust" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                Adjust
+              </div>
+              <div className="h-[90%] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <AdjustSidebar
+                  canvas={mainCanvasRef.current!}
+                  image={currentImageRef.current!}
+                />
+              </div>
+            </div>
+          )}
+
+          {sidebarName === "PenTool" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                Draw
+              </div>
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <Draw canvas={mainCanvasRef.current!} />
+              </div>
+            </div>
+          )}
+
+          {sidebarName === "Text" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                Text
+              </div>
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <AddText canvas={mainCanvasRef.current!} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Hidden offscreen canvas for rendering preview */}
-      <canvas ref={canvasRef} style={{ display: "none" }} />
+      {/* Main Section */}
+      <div className="flex flex-grow h-full flex-col justify-center items-center">
+        {/* Design Section */}
+        <div className="flex-1 w-full flex items-center justify-center">
+          <div
+            className="w-[90%] h-[90%] flex justify-center items-center"
+            id="CanvasContainer"
+          >
+            {/* <MapInteractionCSS> */}
+            <canvas id="canvas" className="z-1" ref={canvasRef}></canvas>
+            {/* </MapInteractionCSS> */}
+          </div>
+        </div>
+        {/* Footer */}
+        <div className="flex flex-none w-full">
+          <Footer
+            canvas={mainCanvasRef.current!}
+            image={currentImageRef.current!}
+            canvasId={canvasIdRef.current}
+            imageUrl={imageUrl}
+          />
+        </div>
+      </div>
     </div>
   );
 };

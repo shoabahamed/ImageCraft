@@ -13,6 +13,7 @@ import apiClient from "@/utils/appClient"; // API client setup for requests
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
+import { Trash, MessageCircle, CheckCircle, FileText } from "lucide-react"; // Corrected icon imports
 
 import {
   Dialog,
@@ -206,7 +207,7 @@ const AdminPanel: React.FC = () => {
         "/send_message",
         {
           reportId: selectedReportId, // Include the project_id
-          title: messageData.message,
+          title: messageData.title,
           message: messageData.message,
         },
         {
@@ -240,167 +241,168 @@ const AdminPanel: React.FC = () => {
         defaultValue="pending"
         className="bg-white rounded-lg shadow-lg p-6 w-full"
       >
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 gap-4">
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="resolved">Resolved</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="mt-6">
+        <TabsContent
+          value="pending"
+          className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {pendingReports.length === 0 ? (
             <p className="text-gray-500">No pending reports at the moment.</p>
           ) : (
-            <div className="space-y-4">
-              {pendingReports.map((report) => (
-                <Card key={report.id} className="border rounded-lg shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-medium text-gray-800">
-                      Report Title : {report.title}
-                    </CardTitle>
-                    <CardDescription className="text-3sm">
-                      Report Description: {report.description}
-                    </CardDescription>
-                    <p className="italic text-sm">
-                      Reported by {report.reporter_name}
-                      <br></br> Created At:{" "}
-                      {report.created_at
-                        ? new Date(report.created_at).toLocaleString()
-                        : "N/A"}
-                    </p>
-                  </CardHeader>
-                  <CardFooter className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-8 gap-2">
-                    {report.has_admin_response === "true" ? (
-                      <>
-                        <Button
-                          className="opacity-50 cursor-not-allowed"
-                          onClick={() => {
-                            goToComparePage(report.project_id, report.id);
-                          }}
-                          disabled={true}
-                        >
-                          Compare Images
-                        </Button>
+            pendingReports.map((report) => (
+              <Card key={report.id} className="border rounded-lg shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg font-medium text-gray-800">
+                    {report.title}
+                  </CardTitle>
 
-                        <Button
-                          className="opacity-50 cursor-not-allowed"
-                          onClick={() => {
-                            goToViewLogsPage(report.project_id, report.id);
-                          }}
-                          disabled={true}
-                        >
-                          View Logs
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        {" "}
-                        <Button
-                          onClick={() => {
-                            goToComparePage(report.project_id, report.id);
-                          }}
-                        >
-                          Compare Images
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            goToViewLogsPage(report.project_id, report.id);
-                          }}
-                        >
-                          View Logs
-                        </Button>
-                      </>
+                  {/* Handling large report descriptions */}
+                  <CardDescription className="text-sm text-gray-600 relative">
+                    <div className="h-20 overflow-hidden">
+                      <p>{report.description}</p>
+                    </div>
+                    {report.description.length > 100 && (
+                      <button
+                        className="absolute bottom-0 left-0 text-blue-600 text-sm hover:underline"
+                        onClick={() => alert("Show full description")}
+                      >
+                        See more
+                      </button>
                     )}
+                  </CardDescription>
 
-                    <Dialog open={openMessage} onOpenChange={setOpenMessage}>
-                      <DialogTrigger asChild>
-                        <Button
-                          className="flex-1 text-sm"
-                          onClick={() => {
-                            setOpenMessage(true);
-                            setSelectedReportId(report.id);
-                          }}
-                        >
-                          Message
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Message To User</DialogTitle>
-                        </DialogHeader>
-
-                        <form onSubmit={handleMessage}>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid w-full gap-1.5">
-                              <Label htmlFor="title">Message Title</Label>
-                              <Input
-                                placeholder="Write a short title"
-                                id="title"
-                                className="mt-2"
-                                required
-                                value={messageData.title}
-                                onChange={handleChange}
-                              />
-                            </div>
-                            <div className="grid w-full gap-1.5">
-                              <Label htmlFor="description">Message</Label>
-                              <Textarea
-                                placeholder="Write a short description"
-                                id="message"
-                                className="mt-2"
-                                required
-                                value={messageData.message}
-                                onChange={handleChange}
-                              />
-                            </div>
+                  <p className="italic text-sm">
+                    Reported by {report.reporter_name} <br />
+                    Created At:{" "}
+                    {report.created_at
+                      ? new Date(report.created_at).toLocaleString()
+                      : "N/A"}
+                  </p>
+                </CardHeader>
+                <CardFooter className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Button
+                    onClick={() =>
+                      goToComparePage(report.project_id, report.id)
+                    }
+                  >
+                    <FileText className="mr-2" size={16} /> Compare Images
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      goToViewLogsPage(report.project_id, report.id)
+                    }
+                  >
+                    <FileText className="mr-2" size={16} /> View Logs
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => resolveReport(report.id)}
+                  >
+                    <CheckCircle className="mr-2" size={16} /> Mark as Resolved
+                  </Button>
+                  <Dialog open={openMessage} onOpenChange={setOpenMessage}>
+                    <DialogTrigger asChild>
+                      <Button
+                        onClick={() => {
+                          setOpenMessage(true);
+                          setSelectedReportId(report.id);
+                        }}
+                      >
+                        <MessageCircle className="mr-2" size={16} /> Message
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Message To User</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleMessage}>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid w-full gap-1.5">
+                            <Label htmlFor="title">Message Title</Label>
+                            <Input
+                              placeholder="Write a short title"
+                              id="title"
+                              className="mt-2"
+                              required
+                              value={messageData.title}
+                              onChange={handleChange}
+                            />
                           </div>
-                          <DialogFooter>
-                            <Button type="submit">Report</Button>
-                          </DialogFooter>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
-                    <Button onClick={() => resolveReport(report.id)}>
-                      Mark as Resolved
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+                          <div className="grid w-full gap-1.5">
+                            <Label htmlFor="message">Message</Label>
+                            <Textarea
+                              placeholder="Write a short description"
+                              id="message"
+                              className="mt-2"
+                              required
+                              value={messageData.message}
+                              onChange={handleChange}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit">Send</Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </CardFooter>
+              </Card>
+            ))
           )}
         </TabsContent>
 
-        <TabsContent value="resolved" className="mt-6">
+        <TabsContent
+          value="resolved"
+          className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {resolvedReports.length === 0 ? (
             <p className="text-gray-500">No resolved reports yet.</p>
           ) : (
-            <div className="space-y-4">
-              {resolvedReports.map((report) => (
-                <Card key={report.id} className="border rounded-lg shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-medium text-gray-800">
-                      Report Title : {report.title}
-                    </CardTitle>
-                    <CardDescription className="text-3sm">
-                      Report Description: {report.description}
-                    </CardDescription>
-                    <p className="italic text-sm">
-                      Reported by {report.reporter_name}
-                      <br></br> Created At:{" "}
-                      {report.created_at
-                        ? new Date(report.created_at).toLocaleString()
-                        : "N/A"}
-                    </p>
-                  </CardHeader>
-                  <CardFooter className="flex space-x-2">
-                    <Button
-                      variant="destructive"
-                      onClick={() => deleteReport(report.id, "resolved")}
-                    >
-                      Delete
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+            resolvedReports.map((report) => (
+              <Card key={report.id} className="border rounded-lg shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg font-medium text-gray-800">
+                    {report.title}
+                  </CardTitle>
+
+                  {/* Handling large report descriptions */}
+                  <CardDescription className="text-sm text-gray-600 relative">
+                    <div className="h-20 overflow-hidden">
+                      <p>{report.description}</p>
+                    </div>
+                    {report.description.length > 100 && (
+                      <button
+                        className="absolute bottom-0 left-0 text-blue-600 text-sm hover:underline"
+                        onClick={() => alert("Show full description")}
+                      >
+                        See more
+                      </button>
+                    )}
+                  </CardDescription>
+
+                  <p className="italic text-sm">
+                    Reported by {report.reporter_name} <br />
+                    Created At:{" "}
+                    {report.created_at
+                      ? new Date(report.created_at).toLocaleString()
+                      : "N/A"}
+                  </p>
+                </CardHeader>
+                <CardFooter className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteReport(report.id, "resolved")}
+                  >
+                    <Trash className="mr-2" size={16} /> Delete
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
           )}
         </TabsContent>
       </Tabs>

@@ -121,7 +121,7 @@ const UserDashboard: React.FC = () => {
                       : "Resolved"}
                   </span>
                 </p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
                   Submitted:{" "}
                   {report.created_at
                     ? new Date(report.created_at).toLocaleString()

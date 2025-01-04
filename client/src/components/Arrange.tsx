@@ -40,6 +40,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
     setRotateX(false);
     setRotateY(false);
   };
+
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
       {/* <div className="w-[90%]">

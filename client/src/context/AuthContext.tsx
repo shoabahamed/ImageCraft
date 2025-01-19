@@ -4,6 +4,7 @@ import {
   useEffect,
   ReactNode,
   Dispatch,
+  useState,
 } from "react";
 
 // Define the structure of the user object
@@ -27,6 +28,7 @@ type AuthAction = { type: "LOGIN"; payload: User } | { type: "LOGOUT" };
 export const AuthContext = createContext<{
   user: User | null;
   dispatch: Dispatch<AuthAction>;
+  loading: boolean;
 } | null>(null);
 
 // Define the authReducer with typed parameters
@@ -54,17 +56,21 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
     user: null,
   });
 
+  const [loading, setLoading] = useState(true); // Track loading state
+
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
       dispatch({ type: "LOGIN", payload: JSON.parse(user) });
     }
+
+    setLoading(false);
   }, []);
 
-  console.log("AuthContext state:", state);
+  // console.log("AuthContext state:", state);
 
   return (
-    <AuthContext.Provider value={{ ...state, dispatch }}>
+    <AuthContext.Provider value={{ ...state, dispatch, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -364,9 +364,9 @@ const CropSidebar = ({ canvas, image }: Props) => {
                 handleClick={() => addShape("elipse")}
               />
             </div>
-            <Button className="w-full" onClick={handleShapeClip}>
+            <button className="w-full custom-button" onClick={handleShapeClip}>
               CUT
-            </Button>
+            </button>
           </CardContent>
         </Card>
       </div>
@@ -379,7 +379,9 @@ const CropSidebar = ({ canvas, image }: Props) => {
           <CardContent className="w-full">
             <div className="flex flex-col gap-3 justify-center">
               {/* <Button className="text-sm md:text-sm">Invert Cutout</Button> */}
-              <Button onClick={resetClip}>Reset Cutout</Button>
+              <button className="custom-button w-full" onClick={resetClip}>
+                Reset Cutout
+              </button>
             </div>
           </CardContent>
         </Card>

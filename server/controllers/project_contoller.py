@@ -11,8 +11,8 @@ load_dotenv()
 
 db = get_db()
 projects_collection = db["Projects"]
-ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/static/original'
-CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/static/canvas'
+ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
+CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
 
 
 
@@ -45,11 +45,11 @@ def save_project():
         
         original_image_file.save(original_image_path)
         canvas_image_file.save(canvas_image_path)
-        
+     
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
             if obj.get("type").lower() == "image":
-                obj["src"] = os.getenv("BACKEND_SERVER") + "/static/original/" + image_filename
+                obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename
 
 
         # Check if a project with the given project_id already exists
@@ -71,16 +71,16 @@ def save_project():
                 "is_public": is_public,
                 "project_data": canvas_data,
                 "project_logs": canvas_logs,
-                "original_image_url": os.getenv("BACKEND_SERVER") + "/static/original/" + image_filename,
-                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/static/canvas/"  + image_filename
+                "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename,
+                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/canvas/"  + image_filename
             }
             projects_collection.insert_one(new_project)
             response_message = "Project created successfully"
             status_code = 201
 
-            
+
         # Prepare the response
-        response = {"user_id": user_id, "project_id": canvas_id}
+        response = {"user_id": user_id, "project_id": canvas_id, "project_data": canvas_data}
         return jsonify({"success": True, "message": response_message, "data": response}), status_code
 
     except Exception as e:
@@ -117,7 +117,7 @@ def get_all_projects():
 
     # data = request.get_json()
     
-    user_id = str(g._id)  # Extracted by the middleware
+    # user_id = str(g._id)  # Extracted by the middleware
 
     # Query the database for projects, excluding the `_id` field
     projects_cursor = projects_collection.find({"is_public": "true"}, {
@@ -172,8 +172,17 @@ def delete_project(project_id):
         # Delete the report from the collection
         result = projects_collection.delete_one({"project_id": project_id})
 
+        
         if result.deleted_count == 0:
             return jsonify({"success": False, "message": "Project not found"}), 404
+        
+        image_filename = secure_filename(f"{project_id}.png") 
+        original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+        canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+        for path in [original_image_path, canvas_image_path]:
+            if os.path.exists(path):
+                os.remove(path)
 
         return jsonify({"success": True, "message": "Project deleted successfully"}), 200
 

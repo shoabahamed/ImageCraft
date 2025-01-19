@@ -9,20 +9,48 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
+
+type mapStateType = {
+  scale: number;
+  translation: { x: number; y: number };
+};
 
 type Props = {
   canvas: Canvas;
   image: FabricImage;
   canvasId: string;
   imageUrl: string;
+  mapState: mapStateType;
+  setMapState: (obj: mapStateType) => void;
 };
 
-const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
-  const { selectedObject, setSelectedObject } = useCanvasObjects();
+const Footer = ({
+  canvas,
+  image,
+  canvasId,
+  imageUrl,
+  mapState,
+  setMapState,
+}: Props) => {
+  const { selectedObject, setSelectedObject, currentImageDim } =
+    useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
   const [showUpdateButton, setShowUpdateButton] = useState(false);
+  const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
+  const [downloadFrame, setDownLoadFrame] = useState(false);
 
   // Function to convert Blob to File
   const convertBlobToFile = (url) => {
@@ -120,7 +148,7 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
       formData.append("canvasLogs", JSON.stringify(logs)); // Append the oringalimage file
 
       formData.append("originalImage", originalImageFile); // Append the oringalimage file
-      formData.append("canvasImage", canvasImageFile); // Append the oringalimage file
+      formData.append("canvasImage", canvasImageFile); // Append the oringalimage
 
       // Post JSON data to the backend with JWT in headers
       const response = await apiClient.post("/save_project", formData, {
@@ -128,6 +156,12 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
           Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
         },
       });
+
+      localStorage.setItem("canvasId", canvasId);
+      localStorage.setItem(
+        "project_data",
+        JSON.stringify(response.data.data.project_data)
+      );
 
       if (response.status === 201) {
         console.log("canvas saved successfully");
@@ -169,41 +203,51 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
 
   const downloadCanvas = () => {
     addLog("Downloading Canvas");
-    console.log(canvas);
-    console.log(image);
 
     if (!canvas || !image) return;
 
-    const originalCanvasWidth = canvas.width!;
-    const originalCanvasHeight = canvas.height!;
-    // Save current canvas dimensions and image scale
+    let backgroundImage: null | FabricImage = null;
+    if (canvas.backgroundImage) {
+      backgroundImage = canvas.backgroundImage;
+    }
+
+    // current canvas and image dimentions (they are both always same)
     const originalImageWidth = image.width!;
     const originalImageHeight = image.height!;
-    const currentImageWidth = image.scaleX! * originalImageWidth;
-    const currentImageHeight = image.scaleY! * originalImageHeight;
+
+    // required image width
+    const { imageWidth: requiredImageWidth, imageHeight: requiredImageHeight } =
+      currentImageDim;
+
+    const renderedImageWidth = image.scaleX! * originalImageWidth;
+    const renderedImageHeight = image.scaleY! * originalImageHeight;
 
     // Calculate scaling factors
-    const scaleX = originalImageWidth / currentImageWidth;
-    const scaleY = originalImageHeight / currentImageHeight;
+    const scaleX = requiredImageWidth / renderedImageWidth;
+    const scaleY = requiredImageHeight / renderedImageHeight;
+
+    console.log(scaleX * originalImageWidth);
 
     // Scale the canvas to the original image size
     canvas.setDimensions({
-      width: originalImageWidth,
-      height: originalImageHeight,
+      width: requiredImageWidth,
+      height: requiredImageHeight,
     });
-    image.scaleX = 1;
-    image.scaleY = 1;
 
     // Apply scaling factors to all other objects
     canvas.getObjects().forEach((obj) => {
-      if (obj !== image) {
-        obj.scaleX *= scaleX;
-        obj.scaleY *= scaleY;
-        obj.left *= scaleX;
-        obj.top *= scaleY;
-        obj.setCoords();
-      }
+      obj.scaleX *= scaleX;
+      obj.scaleY *= scaleY;
+      obj.left *= scaleX;
+      obj.top *= scaleY;
+      obj.setCoords();
     });
+
+    // scale background image if exist
+    if (backgroundImage) {
+      backgroundImage.scaleX *= scaleX;
+      backgroundImage.scaleY *= scaleY;
+    }
 
     canvas.renderAll();
 
@@ -211,27 +255,7 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
     const frameObject = canvas
       .getObjects()
       .find((obj) => obj.name?.startsWith("Frame"));
-    if (frameObject) {
-      // const frameWidth = frameObject.getScaledWidth();
-      // const frameHeight = frameObject.getScaledHeight();
-
-      // const dataURL = canvas.toDataURL({
-      //   left: frameObject.left,
-      //   top: frameObject.top,
-      //   width: frameWidth + 500,
-      //   height: frameHeight + 500,
-      // });
-
-      // const link = document.createElement("a");
-      // link.href = dataURL;
-      // link.download = "frame-image.png";
-      // link.click();
-
-      // // Get the clipPath object
-      // const clipPath = image.clipPath;
-
-      // canvas.backgroundColor = "000"
-
+    if (frameObject && downloadFrame) {
       const clipBoundingBox = frameObject.getBoundingRect();
 
       // Create a temporary canvas element using fabric's rendering
@@ -277,7 +301,7 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
 
       // canvas.backgroundColor = "fff"
     } else {
-      console.log("download");
+      console.log("downloading full image");
       // Generate the data URL for the download
       const dataURL = canvas.toDataURL();
 
@@ -289,23 +313,26 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
     }
 
     // Restore the canvas and image to their previous dimensions
+
     canvas.setDimensions({
-      width: originalCanvasWidth,
-      height: originalCanvasHeight,
+      width: renderedImageWidth,
+      height: renderedImageHeight,
     });
-    image.scaleX = currentImageWidth / originalImageWidth;
-    image.scaleY = currentImageHeight / originalImageHeight;
 
     // Restore the scale and position of all other objects
     canvas.getObjects().forEach((obj) => {
-      if (obj !== image) {
-        obj.scaleX /= scaleX;
-        obj.scaleY /= scaleY;
-        obj.left /= scaleX;
-        obj.top /= scaleY;
-        obj.setCoords();
-      }
+      obj.scaleX /= scaleX;
+      obj.scaleY /= scaleY;
+      obj.left /= scaleX;
+      obj.top /= scaleY;
+      obj.setCoords();
     });
+
+    // scale background image if exist
+    if (backgroundImage) {
+      backgroundImage.scaleX /= scaleX;
+      backgroundImage.scaleY /= scaleY;
+    }
 
     canvas.renderAll();
   };
@@ -318,29 +345,92 @@ const Footer = ({ canvas, image, canvasId, imageUrl }: Props) => {
     }
   };
 
+  const handleZoomIn = () => {
+    const newScale = mapState.scale + 0.05;
+    if (newScale <= 3) {
+      setMapState({ ...mapState, scale: newScale });
+    } else {
+      setMapState({ ...mapState });
+    }
+  };
+
+  const handleZoomOut = () => {
+    const newScale = mapState.scale - 0.05;
+    if (newScale >= 0.05) {
+      setMapState({ ...mapState, scale: newScale });
+    } else {
+      setMapState({ ...mapState });
+    }
+  };
+
   return (
     <div className="flex w-full h-full items-center justify-center rounded-none border-slate-800 border-t-2 gap-4">
-      <div className="flex">
-        <IconComponent icon={<ZoomIn />} iconName={"ZoomIn"} />
-        <IconComponent icon={<Undo />} iconName={"Undo"} />
-        <IconComponent icon={<Redo />} iconName={"Redo"} />
-        <IconComponent icon={<ZoomOut />} iconName={"ZoomOut"} />
+      <div className="flex items-center">
+        <IconComponent
+          icon={<ZoomIn />}
+          iconName={"ZoomIn"}
+          handleClick={() => {
+            handleZoomIn();
+          }}
+        />
+        <div>{Math.floor(mapState.scale * 100)}%</div>
+        {/* <IconComponent icon={<Undo />} iconName={"Undo"} /> */}
+        {/* <IconComponent icon={<Redo />} iconName={"Redo"} />  */}
+        <IconComponent
+          icon={<ZoomOut />}
+          iconName={"ZoomOut"}
+          handleClick={() => handleZoomOut()}
+        />
       </div>
 
-      <div className="flex flex-none gap-1">
-        <Button className="px-8" onClick={downloadCanvas}>
-          Download
-        </Button>
-        <Button className="px-8" onClick={onSaveCanvas}>
+      <div className="flex flex-none gap-10">
+        <Dialog
+          open={openDownloadOptions}
+          onOpenChange={setOpenDownloadOptions}
+        >
+          <DialogTrigger asChild>
+            <button
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-30"
+              onClick={() => {
+                setOpenDownloadOptions(true);
+              }}
+            >
+              Download
+            </button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Download Image</DialogTitle>
+            </DialogHeader>
+            <div className="flex justify-between items-center mt-4">
+              <Label htmlFor="frame-download">Frame Only</Label>
+              <Switch
+                id="frame-download"
+                checked={downloadFrame}
+                onClick={() => setDownLoadFrame(!downloadFrame)}
+              />
+            </div>
+            <DialogFooter className="mt-4">
+              <button className="custom-button" onClick={downloadCanvas}>
+                DownloadImage
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <button
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300  px-6 py-3 text-blue-700"
+          onClick={onSaveCanvas}
+        >
           {showUpdateButton ? "Update" : "Save"}
-        </Button>
+        </button>
         {selectedObject && (
-          <Button
-            className="px-8 bg-red-500 hover:bg-red-600"
+          <button
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-30  text-red-800"
             onClick={deleteObject}
           >
             Delete
-          </Button>
+          </button>
         )}
       </div>
     </div>

@@ -88,10 +88,7 @@ const LogsPage: React.FC = () => {
             Explore detailed logs and project data below
           </p>
         </div>
-        <button
-          onClick={handleGrantLogs}
-          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-2 rounded-md font-semibold shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2"
-        >
+        <button onClick={handleGrantLogs} className="custom-button">
           Grant Logs
         </button>
       </header>

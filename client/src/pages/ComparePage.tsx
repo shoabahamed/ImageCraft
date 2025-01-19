@@ -84,7 +84,7 @@ const CompareImagesPage: React.FC = () => {
         </h1>
         <button
           onClick={() => deleteProject(projectId, reportId)}
-          className="bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] px-4 py-2 rounded-md font-semibold shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--destructive))] focus:ring-offset-2"
+          className="custom-delete-button"
         >
           Delete Project
         </button>

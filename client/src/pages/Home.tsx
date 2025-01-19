@@ -5,14 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { CircleUserRound } from "lucide-react";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useEffect } from "react";
 
 const Home = () => {
@@ -21,8 +14,9 @@ const Home = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // localStorage.removeItem("project_data");
-    // localStorage.removeItem("canvasId");
+    localStorage.removeItem("project_data");
+    localStorage.removeItem("canvasId");
+    localStorage.removeItem("project_logs");
   });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,12 +54,10 @@ const Home = () => {
         <div className="flex flex-wrap justify-center gap-4">
           {user ? (
             <form>
-              <Label
-                htmlFor="picture"
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer"
-              >
+              <Label htmlFor="picture" className="custom-button">
                 Load Image
               </Label>
+
               <Input
                 id="picture"
                 type="file"
@@ -76,7 +68,7 @@ const Home = () => {
             </form>
           ) : (
             <button
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointe"
+              className="custom-button"
               onClick={() =>
                 toast({
                   description: "You need to log in first",
@@ -91,13 +83,11 @@ const Home = () => {
 
           {user ? (
             <Link to="/projects">
-              <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointer">
-                Saved Projects
-              </button>
+              <button className="custom-button">Saved Projects</button>
             </Link>
           ) : (
             <button
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 cursor-pointe"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-300 ring-offset-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gradient-to-r from-indigo-600 via-blue-600 to-teal-500 text-white hover:from-indigo-500 hover:via-blue-500 hover:to-teal-400 px-10 py-3 cursor-pointer shadow-lg hover:shadow-blue-600/50"
               onClick={() =>
                 toast({
                   description: "You need to log in first",
@@ -106,31 +96,11 @@ const Home = () => {
                 })
               }
             >
-              Saved Project
+              Gallery
             </button>
           )}
         </div>
       </div>
-
-      {user && (
-        <div className="absolute bottom-4 right-4">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <button
-                  className="p-3 bg-primary rounded-full text-primary-foreground shadow-lg hover:bg-primary/90"
-                  onClick={() => navigate("/profile")}
-                >
-                  <CircleUserRound size={28} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>UserProfile</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
     </div>
   );
 };

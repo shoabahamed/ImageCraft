@@ -23,6 +23,8 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
 // import { MapInteractionCSS, MapInteraction } from "react-map-interaction";
 
 const MainPage = () => {
@@ -41,7 +43,7 @@ const MainPage = () => {
 
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const canvasIdRef = useRef(idFromState || crypto.randomUUID());
+  const canvasIdRef = useRef(crypto.randomUUID());
 
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -150,60 +152,11 @@ const MainPage = () => {
         mainCanvasRef.current = initCanvas;
       });
 
-      // initCanvas.on("mouse:wheel", function (opt) {
-      //   const delta = opt.e.deltaY;
-      //   let zoom = initCanvas.getZoom();
-
-      //   // Adjust zoom based on mouse wheel delta
-      //   zoom *= 0.999 ** delta;
-
-      //   // Constrain zoom level to minimum and maximum values
-      //   if (zoom > 2) zoom = 2;
-      //   if (zoom < 1) zoom = 1;
-
-      //   // Get the mouse position relative to the canvas
-      //   const mouse = initCanvas.getPointer(opt.e);
-      //   const mousePoint = new fabric.Point(mouse.x, mouse.y);
-
-      //   // Set zoom to the mouse point (focus on mouse position)
-      //   initCanvas.zoomToPoint(mousePoint, zoom);
-
-      //   // Ensure the canvas is re-rendered after zooming
-      //   initCanvas.requestRenderAll();
-
-      //   opt.e.preventDefault();
-      //   opt.e.stopPropagation();
-      // });
-
       return () => {
         initCanvas.dispose(); // Dispose of canvas
         if (resizeObserverRef.current) {
           resizeObserverRef.current.disconnect();
         }
-        // initCanvas.off("mouse:wheel", function (opt) {
-        //   const delta = opt.e.deltaY;
-        //   let zoom = initCanvas.getZoom();
-
-        //   // Adjust zoom based on mouse wheel delta
-        //   zoom *= 0.999 ** delta;
-
-        //   // Constrain zoom level to minimum and maximum values
-        //   if (zoom > 2) zoom = 2;
-        //   if (zoom < 1) zoom = 1;
-
-        //   // Get the mouse position relative to the canvas
-        //   const mouse = initCanvas.getPointer(opt.e);
-        //   const mousePoint = new fabric.Point(mouse.x, mouse.y);
-
-        //   // Set zoom to the mouse point (focus on mouse position)
-        //   initCanvas.zoomToPoint(mousePoint, zoom);
-
-        //   // Ensure the canvas is re-rendered after zooming
-        //   initCanvas.requestRenderAll();
-
-        //   opt.e.preventDefault();
-        //   opt.e.stopPropagation();
-        // });
       };
     }
   }, [imageUrl]);
@@ -353,9 +306,14 @@ const MainPage = () => {
             className="w-[90%] h-[90%] flex justify-center items-center"
             id="CanvasContainer"
           >
-            {/* <MapInteractionCSS> */}
-            <canvas id="canvas" className="z-1" ref={canvasRef}></canvas>
-            {/* </MapInteractionCSS> */}
+            <TransformWrapper
+              panning={{ disabled: true }}
+              pinch={{ disabled: true }}
+            >
+              <TransformComponent>
+                <canvas id="canvas" className="z-1" ref={canvasRef}></canvas>
+              </TransformComponent>
+            </TransformWrapper>
           </div>
         </div>
         {/* Footer */}

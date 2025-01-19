@@ -24,7 +24,7 @@ const IconComponent = ({
 }: IconComponentProps) => {
   return (
     <div
-      className={`flex cursor-default select-none items-center justify-center rounded-sm px-3 py-1.5 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground transition-all duration-300 ${
+      className={`flex cursor-default select-none items-center justify-center rounded-[0.2rem] px-3 py-1.5 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground transition-all duration-300 ${
         sidebarName === iconName ? "bg-slate-500" : ""
       } ${extraStyles}`}
       onClick={() => {

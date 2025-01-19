@@ -2,15 +2,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import apiClient from "@/utils/appClient";
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react"; // Assuming you're using Lucide icons
+import Navbar from "@/components/Navbar";
+import { useNavigate } from "react-router-dom";
 
 interface Project {
   _id: string;
@@ -18,14 +14,15 @@ interface Project {
   is_public: string;
   project_id: string;
   project_data: object;
-  origial_image_url: string;
+  project_logs: string;
+  original_image_url: string;
   canvas_image_url: string;
 }
 
-const Projects = () => {
+const Projects: React.FC = () => {
   const { user } = useAuthContext();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  // const BACKEND_URL = "http://127.0.0.1:5000";
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,73 +30,54 @@ const Projects = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        // Replace the URL with your actual backend URL
         const response = await apiClient.get("/get_projects", {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
+            Authorization: `Bearer ${user?.token}`,
           },
         });
-        // Store the projects in state
         setProjects(response.data.data.projects);
-        console.log(response.data.data.projects);
       } catch (err) {
         setError("Failed to fetch projects");
-        console.error(err); // Log the error for debugging
+        console.error(err);
       } finally {
-        setLoading(false); // Set loading to false after data is fetched
+        setLoading(false);
       }
     };
 
-    // Call the fetchProjects function when the component mounts
-    if (user) {
-      fetchProjects();
-    } else {
-      setProjects([]);
-    }
+    if (user) fetchProjects();
+    else setProjects([]);
   }, [user]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   const updateProjectVisibility = async (
     projectId: string,
     isPublic: boolean
   ) => {
     try {
-      const response = await apiClient.post(
+      await apiClient.post(
         "/projects/update_visibility",
         { projectId, isPublic },
         { headers: { Authorization: `Bearer ${user?.token}` } }
       );
 
-      if (response.status === 200) {
-        toast({
-          description: isPublic
-            ? "Project made public successfully"
-            : "Project made private successfully",
-          className: "bg-green-500 text-gray-900",
-        });
+      toast({
+        description: isPublic
+          ? "Project made public successfully"
+          : "Project made private successfully",
+        className: "bg-green-500 text-gray-900",
+      });
 
-        // Update the project visibility in state
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            project.project_id === projectId
-              ? { ...project, is_public: isPublic ? "true" : "false" }
-              : project
-          )
-        );
-      }
-    } catch (error) {
-      console.error(
-        `Error making project ${isPublic ? "public" : "private"}:`,
-        error
+      setProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project.project_id === projectId
+            ? { ...project, is_public: isPublic ? "true" : "false" }
+            : project
+        )
       );
+    } catch (error) {
       toast({
         description: `Failed to make project ${
           isPublic ? "public" : "private"
@@ -109,77 +87,130 @@ const Projects = () => {
     }
   };
 
-  const deleteProject = async (projectId) => {
+  const deleteProject = async (projectId: string) => {
     try {
       await apiClient.delete(`/delete_project/${projectId}`, {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
+
       setProjects(
         projects.filter((project) => project.project_id !== projectId)
       );
       toast({
         description: "Project deleted successfully.",
-        duration: 3000,
         className: "bg-green-500 text-gray-900",
       });
     } catch {
       toast({
         description: "Failed to delete project.",
-        duration: 3000,
         className: "bg-red-500 text-gray-900",
       });
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  const downloadImage = (url: string) => {
+    const newTab = window.open(url, "_blank");
+    if (newTab) {
+      newTab.focus();
+    } else {
+      toast({
+        description: "Failed to open the image in a new tab.",
+        duration: 3000,
+      });
+    }
+  };
+
+  const goToMainPage = (
+    project_id: string,
+    project_data: Object,
+    project_logs: string
+  ) => {
+    localStorage.setItem("CanvasId", project_id);
+    localStorage.setItem("project_data", JSON.stringify(project_data));
+    localStorage.setItem("project_logs", project_logs);
+    navigate("/mainpage");
+  };
 
   return (
-    <div className="min-h-screen min-w-full flex flex-col gap-3">
-      <div className="text-5xl text-center text-zinc-400 py-3 underline ">
-        Projects
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 px-4 py-">
-        {projects.map((project) => (
-          <Card
-            key={project._id}
-            className="w-full max-w-xs mx-auto shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300"
-          >
-            <CardContent className="p-4">
-              <img
-                src={project.canvas_image_url}
-                alt={`Image for project ${project.project_id}`}
-                className="object-cover w-full h-48 rounded-t-lg cursor-pointer"
-              />
-              <div className="flex justify-between mt-4">
-                {project.is_public === "true" ? (
-                  <Button
-                    onClick={() =>
-                      updateProjectVisibility(project.project_id, false)
-                    }
-                  >
-                    Make Private
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() =>
-                      updateProjectVisibility(project.project_id, true)
-                    }
-                  >
-                    Make Public
-                  </Button>
-                )}
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex flex-col gap-6 px-4 py-8">
+        {/* Projects Title Section */}
+        <div className="text-5xl font-extrabold text-center text-gray-800 mb-8">
+          Projects
+        </div>
 
-                <Button
-                  className="bg-red-500 text-white hover:bg-red-600"
-                  onClick={() => deleteProject(project.project_id)}
+        {/* Projects Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+          {projects.map((project) => (
+            <Card
+              key={project._id}
+              className="relative w-full bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+            >
+              {/* View Icon */}
+              <div className="absolute top-2 right-2 z-10">
+                <button
+                  onClick={() =>
+                    window.open(`/view_project/${project.project_id}`, "_blank")
+                  }
+                  className="p-2 bg-white rounded-full shadow-md hover:bg-gray-200 transition"
+                  title="View Project"
                 >
-                  Delete
-                </Button>
+                  <Eye
+                    className="w-5 h-5 text-gray-700"
+                    onClick={() => downloadImage(project.canvas_image_url)}
+                  />
+                </button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+
+              {/* Project Image */}
+              <div
+                className="relative cursor-pointer"
+                onClick={() =>
+                  goToMainPage(
+                    project.project_id,
+                    project.project_data,
+                    project.project_logs
+                  )
+                }
+              >
+                <img
+                  src={project.canvas_image_url}
+                  alt={`Project ${project.project_id}`}
+                  className="object-cover w-full h-64 rounded-t-xl"
+                />
+              </div>
+
+              {/* Project Buttons */}
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="custom-button"
+                    onClick={() =>
+                      updateProjectVisibility(
+                        project.project_id,
+                        project.is_public !== "true"
+                      )
+                    }
+                  >
+                    {project.is_public === "true"
+                      ? "Make Private"
+                      : "Make Public"}
+                  </Button>
+                  <Button
+                    size={"sm"}
+                    className="custom-delete-button"
+                    onClick={() => deleteProject(project.project_id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -9,23 +9,20 @@ load_dotenv()
 
 
 app = Flask(__name__)
+
+
 app.secret_key = os.getenv("APP_SECRET")
-# CORS(app, origins="*", supports_credentials=True, 
-#      allow_headers=["Authorization", "Content-Type", "Access-Control-Allow-Headers"], 
-#      expose_headers=["Authorization"])
-
-app = Flask(__name__)
-app.config['ORG_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/static/original'
-app.config['CANVAS_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/static/canvas'
-
+app.config['ORG_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
+app.config['CANVAS_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
+CORS(app, resources={r"/server/static/*": {"origins": "*"}})
 # os.makedirs(app.config['ORG_IMG_FOLDER'], exist_ok=True)
 
-@app.route('/static/original/<string:filename>')
+@app.route('/server/static/original/<string:filename>')
 def get_original_image(filename):
     print(filename)
     return send_from_directory(app.config['ORG_IMG_FOLDER'], filename, as_attachment=False)
 
-@app.route('/static/canvas/<string:filename>')
+@app.route('/server/static/canvas/<string:filename>')
 def get_canvas_image(filename):
     print(filename)
     return send_from_directory(app.config['CANVAS_IMG_FOLDER'], filename, as_attachment=False)

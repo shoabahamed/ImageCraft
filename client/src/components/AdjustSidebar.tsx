@@ -215,7 +215,9 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
             >
               Technicolor
             </Button>
-            <Button onClick={handleFilterReset}>Reset</Button>
+            <button className="custom-button" onClick={handleFilterReset}>
+              Reset
+            </button>
           </CardContent>
         </Card>
       </div>
@@ -271,7 +273,9 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 defaultValue={hueValue}
                 setSliderValue={setHueValue}
               />
-              <Button onClick={handleColorReset}>Reset</Button>
+              <button className="custom-button" onClick={handleColorReset}>
+                Reset
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -321,7 +325,9 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 defaultValue={pixelateValue}
                 setSliderValue={setPixelateValue}
               />
-              <Button onClick={handleDetailReset}>Reset</Button>
+              <button className="custom-button" onClick={handleDetailReset}>
+                Reset
+              </button>
             </div>
           </CardContent>
         </Card>

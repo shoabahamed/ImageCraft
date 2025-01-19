@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react"; // Assuming you're using Lucide icons
 import Navbar from "@/components/Navbar";
+import { useNavigate } from "react-router-dom";
 
 interface Project {
   _id: string;
@@ -13,12 +14,14 @@ interface Project {
   is_public: string;
   project_id: string;
   project_data: object;
+  project_logs: string;
   original_image_url: string;
   canvas_image_url: string;
 }
 
 const Projects: React.FC = () => {
   const { user } = useAuthContext();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -117,6 +120,17 @@ const Projects: React.FC = () => {
     }
   };
 
+  const goToMainPage = (
+    project_id: string,
+    project_data: Object,
+    project_logs: string
+  ) => {
+    localStorage.setItem("CanvasId", project_id);
+    localStorage.setItem("project_data", JSON.stringify(project_data));
+    localStorage.setItem("project_logs", project_logs);
+    navigate("/mainpage");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -150,7 +164,16 @@ const Projects: React.FC = () => {
               </div>
 
               {/* Project Image */}
-              <div className="relative">
+              <div
+                className="relative cursor-pointer"
+                onClick={() =>
+                  goToMainPage(
+                    project.project_id,
+                    project.project_data,
+                    project.project_logs
+                  )
+                }
+              >
                 <img
                   src={project.canvas_image_url}
                   alt={`Project ${project.project_id}`}
@@ -164,7 +187,7 @@ const Projects: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-gray-600"
+                    className="custom-button"
                     onClick={() =>
                       updateProjectVisibility(
                         project.project_id,
@@ -177,9 +200,8 @@ const Projects: React.FC = () => {
                       : "Make Public"}
                   </Button>
                   <Button
-                    size="sm"
-                    variant="destructive"
-                    className="text-white bg-red-500 hover:bg-red-600"
+                    size={"sm"}
+                    className="custom-delete-button"
                     onClick={() => deleteProject(project.project_id)}
                   >
                     Delete

@@ -15,7 +15,11 @@ import { LogProvider } from "./context/LogContext";
 import LogsPage from "./pages/LogsPage";
 
 export default function App() {
-  const { user } = useAuthContext();
+  const { user, loading } = useAuthContext();
+
+  if (loading) {
+    return <div>Loading...</div>; // Replace with your preferred loading spinner/component
+  }
 
   return (
     <div>
@@ -23,17 +27,16 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />
-          </Routes>
-          <Routes>
+
             <Route
               path="/mainpage"
               element={
                 user ? (
                   <LogProvider>
                     <CanvasObjectsProvider>
-                      <MainPage />
+                      {/* <MainPage /> */}
 
-                      {/* <Test /> */}
+                      <Test />
                     </CanvasObjectsProvider>
                   </LogProvider>
                 ) : (
@@ -41,44 +44,38 @@ export default function App() {
                 )
               }
             />
-          </Routes>
-          <Routes>
+
             <Route
               path="/profile"
               element={user ? <UserDashboard /> : <Home />}
             />
-          </Routes>
-          <Routes>
+
             <Route path="/gallery" element={<Gallery />} />
-          </Routes>
-          <Routes>
+
             <Route
               path="/admin"
               element={
                 user && user.role === "admin" ? <AdminPanel /> : <Home />
               }
             />
-          </Routes>
-          <Routes>
+
             <Route
               path="/admin/compare_img"
               element={
                 user && user.role === "admin" ? <ComparePage /> : <Home />
               }
             />
-          </Routes>
-          <Routes>
+
             <Route
               path="/admin/view_logs"
               element={user && user.role === "admin" ? <LogsPage /> : <Home />}
             />
-          </Routes>
-          <Routes>
+
             <Route path="/projects" element={user ? <Projects /> : <Home />} />
-          </Routes>
-          <Routes>
+
             <Route path="/test" element={<Test />} />
           </Routes>
+
           <Toaster />
         </BrowserRouter>
       </ThemeProvider>

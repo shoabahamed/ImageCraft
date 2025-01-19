@@ -27,7 +27,6 @@ import {
   CaseUpper,
   Italic,
 } from "lucide-react";
-import { Button } from "./ui/button";
 
 import { Canvas, Textbox } from "fabric";
 import { Textarea } from "./ui/textarea";
@@ -111,6 +110,7 @@ const AddText = ({ canvas }: AddTextProps) => {
 
   // Set up event listeners for object selection
   useEffect(() => {
+    console.log(canvas);
     const handleObjectSelected = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject && activeObject.type === "textbox") {
@@ -279,7 +279,9 @@ const AddText = ({ canvas }: AddTextProps) => {
           </CardHeader>
           <CardContent className="w-full">
             <div className="flex flex-col gap-3">
-              <Button onClick={() => addText()}>Add Text</Button>
+              <button className="custom-button" onClick={() => addText()}>
+                Add Text
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -518,7 +520,12 @@ const AddText = ({ canvas }: AddTextProps) => {
               </CardHeader>
               <CardContent className="w-full">
                 <div className="flex flex-col gap-3">
-                  <Button onClick={deleteSelectedObject}>Delete Text</Button>
+                  <button
+                    className="custom-button"
+                    onClick={deleteSelectedObject}
+                  >
+                    Delete Text
+                  </button>
                 </div>
               </CardContent>
             </Card>

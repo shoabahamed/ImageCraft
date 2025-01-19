@@ -29,7 +29,7 @@ import {
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const signupformSchema = z.object({
   username: z.string().min(2, {
@@ -251,22 +251,143 @@ const Navbar = () => {
   return (
     <nav className="w-full pt-3">
       <div className="flex items-center justify-between mx-3 border-b-2 border-slate-300 pb-3">
-        <div className="flex items-center space-x-2">
+        <div
+          className="flex items-center space-x-2 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
           <p className="text-3xl font-bold italic">StyleForge</p>
         </div>
-        <div className="flex gap-5">
-          <Button className="px-8" onClick={navigateToGallery}>
-            Gallery
-          </Button>
+        <div className="flex gap-9 items-center">
           {user ? (
-            <Button onClick={handleLogOut} className="px-8">
-              Log Out
-            </Button>
+            <>
+              <Link
+                to="/"
+                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
+      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
+              >
+                Home
+              </Link>
+              <Link
+                to="/gallery"
+                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
+      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
+              >
+                Gallery
+              </Link>
+              <Link
+                to="/projects"
+                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
+      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
+              >
+                Projects
+              </Link>
+              <Link
+                to="/profile"
+                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
+      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
+              >
+                Profile
+              </Link>
+
+              <Button
+                size={"sm"}
+                onClick={handleLogOut}
+                className="custom-delete-button"
+              >
+                Log Out
+              </Button>
+            </>
           ) : (
             <>
+              <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+                <DialogTrigger asChild>
+                  <p className="cursor-pointer text-gray-300 hover:text-white transition-colors duration-200">
+                    SignIn
+                  </p>
+                </DialogTrigger>
+                {/* sm:w-[60%] md:w-[30%] */}
+                <DialogContent className="">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl">Login</DialogTitle>
+                    <DialogDescription>
+                      Enter your email below to login to your account
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div>
+                    <Form {...loginform}>
+                      <form
+                        onSubmit={loginform.handleSubmit(handleLogIn)}
+                        className="space-y-4"
+                      >
+                        <div className="flex flex-col gap-6">
+                          <FormField
+                            control={loginform.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem className="grid gap-2">
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="john@gmail.com"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={loginform.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem className="grid gap-2">
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="123456" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button className="w-full custom-button">
+                            LogIn
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleGoogleLogIn}
+                      >
+                        Login with Google
+                      </Button>
+                      <div className="mt-4 text-center text-sm">
+                        Don&apos;t have an account?{" "}
+                        <button
+                          type="button"
+                          className="underline underline-offset-4"
+                          onClick={() => {
+                            setIsLoginOpen(false);
+                            setIsSignUpOpen(true);
+                          }}
+                        >
+                          Sign Up
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={isSignUpOpen} onOpenChange={setIsSignUpOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-28">SignUp</Button>
+                  <Button className="rounded-sm" variant={"outline"}>
+                    Getting Started
+                  </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -324,7 +445,9 @@ const Navbar = () => {
                               </FormItem>
                             )}
                           />
-                          <Button className="w-full">SignUp</Button>
+                          <Button className="w-full custom-button">
+                            SignUp
+                          </Button>
                         </div>
                       </form>
                     </Form>
@@ -348,86 +471,6 @@ const Navbar = () => {
                           }}
                         >
                           Login
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
-                <DialogTrigger asChild>
-                  <Button className="w-28">Login</Button>
-                </DialogTrigger>
-                {/* sm:w-[60%] md:w-[30%] */}
-                <DialogContent className="">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl">Login</DialogTitle>
-                    <DialogDescription>
-                      Enter your email below to login to your account
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div>
-                    <Form {...loginform}>
-                      <form
-                        onSubmit={loginform.handleSubmit(handleLogIn)}
-                        className="space-y-4"
-                      >
-                        <div className="flex flex-col gap-6">
-                          <FormField
-                            control={loginform.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem className="grid gap-2">
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="john@gmail.com"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={loginform.control}
-                            name="password"
-                            render={({ field }) => (
-                              <FormItem className="grid gap-2">
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="123456" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <Button className="w-full">LogIn</Button>
-                        </div>
-                      </form>
-                    </Form>
-
-                    <div className="mt-4">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleGoogleLogIn}
-                      >
-                        Login with Google
-                      </Button>
-                      <div className="mt-4 text-center text-sm">
-                        Don&apos;t have an account?{" "}
-                        <button
-                          type="button"
-                          className="underline underline-offset-4"
-                          onClick={() => {
-                            setIsLoginOpen(false);
-                            setIsSignUpOpen(true);
-                          }}
-                        >
-                          Sign Up
                         </button>
                       </div>
                     </div>

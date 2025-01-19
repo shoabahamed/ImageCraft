@@ -8,36 +8,45 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { Canvas } from "fabric";
+import { Canvas, FabricImage } from "fabric";
+import { Switch } from "./ui/switch";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
 type ImageSizeProps = {
   canvas: Canvas;
-  initialWidth: number;
-  initialHeight: number;
+  image: FabricImage;
 };
 
-const ImageSize = ({ canvas, initialWidth, initialHeight }: ImageSizeProps) => {
-  const [imageHeight, setImageHeight] = useState(initialHeight);
-  const [imageWidth, setImageWidth] = useState(initialWidth);
-
-  useEffect(() => {
-    if (canvas) {
-      canvas.setWidth(imageWidth);
-      canvas.setHeight(imageHeight);
-      canvas.renderAll();
-    }
-  }, [imageWidth, imageHeight, canvas]);
+const ImageSize = ({ canvas, image }: ImageSizeProps) => {
+  const { currentImageDim, setCurrentImageDim } = useCanvasObjects();
+  const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
 
   const handleWidthChange = (e) => {
-    const value = parseInt(e.target.value);
-    if (value > 0) {
-      setImageWidth(value);
+    const newWidth = parseInt(e.target.value);
+    const oldHeight = image.height;
+    const oldWidth = image.width;
+    if (newWidth > 0) {
+      if (maintainAspectRatio) {
+        const ratio = oldWidth / oldHeight;
+        const newHeight = Math.floor(newWidth / ratio);
+        setCurrentImageDim({ imageHeight: newHeight, imageWidth: newWidth });
+      } else {
+        setCurrentImageDim({ ...currentImageDim, imageWidth: newWidth });
+      }
     }
   };
   const handleHeightChange = (e) => {
-    const value = parseInt(e.target.value);
-    if (value > 0) {
-      setImageHeight(value);
+    const newHeight = parseInt(e.target.value);
+    const oldHeight = image.height;
+    const oldWidth = image.width;
+    if (newHeight > 0) {
+      if (maintainAspectRatio) {
+        const ratio = oldWidth / oldHeight;
+        const newWidth = Math.floor(newHeight * ratio);
+        setCurrentImageDim({ imageHeight: newHeight, imageWidth: newWidth });
+      } else {
+        setCurrentImageDim({ ...currentImageDim, imageHeight: newHeight });
+      }
     }
   };
 
@@ -54,7 +63,7 @@ const ImageSize = ({ canvas, initialWidth, initialHeight }: ImageSizeProps) => {
               id="height"
               type="number"
               name="height"
-              value={imageHeight}
+              value={currentImageDim.imageHeight}
               onChange={handleHeightChange}
             />
           </div>
@@ -64,12 +73,18 @@ const ImageSize = ({ canvas, initialWidth, initialHeight }: ImageSizeProps) => {
               id="width"
               type="number"
               name="width"
-              value={imageWidth}
+              value={currentImageDim.imageWidth}
               onChange={handleWidthChange}
             />
           </div>
-
-          <Button>Interactive</Button>
+          <div className="mt-2 w-full flex justify-between items-center">
+            <Label htmlFor="aspect-ratio">Aspect Ratio</Label>
+            <Switch
+              id="aspect-ratio"
+              checked={maintainAspectRatio}
+              onClick={() => setMaintainAspectRatio(!maintainAspectRatio)}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

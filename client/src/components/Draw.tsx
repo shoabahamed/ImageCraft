@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "./ui/input";
-import { Button } from "./ui/button";
 import CustomSlider from "./custom-slider";
 import * as fabric from "fabric";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
@@ -24,11 +23,12 @@ type DrawProps = {
 };
 
 const Draw = ({ canvas }: DrawProps) => {
+  const { firstLoad, setFirstLoad } = useState(false);
   const { selectedObject, setSelectedObject } = useCanvasObjects();
   const { addLog } = useLogContext();
   const [brushSize, setBrushSize] = useState(3);
   const [brushColor, setBrushColor] = useState("#00ff00");
-  const [brushType, setBrushType] = useState("pencil");
+  const [brushType, setBrushType] = useState("none");
 
   const createBrush = (
     canvas: fabric.Canvas,
@@ -205,7 +205,6 @@ const Draw = ({ canvas }: DrawProps) => {
           `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
         );
 
-        addLog("Scaled brush strokes");
         setSelectedObject(activeObject); // Update the context with the selected object
       }
     };
@@ -216,12 +215,17 @@ const Draw = ({ canvas }: DrawProps) => {
       setSelectedObject(null); // Clear the selected object in the context
     };
 
+    const handlePathCreated = () => {
+      addLog("created bursh strokes");
+    };
     // Attach event listeners
     canvas.on("selection:created", handleObjectCreated);
     canvas.on("selection:updated", handleObjectUpdated);
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
     canvas.on("selection:cleared", handleObjectDeselected);
+    // Attach event listener for path creation
+    canvas.on("path:created", handlePathCreated);
 
     // Cleanup event listeners on unmount or canvas changes
     return () => {
@@ -230,6 +234,8 @@ const Draw = ({ canvas }: DrawProps) => {
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
       canvas.off("selection:cleared", handleObjectDeselected);
+      // Attach event listener for path creation
+      canvas.off("path:created", handlePathCreated);
     };
   }, [canvas, setSelectedObject]);
 
@@ -315,9 +321,12 @@ const Draw = ({ canvas }: DrawProps) => {
             <CardDescription>Actions</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={clearBrushStrokes} className="w-full">
+            <button
+              className="custom-button w-full"
+              onClick={clearBrushStrokes}
+            >
               Reset Drawing
-            </Button>
+            </button>
           </CardContent>
         </Card>
       </div>

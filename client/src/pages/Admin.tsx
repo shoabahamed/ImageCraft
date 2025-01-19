@@ -262,7 +262,7 @@ const AdminPanel: React.FC = () => {
 
                   {/* Handling large report descriptions */}
                   <CardDescription className="text-sm text-gray-600 relative">
-                    <div className="h-20 overflow-hidden">
+                    <div className="max-h-20 overflow-hidden">
                       <p>{report.description}</p>
                     </div>
                     {report.description.length > 100 && (
@@ -285,6 +285,8 @@ const AdminPanel: React.FC = () => {
                 </CardHeader>
                 <CardFooter className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Button
+                    className=""
+                    variant={"outline"}
                     onClick={() =>
                       goToComparePage(report.project_id, report.id)
                     }
@@ -292,21 +294,18 @@ const AdminPanel: React.FC = () => {
                     <FileText className="mr-2" size={16} /> Compare Images
                   </Button>
                   <Button
+                    className=""
+                    variant={"outline"}
                     onClick={() =>
                       goToViewLogsPage(report.project_id, report.id)
                     }
                   >
                     <FileText className="mr-2" size={16} /> View Logs
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => resolveReport(report.id)}
-                  >
-                    <CheckCircle className="mr-2" size={16} /> Mark as Resolved
-                  </Button>
                   <Dialog open={openMessage} onOpenChange={setOpenMessage}>
                     <DialogTrigger asChild>
                       <Button
+                        className="custom-button"
                         onClick={() => {
                           setOpenMessage(true);
                           setSelectedReportId(report.id);
@@ -350,6 +349,13 @@ const AdminPanel: React.FC = () => {
                       </form>
                     </DialogContent>
                   </Dialog>
+                  <Button
+                    variant={"outline"}
+                    className="custom-delete-button"
+                    onClick={() => resolveReport(report.id)}
+                  >
+                    <CheckCircle className="mr-2" size={16} /> Mark as Resolved
+                  </Button>
                 </CardFooter>
               </Card>
             ))
@@ -372,7 +378,7 @@ const AdminPanel: React.FC = () => {
 
                   {/* Handling large report descriptions */}
                   <CardDescription className="text-sm text-gray-600 relative">
-                    <div className="h-20 overflow-hidden">
+                    <div className="max-h-20 overflow-hidden">
                       <p>{report.description}</p>
                     </div>
                     {report.description.length > 100 && (

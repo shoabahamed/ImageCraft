@@ -19,6 +19,8 @@ interface CanvasObjectsContextType {
   setCurrentImageDim: (obj: ImageDimensions) => void;
   currentContDim: ContainerDimensions;
   setCurrentContDim: (obj: ContainerDimensions) => void;
+  loadedFromSaved: boolean;
+  setLoadedFromSaved: (value: boolean) => void;
 }
 
 // Create the context with a default value
@@ -43,7 +45,7 @@ export const CanvasObjectsProvider = ({
     contWidth: 0,
     contHeight: 0,
   });
-
+  const [loadedFromSaved, setLoadedFromSaved] = useState(false);
   return (
     <CanvasObjectsContext.Provider
       value={{
@@ -53,6 +55,8 @@ export const CanvasObjectsProvider = ({
         setCurrentContDim,
         currentImageDim,
         setCurrentImageDim,
+        loadedFromSaved,
+        setLoadedFromSaved,
       }}
     >
       {children}

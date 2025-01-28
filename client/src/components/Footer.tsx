@@ -43,7 +43,8 @@ const Footer = ({
   mapState,
   setMapState,
 }: Props) => {
-  const { selectedObject, currentImageDim } = useCanvasObjects();
+  const { selectedObject, currentImageDim, loadedFromSaved } =
+    useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
@@ -187,6 +188,7 @@ const Footer = ({
       );
       formData.append("originalImage", originalImageFile); // Append the oringalimage file
       formData.append("canvasImage", canvasImageFile); // Append the oringalimage
+      formData.append("loadedFromSaved", loadedFromSaved ? "true" : "false");
 
       // Post JSON data to the backend with JWT in headers
       const response = await apiClient.post("/save_project", formData, {

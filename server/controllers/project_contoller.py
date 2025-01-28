@@ -42,6 +42,9 @@ def save_project():
         image_scale = eval(image_scale)
         rendered_image_shape = eval(rendered_image_shape)
 
+        # whether loaded from saved
+        loaded_from_saved = request.form.get("loadedFromSaved")
+
         
         
         if not canvas_data or not original_image_file and not canvas_image_file:
@@ -59,8 +62,7 @@ def save_project():
         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
         
-        original_image_file.save(original_image_path)
-        canvas_image_file.save(canvas_image_path)
+
      
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
@@ -72,13 +74,19 @@ def save_project():
         existing_project = projects_collection.find_one({"project_id": canvas_id, "user_id": user_id})
         if existing_project:
             # Update the existing project
+
+            canvas_image_file.save(canvas_image_path)
+
             projects_collection.update_one(
                 {"project_id": canvas_id, "user_id": user_id}, 
                 {"$set": {"project_data": canvas_data, "project_logs": canvas_logs, "final_image_shape": final_image_shape}}
             )
             response_message = "Project updated successfully"
             status_code = 200
+            
         else:
+            original_image_file.save(original_image_path)
+            canvas_image_file.save(canvas_image_path)
             # Create a new project
             new_project = {
                 "user_id": user_id,

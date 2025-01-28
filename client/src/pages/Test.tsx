@@ -44,7 +44,8 @@ const Test = () => {
   const { user } = useAuthContext();
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
 
-  const { setCurrentImageDim, setCurrentContDim } = useCanvasObjects();
+  const { setCurrentImageDim, setCurrentContDim, setLoadedFromSaved } =
+    useCanvasObjects();
 
   const [mapState, setMapState] = useState({
     scale: 1,
@@ -233,8 +234,12 @@ const Test = () => {
                 width: renderedImageShape.width,
                 height: renderedImageShape.height,
               });
-              imageObject.scale(Math.min(imageScale.scaleX, imageScale.scaleY));
 
+              imageObject.scale(Math.min(imageScale.scaleX, imageScale.scaleY));
+              console.log(
+                imageObject.getScaledWidth(),
+                imageObject.getScaledHeight()
+              );
               imageObject.set({
                 left: 0,
                 top: 0,
@@ -258,13 +263,14 @@ const Test = () => {
 
             canvasIdRef.current = localStorage.getItem("canvasId");
             localStorage.removeItem("project_data");
-            localStorage.removeItem("canvasId");
+            localStorage.removeItem("CanvasId");
 
             setCurrentImageDim({
               imageWidth: finalImageShape.width,
               imageHeight: finalImageShape.height,
             });
 
+            setLoadedFromSaved(true);
             const mapX = containerWidth / 2 - renderedImageShape.width / 2;
             const mapY = containerHeight / 2 - renderedImageShape.height / 2;
 

@@ -1,18 +1,40 @@
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 
+type logType = {
+  section: string;
+  tab: string;
+  event: string;
+  message: string;
+  param?: string | null;
+  objType?: string | null;
+  value?: string | null;
+};
+
 type LogContextType = {
-  logs: string[]; // Array of log messages
-  addLog: (message: string) => void; // Function to add a log message
+  logs: logType[]; // Array of log messages
+  addLog: (log: logType) => void; // Function to add a log message
   clearLogs: () => void; // Clear all logs
 };
 
 export const LogContext = createContext<LogContextType | undefined>(undefined);
 
 export const LogProvider = ({ children }: { children: ReactNode }) => {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<logType[]>([]);
 
-  const addLog = (message: string) => {
-    setLogs((prevLogs) => [...prevLogs, message]); // Append new message
+  const addLog = (log: logType) => {
+    const {
+      section,
+      tab,
+      event,
+      message,
+      param = "",
+      objType = "",
+      value = "",
+    } = log;
+    setLogs((prevLogs) => [
+      ...prevLogs,
+      { section, tab, event, message, param, objType, value },
+    ]); // Append new message
   };
 
   const clearLogs = () => {

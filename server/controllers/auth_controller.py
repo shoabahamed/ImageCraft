@@ -57,11 +57,12 @@ def callback():
         email = id_info["email"]
         user = users_collection.find_one({"email": email})
         if not user:
+            print("sdkfjdsj")
             username = id_info['name']
             valid_email = email
             role = "user"
             hashed_password = "gmail_login"
-            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role}
+            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": []}
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id))
@@ -107,7 +108,7 @@ def signup():
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         # user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
-        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role}
+        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role, "bookmarked": []}
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))

@@ -43,14 +43,14 @@ const Footer = ({
   mapState,
   setMapState,
 }: Props) => {
-  const { selectedObject, setSelectedObject, currentImageDim } =
-    useCanvasObjects();
+  const { selectedObject, currentImageDim } = useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
   const [showUpdateButton, setShowUpdateButton] = useState(false);
   const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
   const [downloadFrame, setDownLoadFrame] = useState(false);
+  console.log(canvasId);
 
   // Function to convert Blob to File
   const convertBlobToFile = (url) => {
@@ -68,71 +68,88 @@ const Footer = ({
   };
 
   const onSaveCanvas = async () => {
-    addLog("Saving Canvas to backend");
+    addLog({
+      section: "canvas",
+      tab: "canvas",
+      event: "save",
+      message: `Saving project`,
+    });
+
     if (!canvas) return;
 
     try {
       if (!canvas || !image) return;
 
-      // save the canvas as image
-      // converting canvas to original image size
+      let backgroundImage: null | FabricImage = null;
+      if (canvas.backgroundImage) {
+        backgroundImage = canvas.backgroundImage;
+      }
 
-      const originalCanvasWidth = canvas.width!;
-      const originalCanvasHeight = canvas.height!;
-      // Save current canvas dimensions and image scale
+      // current canvas and image dimentions (they are both always same)
       const originalImageWidth = image.width!;
       const originalImageHeight = image.height!;
-      const currentImageWidth = image.scaleX! * originalImageWidth;
-      const currentImageHeight = image.scaleY! * originalImageHeight;
+
+      // required image width
+      const {
+        imageWidth: requiredImageWidth,
+        imageHeight: requiredImageHeight,
+      } = currentImageDim;
+
+      const renderedImageWidth = image.scaleX! * originalImageWidth;
+      const renderedImageHeight = image.scaleY! * originalImageHeight;
 
       // Calculate scaling factors
-      const scaleX = originalImageWidth / currentImageWidth;
-      const scaleY = originalImageHeight / currentImageHeight;
+      const scaleX = requiredImageWidth / renderedImageWidth;
+      const scaleY = requiredImageHeight / renderedImageHeight;
 
       // Scale the canvas to the original image size
       canvas.setDimensions({
-        width: originalImageWidth,
-        height: originalImageHeight,
+        width: requiredImageWidth,
+        height: requiredImageHeight,
       });
-      image.scaleX = 1;
-      image.scaleY = 1;
 
       // Apply scaling factors to all other objects
       canvas.getObjects().forEach((obj) => {
-        if (obj !== image) {
-          obj.scaleX *= scaleX;
-          obj.scaleY *= scaleY;
-          obj.left *= scaleX;
-          obj.top *= scaleY;
-          obj.setCoords();
-        }
+        obj.scaleX *= scaleX;
+        obj.scaleY *= scaleY;
+        obj.left *= scaleX;
+        obj.top *= scaleY;
+        obj.setCoords();
       });
 
-      // canvas.renderAll();
+      // scale background image if exist
+      if (backgroundImage) {
+        backgroundImage.scaleX *= scaleX;
+        backgroundImage.scaleY *= scaleY;
+      }
 
-      // Get the JSON representation of the canvas
-      const canvasJSON = canvas.toJSON();
+      // Get the image representation of the canvas
       const canvasDataUrl = canvas.toDataURL(); // Canvas as data URL
 
+      // Restore the canvas and image to their previous dimensions
+
       canvas.setDimensions({
-        width: originalCanvasWidth,
-        height: originalCanvasHeight,
+        width: renderedImageWidth,
+        height: renderedImageHeight,
       });
-      image.scaleX = currentImageWidth / originalImageWidth;
-      image.scaleY = currentImageHeight / originalImageHeight;
 
       // Restore the scale and position of all other objects
       canvas.getObjects().forEach((obj) => {
-        if (obj !== image) {
-          obj.scaleX /= scaleX;
-          obj.scaleY /= scaleY;
-          obj.left /= scaleX;
-          obj.top /= scaleY;
-          obj.setCoords();
-        }
+        obj.scaleX /= scaleX;
+        obj.scaleY /= scaleY;
+        obj.left /= scaleX;
+        obj.top /= scaleY;
+        obj.setCoords();
       });
 
-      canvas.renderAll();
+      // scale background image if exist
+      if (backgroundImage) {
+        backgroundImage.scaleX /= scaleX;
+        backgroundImage.scaleY /= scaleY;
+      }
+
+      // json data
+      const canvasJSON = canvas.toJSON();
 
       // Convert canvas image (Data URL) to a Blob and then to a File
       const canvasImageFile = await convertBlobToFile(canvasDataUrl);
@@ -146,7 +163,28 @@ const Footer = ({
       formData.append("isPublic", "false"); // Append the oringalimage file
       formData.append("canvasData", JSON.stringify(canvasJSON)); // Add canvas data as a string
       formData.append("canvasLogs", JSON.stringify(logs)); // Append the oringalimage file
-
+      formData.append(
+        "originalImageShape",
+        JSON.stringify({ width: image.width, height: image.height })
+      );
+      formData.append(
+        "finalImageShape",
+        JSON.stringify({
+          width: requiredImageWidth,
+          height: requiredImageHeight,
+        })
+      );
+      formData.append(
+        "renderedImageShape",
+        JSON.stringify({
+          width: renderedImageWidth,
+          height: renderedImageHeight,
+        })
+      );
+      formData.append(
+        "imageScale",
+        JSON.stringify({ scaleX: image.scaleX, scaleY: image.scaleY })
+      );
       formData.append("originalImage", originalImageFile); // Append the oringalimage file
       formData.append("canvasImage", canvasImageFile); // Append the oringalimage
 
@@ -157,11 +195,11 @@ const Footer = ({
         },
       });
 
-      localStorage.setItem("canvasId", canvasId);
-      localStorage.setItem(
-        "project_data",
-        JSON.stringify(response.data.data.project_data)
-      );
+      // localStorage.setItem("canvasId", canvasId);
+      // localStorage.setItem(
+      //   "project_data",
+      //   JSON.stringify(response.data.data.project_data)
+      // );
 
       if (response.status === 201) {
         console.log("canvas saved successfully");
@@ -202,7 +240,12 @@ const Footer = ({
   };
 
   const downloadCanvas = () => {
-    addLog("Downloading Canvas");
+    addLog({
+      section: "canvas",
+      tab: "canvas",
+      event: "download",
+      message: `Downloading project`,
+    });
 
     if (!canvas || !image) return;
 
@@ -225,8 +268,6 @@ const Footer = ({
     // Calculate scaling factors
     const scaleX = requiredImageWidth / renderedImageWidth;
     const scaleY = requiredImageHeight / renderedImageHeight;
-
-    console.log(scaleX * originalImageWidth);
 
     // Scale the canvas to the original image size
     canvas.setDimensions({
@@ -339,7 +380,14 @@ const Footer = ({
 
   const deleteObject = () => {
     if (selectedObject) {
-      addLog(`Deleted object of type ${selectedObject.type}`);
+      addLog({
+        section: "crop&cut ----",
+        tab: "cut",
+        event: "deletion",
+        message: `deleted shape ${selectedObject.type}`,
+        objType: selectedObject.type,
+      });
+
       canvas.remove(selectedObject);
       canvas.renderAll();
     }

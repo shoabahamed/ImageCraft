@@ -5,12 +5,14 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import json
 from dotenv import load_dotenv
+from bson import ObjectId
 
 load_dotenv()
 
 
 db = get_db()
 projects_collection = db["Projects"]
+users_collection = db["Users"]
 ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
 CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
 
@@ -26,6 +28,20 @@ def save_project():
         canvas_logs = request.form.get('canvasLogs')
         original_image_file = request.files.get('originalImage')  # Get the original image file from the form
         canvas_image_file = request.files.get('canvasImage')
+
+        # Retrieve JSON-like data from form fields
+        original_image_shape = request.form.get('originalImageShape')
+        final_image_shape = request.form.get('finalImageShape')
+        image_scale = request.form.get('imageScale')
+        rendered_image_shape = request.form.get("renderedImageShape")
+
+   
+        # Parse the JSON strings into Python dictionaries (optional)
+        original_image_shape = eval(original_image_shape)
+        final_image_shape = eval(final_image_shape)
+        image_scale = eval(image_scale)
+        rendered_image_shape = eval(rendered_image_shape)
+
         
         
         if not canvas_data or not original_image_file and not canvas_image_file:
@@ -58,7 +74,7 @@ def save_project():
             # Update the existing project
             projects_collection.update_one(
                 {"project_id": canvas_id, "user_id": user_id}, 
-                {"$set": {"project_data": canvas_data, "project_logs": canvas_logs}}
+                {"$set": {"project_data": canvas_data, "project_logs": canvas_logs, "final_image_shape": final_image_shape}}
             )
             response_message = "Project updated successfully"
             status_code = 200
@@ -71,8 +87,16 @@ def save_project():
                 "is_public": is_public,
                 "project_data": canvas_data,
                 "project_logs": canvas_logs,
+                "granted_logs": [user_id],
                 "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename,
-                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/canvas/"  + image_filename
+                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/canvas/"  + image_filename,
+                "total_rating": 0,
+                "rating_count": 0,
+                "original_image_shape": original_image_shape,
+                "final_image_shape": final_image_shape,
+                "rendered_image_shape": rendered_image_shape,
+                "image_scale" : image_scale
+                
             }
             projects_collection.insert_one(new_project)
             response_message = "Project created successfully"
@@ -115,9 +139,15 @@ def get_projects():
 def get_all_projects():
   try:
 
-    # data = request.get_json()
     
-    # user_id = str(g._id)  # Extracted by the middleware
+    user_id = str(g._id)  # Extracted by the middleware
+    
+    
+    # find current user bookmark info
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+  
+    bookmarked_projects = user.get('bookmarked')
+    
 
     # Query the database for projects, excluding the `_id` field
     projects_cursor = projects_collection.find({"is_public": "true"}, {
@@ -127,7 +157,9 @@ def get_all_projects():
             "project_id": 1,
             "is_public":1,
             "original_image_url": 1,
-            "canvas_image_url": 1
+            "canvas_image_url": 1,
+            "total_rating": 1,
+            "rating_count": 1
         })
     
     # Convert the cursor to a list of dictionaries
@@ -136,10 +168,19 @@ def get_all_projects():
     # Convert the MongoDB ObjectId to string for JSON serialization
     for project in projects:
         project["_id"] = str(project["_id"])  # MongoDB ObjectId needs to be converted to string
+        if bookmarked_projects and project['project_id'] in bookmarked_projects:
+            project['bookmarked'] = True
+        else:
+            project['bookmarked'] = False
+
+        project["total_rating"] = int(project['total_rating'])
+        project['rating_count'] = int(project['rating_count'])
+
+
 
 
     response = {"projects": projects}
-    print(len(projects))
+    
     return jsonify({"success": True, "message": "Projects retrieved successfully", "data": response}), 201
   
   except Exception as e:
@@ -220,6 +261,85 @@ def update_project_visibility():
             return jsonify({"success": True, "message": f"Project made {visibility}"}), 200
         else:
             return jsonify({"success": False, "message": "Project not found or already in the desired state"}), 404
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    
+
+
+def update_project_bookmark():
+    try:
+        # Extract data from request
+        user_id = str(g._id)
+        data = request.get_json()
+        project_id = data.get("project_id")
+        bookmark = data.get("bookmark") 
+
+       
+        # Validate input
+        if not project_id or bookmark is None:
+            return jsonify({"success": False, "message": "Invalid data"}), 400
+
+        
+        # updating bookmarks of a user
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        bookmarked_projects = set(user['bookmarked'])
+        
+        if(bookmark):
+            bookmarked_projects = bookmarked_projects.union({project_id})
+        else:
+            bookmarked_projects = bookmarked_projects.difference({project_id})
+        
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {
+            "$set": {
+                "bookmarked": list(bookmarked_projects)
+            }
+            }
+        )
+
+
+        if result.modified_count == 1:
+            return jsonify({"success": True, "message": f"Bookmark Updated"}), 200
+        else:
+            return jsonify({"success": False, "message": "Project not found or already in the desired state"}), 404
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    
+
+
+def rate_project():
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        rating = data.get('rating')
+
+        if not project_id or not rating:
+            return jsonify({'message': 'Missing required fields'}), 400
+        
+        
+        # Fetch project by project_id from the database
+        project = projects_collection.find_one({"project_id": project_id})
+
+        
+        total_rating = int(project.get("total_rating", 0)) + rating
+        rating_count = int(project.get("rating_count", 1)) + 1
+        
+ 
+        print("ksdfjds")
+        # Update the project's visibility
+        result = projects_collection.update_one(
+            {"project_id": project_id},
+            {"$set": {"total_rating": str(total_rating), "rating_count": str(rating_count)}}
+        )
+
+
+        if result.modified_count == 1:
+            return jsonify({"success": True, "message": f"Rating Successfull"}), 200
+        else:
+            return jsonify({"success": False, "message": "Rating Unsucessfull"}), 404
 
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

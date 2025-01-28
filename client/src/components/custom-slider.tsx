@@ -10,6 +10,8 @@ type SlideProps = {
   setSliderValue: (value: number) => void;
   step?: number;
   logName?: string;
+  section?: string;
+  tab?: string;
 };
 
 const CustomSlider = ({
@@ -21,6 +23,8 @@ const CustomSlider = ({
   setSliderValue,
   step = 1,
   logName = "",
+  section = "",
+  tab = "",
 }: SlideProps) => {
   const { addLog } = useLogContext(); // Use log contextuseLogContext
   return (
@@ -35,11 +39,15 @@ const CustomSlider = ({
         max={max}
         step={step}
         onValueChange={(e) => {
-          addLog(
-            `${
+          addLog({
+            section: section,
+            tab: tab,
+            event: "update",
+            message: `${
               logName === "" ? sliderName : logName
-            } value changed from ${sliderValue} to ${e[0]}`
-          );
+            } value changed from ${sliderValue} to ${e[0]}`,
+            value: `${e[0]}`,
+          });
           setSliderValue(e[0]);
         }}
       />

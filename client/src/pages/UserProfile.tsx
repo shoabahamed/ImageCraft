@@ -3,6 +3,7 @@ import apiClient from "@/utils/appClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface AdminResponse {
   granted_log: boolean | null;
@@ -149,6 +150,17 @@ const UserDashboard: React.FC = () => {
                         <strong>Message:</strong>{" "}
                         {report.admin_response?.message ||
                           "No message provided"}
+                        {report.admin_response?.granted_log && (
+                          <span>
+                            You can find details of logs
+                            <Link
+                              to={`http://localhost:5173/log_dashboard/${report.project_id}`}
+                              className="px-1 underline text-gray-200"
+                            >
+                              here
+                            </Link>
+                          </span>
+                        )}
                       </p>
                       <div className="mt-3 flex flex-col space-y-2">
                         {report.admin_response?.logs && (

@@ -13,6 +13,7 @@ import UserDashboard from "./pages/UserProfile";
 import { CanvasObjectsProvider } from "./context/CanvasObjectContext";
 import { LogProvider } from "./context/LogContext";
 import LogsPage from "./pages/LogsPage";
+import LogDashboard from "./pages/LogDashboard";
 
 export default function App() {
   const { user, loading } = useAuthContext();
@@ -73,7 +74,10 @@ export default function App() {
 
             <Route path="/projects" element={user ? <Projects /> : <Home />} />
 
-            <Route path="/test" element={<Test />} />
+            <Route
+              path="/log_dashboard/:projectId"
+              element={<LogDashboard />}
+            />
           </Routes>
 
           <Toaster />

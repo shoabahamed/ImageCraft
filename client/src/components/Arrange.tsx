@@ -33,9 +33,6 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
   const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
 
   useEffect(() => {
-    console.log(image);
-    console.log(rotateX);
-    console.log(rotateY);
     image.set({
       flipX: rotateX,
       flipY: rotateY,
@@ -44,17 +41,28 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
     canvas.renderAll();
   }, [rotateX, rotateY]);
 
-  const handleReset = () => {
-    addLog("Reseted back to original image orientation and background");
+  const handleOrientationReset = () => {
+    addLog({
+      section: "arrange",
+      tab: "rotation",
+      event: "reset",
+      message: `image rotation set default`,
+      param: "rotation",
+      objType: "image",
+    });
+
     setRotateX(false);
     setRotateY(false);
-    setBackgroundColor("#ffffff");
-    setBackgroundImage(null);
   };
 
   const handleBackGroundColorChange = (e) => {
     canvas.backgroundColor = e.target.value;
-    addLog("Changed brush color " + backgroundColor + " to " + e.target.value);
+    addLog({
+      section: "arrange",
+      tab: "background",
+      event: "update",
+      message: `cavnvas background color changed to ${e.target.value}`,
+    });
 
     setBackgroundColor(e.target.value);
     canvas.renderAll();
@@ -90,12 +98,25 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
         canvas.renderAll();
 
         setBackgroundImage(fabricBackgroundImage);
+
+        addLog({
+          section: "arrange",
+          tab: "background",
+          event: "creation",
+          message: `added background image to canvas`,
+        });
       };
     }
   };
 
   const removeBackGroundImage = () => {
-    console.log(backgroundImage);
+    addLog({
+      section: "arrange",
+      tab: "background",
+      event: "reset",
+      message: `background removed from canvas`,
+    });
+
     if (backgroundImage) {
       canvas.backgroundImage = null;
       canvas.renderAll();
@@ -111,58 +132,122 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
             <CardDescription>Roate&Flip</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <IconComponent
-                icon={<UndoDot />}
-                iconName="Rotate Left"
-                handleClick={() => {
-                  if (rotateX) {
-                    addLog("Rotated 180 degress right");
-                  } else {
-                    addLog("Rotated 180 degress left");
-                  }
-                  setRotateX(!rotateX);
-                }}
-              />
+            <div className="flex flex-col gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <IconComponent
+                  icon={<UndoDot />}
+                  iconName="Rotate Left"
+                  handleClick={() => {
+                    if (rotateX) {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress right",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    } else {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress left",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    }
+                    setRotateX(!rotateX);
+                  }}
+                />
 
-              <IconComponent
-                icon={<RedoDot />}
-                iconName="Roate Right"
-                handleClick={() => {
-                  if (rotateX) {
-                    addLog("Rotated 180 degress left");
-                  } else {
-                    addLog("Rotated 180 degress right");
-                  }
-                  setRotateX(!rotateX);
-                }}
-              />
+                <IconComponent
+                  icon={<RedoDot />}
+                  iconName="Roate Right"
+                  handleClick={() => {
+                    if (rotateX) {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress left",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    } else {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress right",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    }
+                    setRotateX(!rotateX);
+                  }}
+                />
 
-              <IconComponent
-                icon={<UnfoldVertical />}
-                iconName="Vertial Flip"
-                handleClick={() => {
-                  if (rotateY) {
-                    addLog("Rotated 180 degress down");
-                  } else {
-                    addLog("Rotated 180 degress up");
-                  }
-                  setRotateY(!rotateY);
-                }}
-              />
+                <IconComponent
+                  icon={<UnfoldVertical />}
+                  iconName="Vertial Flip"
+                  handleClick={() => {
+                    if (rotateY) {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress down",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    } else {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress up",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    }
+                    setRotateY(!rotateY);
+                  }}
+                />
 
-              <IconComponent
-                icon={<UnfoldHorizontal />}
-                iconName="Vertical  Flip"
-                handleClick={() => {
-                  if (rotateY) {
-                    addLog("Rotated 180 degress up");
-                  } else {
-                    addLog("Rotated 180 degress down");
-                  }
-                  setRotateY(!rotateY);
-                }}
-              />
+                <IconComponent
+                  icon={<UnfoldHorizontal />}
+                  iconName="Vertical  Flip"
+                  handleClick={() => {
+                    if (rotateY) {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress up",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    } else {
+                      addLog({
+                        section: "arrange",
+                        tab: "rotation",
+                        event: "update",
+                        message: "image Rotated 180 degress down",
+                        param: "rotation",
+                        objType: "image",
+                      });
+                    }
+                    setRotateY(!rotateY);
+                  }}
+                />
+              </div>
+              <button
+                className="custom-button"
+                onClick={handleOrientationReset}
+              >
+                Reset
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -220,21 +305,6 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                   Remove Image
                 </button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="w-[90%]">
-        <Card>
-          <CardHeader>
-            <CardDescription>Mode</CardDescription>
-          </CardHeader>
-          <CardContent className="w-full">
-            <div className="flex flex-col gap-3">
-              <button className="custom-button" onClick={handleReset}>
-                Reset Image
-              </button>
             </div>
           </CardContent>
         </Card>

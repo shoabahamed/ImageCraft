@@ -9,4 +9,5 @@ __pycache__/
 .env
 
 server/controllers/client_secret.json
+server/weights
 

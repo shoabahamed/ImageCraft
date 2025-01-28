@@ -39,78 +39,6 @@ const Draw = ({ canvas }: DrawProps) => {
     let brush: fabric.BaseBrush;
 
     switch (type) {
-      case "hline":
-        brush = new fabric.PatternBrush(canvas);
-        brush.getPatternSrc = function () {
-          const patternCanvas = document.createElement("canvas");
-          const patternSize = size * 4;
-          patternCanvas.width = patternCanvas.height = patternSize;
-          const ctx = patternCanvas.getContext("2d");
-          if (ctx) {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = size;
-            ctx.beginPath();
-            ctx.moveTo(0, patternSize / 2);
-            ctx.lineTo(patternSize, patternSize / 2);
-            ctx.stroke();
-          }
-          return patternCanvas;
-        };
-        break;
-
-      case "vline":
-        brush = new fabric.PatternBrush(canvas);
-        brush.getPatternSrc = function () {
-          const patternCanvas = document.createElement("canvas");
-          const patternSize = size * 4;
-          patternCanvas.width = patternCanvas.height = patternSize;
-          const ctx = patternCanvas.getContext("2d");
-          if (ctx) {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = size;
-            ctx.beginPath();
-            ctx.moveTo(patternSize / 2, 0);
-            ctx.lineTo(patternSize / 2, patternSize);
-            ctx.stroke();
-          }
-          return patternCanvas;
-        };
-        break;
-
-      case "square":
-        brush = new fabric.PatternBrush(canvas);
-        brush.getPatternSrc = function () {
-          const squareSize = size * 2;
-          const patternCanvas = document.createElement("canvas");
-          patternCanvas.width = patternCanvas.height = squareSize + 2;
-          const ctx = patternCanvas.getContext("2d");
-          if (ctx) {
-            ctx.fillStyle = color;
-            ctx.fillRect(0, 0, squareSize, squareSize);
-          }
-          return patternCanvas;
-        };
-        break;
-
-      case "diamond":
-        brush = new fabric.PatternBrush(canvas);
-        brush.getPatternSrc = function () {
-          const diamondSize = size * 2;
-          const patternCanvas = document.createElement("canvas");
-          const rect = new fabric.Rect({
-            width: diamondSize,
-            height: diamondSize,
-            angle: 45,
-            fill: color,
-          });
-          const canvasWidth = rect.getBoundingRect().width;
-          patternCanvas.width = patternCanvas.height = canvasWidth;
-          const ctx = patternCanvas.getContext("2d");
-          if (ctx) rect.render(ctx);
-          return patternCanvas;
-        };
-        break;
-
       case "circle":
         brush = new fabric.CircleBrush(canvas);
         brush.width = size;
@@ -146,7 +74,13 @@ const Draw = ({ canvas }: DrawProps) => {
 
   const clearBrushStrokes = () => {
     if (!canvas) return;
-    addLog("Cleared all created brush strokes");
+    addLog({
+      section: "draw",
+      tab: "draw",
+      event: "reset",
+      message: `Cleared all created brush strokes`,
+    });
+
     // Filter objects that are created in drawing mode
     const objectsToRemove = canvas.getObjects().filter((obj) => {
       // Exclude objects that are not part of brush strokes
@@ -171,7 +105,6 @@ const Draw = ({ canvas }: DrawProps) => {
     const handleObjectCreated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        addLog("Selected brush stokes");
         setSelectedObject(activeObject); // Update the context with the selected object
       }
     };
@@ -180,7 +113,6 @@ const Draw = ({ canvas }: DrawProps) => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
         const objectName = activeObject.type || "Unknown Object";
-        addLog(`Updated object: ${objectName}`);
         setSelectedObject(activeObject); // Update the context with the selected object
       }
     };
@@ -189,7 +121,7 @@ const Draw = ({ canvas }: DrawProps) => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
         const objectName = activeObject.type || "Unknown Object";
-        addLog(`Modified object: ${objectName}`);
+
         setSelectedObject(activeObject); // Update the context with the selected object
       }
     };
@@ -201,9 +133,14 @@ const Draw = ({ canvas }: DrawProps) => {
         const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
         const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
 
-        addLog(
-          `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
-        );
+        addLog({
+          section: "draw",
+          tab: "draw",
+          event: "update",
+          message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+          param: "scale",
+          objType: "brush",
+        });
 
         setSelectedObject(activeObject); // Update the context with the selected object
       }
@@ -211,12 +148,16 @@ const Draw = ({ canvas }: DrawProps) => {
 
     // Function to handle deselection of objects
     const handleObjectDeselected = () => {
-      addLog("Deselected brush strokes");
       setSelectedObject(null); // Clear the selected object in the context
     };
 
     const handlePathCreated = () => {
-      addLog("created bursh strokes");
+      addLog({
+        section: "draw",
+        tab: "draw",
+        event: "create",
+        message: `created brush strokes`,
+      });
     };
     // Attach event listeners
     canvas.on("selection:created", handleObjectCreated);
@@ -250,7 +191,15 @@ const Draw = ({ canvas }: DrawProps) => {
           <CardContent>
             <Select
               onValueChange={(value) => {
-                addLog("Changed brush type " + brushType + " to " + value);
+                addLog({
+                  section: "draw",
+                  tab: "draw",
+                  event: "update",
+                  message: "Changed brush type " + brushType + " to " + value,
+                  param: "brush type",
+                  value: value,
+                });
+
                 setBrushType(value);
               }}
               defaultValue={brushType}
@@ -263,10 +212,6 @@ const Draw = ({ canvas }: DrawProps) => {
                 <SelectItem value="pencil">Pencil</SelectItem>
                 <SelectItem value="circle">Circle</SelectItem>
                 <SelectItem value="spray">Spray</SelectItem>
-                {/* <SelectItem value="hline">HLine</SelectItem> */}
-                {/* <SelectItem value="vline">VLine</SelectItem> */}
-                {/* <SelectItem value="square">Square</SelectItem> */}
-                {/* <SelectItem value="diamond">Diamond</SelectItem> */}
               </SelectContent>
             </Select>
           </CardContent>
@@ -290,12 +235,19 @@ const Draw = ({ canvas }: DrawProps) => {
                   type="color"
                   value={brushColor}
                   onChange={(e) => {
-                    addLog(
-                      "Changed brush color " +
+                    addLog({
+                      section: "draw",
+                      tab: "draw",
+                      event: "update",
+                      message:
+                        "Changed brush color " +
                         brushColor +
                         " to " +
-                        e.target.value
-                    );
+                        e.target.value,
+                      param: "brush color",
+                      value: e.target.value,
+                    });
+
                     setBrushColor(e.target.value);
                   }}
                 />
@@ -308,6 +260,8 @@ const Draw = ({ canvas }: DrawProps) => {
                 sliderValue={brushSize}
                 setSliderValue={setBrushSize}
                 logName="BrushSize"
+                section={"draw"}
+                tab={"tab"}
               />
             </div>
           </CardContent>

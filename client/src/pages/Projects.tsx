@@ -17,6 +17,10 @@ interface Project {
   project_logs: string;
   original_image_url: string;
   canvas_image_url: string;
+  original_image_shape: { width: number; height: number };
+  final_image_shape: { width: number; height: number };
+  rendered_image_shape: { width: number; height: number };
+  image_scale: { scaleX: number; scaleY: number };
 }
 
 const Projects: React.FC = () => {
@@ -37,6 +41,7 @@ const Projects: React.FC = () => {
           },
         });
         setProjects(response.data.data.projects);
+        // console.log(response.data.data.projects);
       } catch (err) {
         setError("Failed to fetch projects");
         console.error(err);
@@ -123,11 +128,24 @@ const Projects: React.FC = () => {
   const goToMainPage = (
     project_id: string,
     project_data: Object,
-    project_logs: string
+    project_logs: string,
+    final_image_shape: object,
+    rendered_image_shape: object,
+    image_scale: object
   ) => {
     localStorage.setItem("CanvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
     localStorage.setItem("project_logs", project_logs);
+
+    localStorage.setItem(
+      "final_image_shape",
+      JSON.stringify(final_image_shape)
+    );
+    localStorage.setItem(
+      "rendered_image_shape",
+      JSON.stringify(rendered_image_shape)
+    );
+    localStorage.setItem("image_scale", JSON.stringify(image_scale));
     navigate("/mainpage");
   };
 
@@ -170,7 +188,10 @@ const Projects: React.FC = () => {
                   goToMainPage(
                     project.project_id,
                     project.project_data,
-                    project.project_logs
+                    project.project_logs,
+                    project.final_image_shape,
+                    project.rendered_image_shape,
+                    project.image_scale
                   )
                 }
               >

@@ -85,8 +85,12 @@ const AddText = ({ canvas }: AddTextProps) => {
     });
     canvas.add(text);
     canvas.setActiveObject(text);
-
-    addLog(`Created text object with ID ${textId}`);
+    addLog({
+      section: "text",
+      tab: "text",
+      event: "create",
+      message: `Created text object with ID ${textId}`,
+    });
   };
 
   // Update text properties
@@ -110,7 +114,6 @@ const AddText = ({ canvas }: AddTextProps) => {
 
   // Set up event listeners for object selection
   useEffect(() => {
-    console.log(canvas);
     const handleObjectSelected = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject && activeObject.type === "textbox") {
@@ -130,9 +133,13 @@ const AddText = ({ canvas }: AddTextProps) => {
         setBold(textObj.fontWeight === "bold" ? true : false);
         setUpper(textObj.get("isUpper") || false);
 
-        setTimeout(() => {
-          addLog(`Selected texbox object with ID: ${textObj.get("id")}`);
-        }, 0);
+        // setTimeout(() => {
+        //   addLog({
+        //     objType: "text",
+        //     propType: "selection",
+        //     message: `Selected texbox object with ID: ${textObj.get("id")}`,
+        //   });
+        // }, 0);
       } else {
         setSelectedObject(null);
       }
@@ -157,9 +164,13 @@ const AddText = ({ canvas }: AddTextProps) => {
         setBold(textObj.fontWeight === "bold" ? true : false);
         setUpper(textObj.get("isUpper") || false);
 
-        setTimeout(() => {
-          addLog(`Updated texbox object with ID: ${textObj.get("id")}`);
-        }, 0);
+        // setTimeout(() => {
+        //   addLog({
+        //     objType: "text",
+        //     propType: "selection",
+        //     message: `Updated texbox object with ID: ${textObj.get("id")}`,
+        //   });
+        // }, 0);
       } else {
         setSelectedObject(null);
       }
@@ -184,9 +195,13 @@ const AddText = ({ canvas }: AddTextProps) => {
         setBold(textObj.fontWeight === "bold" ? true : false);
         setUpper(textObj.get("isUpper") || false);
 
-        setTimeout(() => {
-          addLog(`Modified texbox object with ID: ${textObj.get("id")}`);
-        }, 0);
+        // setTimeout(() => {
+        //   addLog({
+        //     objType: "text",
+        //     propType: "selection",
+        //     message: `Modified texbox object with ID: ${textObj.get("id")}`,
+        //   });
+        // }, 0);
       } else {
         setSelectedObject(null);
       }
@@ -198,9 +213,14 @@ const AddText = ({ canvas }: AddTextProps) => {
         const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
         const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
 
-        addLog(
-          `Scaled selected object: textbox. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`
-        );
+        addLog({
+          section: "text",
+          tab: "text",
+          event: "update",
+          message: `Scaled text ${activeObject.text}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+          param: "scale",
+          objType: "text",
+        });
 
         const textObj = activeObject as Textbox;
         setSelectedObject(textObj);
@@ -243,7 +263,13 @@ const AddText = ({ canvas }: AddTextProps) => {
   // Delete selected object
   const deleteSelectedObject = () => {
     if (selectedObject) {
-      addLog(`Deleted text object ID ${selectedObject.get("id")}`);
+      addLog({
+        section: "text",
+        tab: "text",
+        event: "deletion",
+        message: `deleted text ${activeObject.text}`,
+      });
+
       canvas.remove(selectedObject);
       setSelectedObject(null); // Clear state after deletion
     }
@@ -266,7 +292,18 @@ const AddText = ({ canvas }: AddTextProps) => {
   ]);
 
   const handleFontChange = (value) => {
-    addLog(`changed the font style from ${textFont} to ${value}`);
+    const selectedObject = canvas.getActiveObject();
+    if (selectedObject) {
+      addLog({
+        section: "text",
+        tab: "text",
+        event: "update",
+        message: `changed text ${selectedObject.text} font ${textFont} to ${value}`,
+        param: "font",
+        objType: "text",
+      });
+    }
+
     setTextFont(value);
   };
 
@@ -301,9 +338,14 @@ const AddText = ({ canvas }: AddTextProps) => {
                       name="text"
                       value={textValue}
                       onChange={(e) => {
-                        addLog(
-                          `Changed text from ${textValue} to ${e.target.value}`
-                        );
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `Changed text from ${textValue} to ${e.target.value}`,
+                          param: "font",
+                          objType: "text",
+                        });
 
                         setTextValue(e.target.value);
                       }}
@@ -350,9 +392,15 @@ const AddText = ({ canvas }: AddTextProps) => {
                       type="color"
                       value={textColorValue}
                       onChange={(e) => {
-                        addLog(
-                          `changed text color from ${textColorValue} to ${e.target.value}`
-                        );
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} changed text color from ${textColorValue} to ${e.target.value}`,
+                          param: "color",
+                          objType: "text",
+                        });
+
                         setTextColorValue(e.target.value);
                       }}
                     />
@@ -374,6 +422,8 @@ const AddText = ({ canvas }: AddTextProps) => {
                     sliderValue={textSize}
                     setSliderValue={setTextSize}
                     logName="Text Font Size"
+                    section={"text"}
+                    tab={"text"}
                   />
                   <CustomSlider
                     sliderName="Opacity"
@@ -384,6 +434,8 @@ const AddText = ({ canvas }: AddTextProps) => {
                     sliderValue={textOpacity}
                     setSliderValue={setTextOpacity}
                     logName="Text Opacity"
+                    section={"text"}
+                    tab={"text"}
                   />
                   <CustomSlider
                     sliderName="Line Spacing"
@@ -393,6 +445,8 @@ const AddText = ({ canvas }: AddTextProps) => {
                     sliderValue={textLineSpacing}
                     setSliderValue={setTextLineSpacing}
                     logName="Text Line Spacing"
+                    section={"text"}
+                    tab={"text"}
                   />
                 </div>
               </CardContent>
@@ -410,9 +464,15 @@ const AddText = ({ canvas }: AddTextProps) => {
                     icon={<AlignLeft />}
                     iconName="Align Left"
                     handleClick={() => {
-                      addLog(
-                        `Left Aligned text object from ${textAlignValue} Align`
-                      );
+                      addLog({
+                        section: "text",
+                        tab: "text",
+                        event: "update",
+                        message: `${selectedObject.text} changed Left Aligned to ${textAlignValue} Align`,
+                        param: "alignment",
+                        objType: "text",
+                      });
+
                       setTextAlignValue("left");
                     }}
                     extraStyles={`${
@@ -423,9 +483,15 @@ const AddText = ({ canvas }: AddTextProps) => {
                     icon={<AlignCenter />}
                     iconName="Align Center"
                     handleClick={() => {
-                      addLog(
-                        `Center Aligned text object from ${textAlignValue} Align`
-                      );
+                      addLog({
+                        section: "text",
+                        tab: "text",
+                        event: "update",
+                        message: `${selectedObject.text} changed Center Alignedto ${textAlignValue} Align`,
+                        param: "alignment",
+                        objType: "text",
+                      });
+
                       setTextAlignValue("center");
                     }}
                     extraStyles={`${
@@ -436,9 +502,15 @@ const AddText = ({ canvas }: AddTextProps) => {
                     icon={<AlignRight />}
                     iconName="Align Right"
                     handleClick={() => {
-                      addLog(
-                        `Right Aligned text object from ${textAlignValue} Align`
-                      );
+                      addLog({
+                        section: "text",
+                        tab: "text",
+                        event: "update",
+                        message: `${selectedObject.text} changed Right Aligned dto ${textAlignValue} Align`,
+                        param: "alignment",
+                        objType: "text",
+                      });
+
                       setTextAlignValue("right");
                     }}
                     extraStyles={`${
@@ -462,9 +534,23 @@ const AddText = ({ canvas }: AddTextProps) => {
                     iconName="Upper Case"
                     handleClick={() => {
                       if (isUpper) {
-                        addLog("Changed text from uppercase to lower case");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Changed text from uppercase to lower case`,
+                          param: "style",
+                          objType: "text",
+                        });
                       } else {
-                        addLog("Changed text from lowercase to upper case");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Changed text from lowercase to upper case`,
+                          param: "style",
+                          objType: "text",
+                        });
                       }
                       setUpper(!isUpper);
                     }}
@@ -475,9 +561,23 @@ const AddText = ({ canvas }: AddTextProps) => {
                     iconName="Italic"
                     handleClick={() => {
                       if (isItalic) {
-                        addLog("Changed text from italic to normal");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Changed text from italic to normal`,
+                          param: "style",
+                          objType: "text",
+                        });
                       } else {
-                        addLog("Changed text from normal to italic");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Changed text from normal to italic`,
+                          param: "style",
+                          objType: "text",
+                        });
                       }
                       setItalic(!isItalic);
                     }}
@@ -488,9 +588,23 @@ const AddText = ({ canvas }: AddTextProps) => {
                     iconName="Bold"
                     handleClick={() => {
                       if (isBold) {
-                        addLog("Changed text from bold to normal");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Changed text from bold to normal`,
+                          param: "style",
+                          objType: "text",
+                        });
                       } else {
-                        addLog("Changed text from normal to bold");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Changed text from normal to bold`,
+                          param: "style",
+                          objType: "text",
+                        });
                       }
                       setBold(!isBold);
                     }}
@@ -501,9 +615,23 @@ const AddText = ({ canvas }: AddTextProps) => {
                     iconName="UnderLine"
                     handleClick={() => {
                       if (isUnderLine) {
-                        addLog("Removed text Underline");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Removed text Underline`,
+                          param: "style",
+                          objType: "text",
+                        });
                       } else {
-                        addLog("Added text Underline");
+                        addLog({
+                          section: "text",
+                          tab: "text",
+                          event: "update",
+                          message: `${selectedObject.text} Added text Underline`,
+                          param: "style",
+                          objType: "text",
+                        });
                       }
                       setUnderLine(!isUnderLine);
                     }}

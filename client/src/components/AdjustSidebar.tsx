@@ -101,12 +101,23 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
 
   const applyPredefinedFilter = (filterType: string) => {
     if (predefinedFilter) {
-      addLog(`Removed image filter ${predefinedFilter}`);
+      addLog({
+        section: "adjust",
+        tab: "filter",
+        event: "deletion",
+        message: `removed filter ${predefinedFilter} `,
+      });
     }
     if (predefinedFilter && filterType === predefinedFilter) {
       setPredefinedFilter("");
     } else {
-      addLog(`applied image filter ${filterType}`);
+      addLog({
+        section: "adjust",
+        tab: "filter",
+        event: "update",
+        message: `applied filter ${filterType} `,
+        value: predefinedFilter,
+      });
 
       setPredefinedFilter(filterType);
     }
@@ -132,7 +143,12 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   }, [opacityValue]);
 
   const handleColorReset = () => {
-    addLog(`Reseted all Image color properties`);
+    addLog({
+      section: "adjust",
+      tab: "color",
+      event: "reset",
+      message: `reseted all image color properties `,
+    });
 
     setBrightnessValue(0);
     setVibranceValue(0);
@@ -142,7 +158,12 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   const handleDetailReset = () => {
-    addLog(`Reseted all Image Details properties`);
+    addLog({
+      section: "adjust",
+      tab: "detail",
+      event: "reset",
+      message: `reseted all image detail properties `,
+    });
 
     setOpacityValue(1);
     setPixelateValue(0);
@@ -151,14 +172,14 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   const handleFilterReset = () => {
-    addLog(`Removed image filters`);
+    addLog({
+      section: "adjust",
+      tab: "filter",
+      event: "deletion",
+      message: `removed all filters`,
+    });
     setPredefinedFilter("");
   };
-
-  // const handleBrightnessChange = (newValue: number) => {
-  //   addLog("brightness", brightnessValue, newValue); // Log brightness change
-  //   setBrightnessValue(newValue);
-  // };
 
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
@@ -236,6 +257,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 defaultValue={brightnessValue}
                 step={0.01}
                 setSliderValue={setBrightnessValue}
+                section={"adjust"}
+                tab={"color"}
               />
               <CustomSlider
                 sliderName={"Contrast"}
@@ -245,6 +268,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={contrastValue}
                 defaultValue={contrastValue}
                 setSliderValue={setContrastValue}
+                section={"adjust"}
+                tab={"color"}
               />
               <CustomSlider
                 sliderName={"Saturation"}
@@ -254,6 +279,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={saturationValue}
                 defaultValue={saturationValue}
                 setSliderValue={setSaturationValue}
+                section={"adjust"}
+                tab={"color"}
               />
               <CustomSlider
                 sliderName={"Vibrance"}
@@ -263,6 +290,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={vibranceValue}
                 defaultValue={vibranceValue}
                 setSliderValue={setVibranceValue}
+                section={"adjust"}
+                tab={"color"}
               />
               <CustomSlider
                 sliderName={"Hue"}
@@ -272,6 +301,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={hueValue}
                 defaultValue={hueValue}
                 setSliderValue={setHueValue}
+                section={"adjust"}
+                tab={"color"}
               />
               <button className="custom-button" onClick={handleColorReset}>
                 Reset
@@ -296,6 +327,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 defaultValue={1}
                 setSliderValue={setOpacityValue}
                 step={0.01}
+                section={"adjust"}
+                tab={"detail"}
               />
 
               <CustomSlider
@@ -306,6 +339,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={blurValue}
                 defaultValue={blurValue}
                 setSliderValue={setBlurValue}
+                section={"adjust"}
+                tab={"detail"}
               />
               <CustomSlider
                 sliderName={"Noise"}
@@ -315,6 +350,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={noiseValue}
                 defaultValue={noiseValue}
                 setSliderValue={setNoiseValue}
+                section={"adjust"}
+                tab={"detail"}
               />
               <CustomSlider
                 sliderName={"Pixelate"}
@@ -324,6 +361,8 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
                 sliderValue={pixelateValue}
                 defaultValue={pixelateValue}
                 setSliderValue={setPixelateValue}
+                section={"adjust"}
+                tab={"detail"}
               />
               <button className="custom-button" onClick={handleDetailReset}>
                 Reset

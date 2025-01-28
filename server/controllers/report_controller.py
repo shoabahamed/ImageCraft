@@ -3,7 +3,6 @@ from bson import ObjectId
 from config.db_config import get_db
 from dotenv import load_dotenv
 import datetime
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -150,6 +149,7 @@ def grant_logs():
     try:
         data = request.get_json()  # To fetch additional info if needed
         report_id = data['reportId']
+        
 
         # Fetch the report
         report = reports_collection.find_one({"_id": ObjectId(report_id)})
@@ -168,7 +168,7 @@ def grant_logs():
         updated_admin_response = {
             "granted_log": True,  # Indicating logs were granted
             "title": "Logs Granted",
-            "message": "Your concert seems valid so logs have been granted",
+            "message": "",
             "data": project['project_data'],
             "logs": project['project_logs'],  # Assuming the project has a `logs_url` field
             "original_image_url": project["original_image_url"],
@@ -186,7 +186,25 @@ def grant_logs():
             }
         )
 
-        if result.matched_count == 0:
+
+        # update granted logs in proeject
+        
+        reporter_user_id = report['reporter_user_id']
+        granted_logs = set(project['granted_logs'])
+        granted_logs.add(reporter_user_id)
+        granted_logs = list(granted_logs)
+       
+        
+        project_result = projects_collection.update_one(
+            {"project_id": project['project_id']},
+            {
+            "$set": {
+                "granted_logs": granted_logs
+            }
+            }
+        )
+
+        if result.matched_count == 0 or project_result.matched_count == 0:
             return jsonify({"success": False, "message": "Failed to update the report"}), 500
 
         return jsonify({"success": True, "message": "Logs granted and report updated successfully"}), 200
@@ -315,6 +333,36 @@ def send_message():
 
         return jsonify({"success": True, "message": "Logs granted and report updated successfully"}), 200
     
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    
+
+
+def get_project_log(project_id):
+    try:
+        role = request.headers.get("Role")
+        user_id = g._id
+        # project_id = request.args.get("project_id")
+        project = projects_collection.find_one({"project_id": project_id})
+        granted_logs = project.get("granted_logs")
+        if(granted_logs == None):
+            granted_logs = []
+        
+        
+        if(role == "admin" or user_id in granted_logs):
+            logs = {
+                "project_data": project.get("project_data"),
+                "project_logs": project.get("project_logs"),
+                "original_image_url": project.get("original_image_url"),
+                "canvas_image_url": project.get("canvas_image_url")
+            }
+            
+           
+            return jsonify({"success": True, "message": "Logs returned successfully", "data": logs}), 200
+        else:
+            return jsonify({"success": False, "message": "You do not have necessary access"}), 401
+
+        
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 

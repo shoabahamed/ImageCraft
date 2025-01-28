@@ -4,9 +4,19 @@ import { useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 
+type logType = {
+  section: string;
+  tab: string;
+  event: string;
+  message: string;
+  param?: string | null;
+  objType?: string | null;
+  value?: string | null;
+};
+
 interface ProjectLogs {
   project_data: string; // JSON string
-  project_logs: string[]; // Array of log strings
+  project_logs: logType[]; // Array of log strings
 }
 
 const LogsPage: React.FC = () => {
@@ -40,7 +50,7 @@ const LogsPage: React.FC = () => {
     };
 
     fetchLogs();
-  }, [projectId, toast]);
+  }, [projectId]);
 
   const handleGrantLogs = async () => {
     try {
@@ -117,7 +127,7 @@ const LogsPage: React.FC = () => {
                   key={index}
                   className="bg-[hsl(var(--popover))] p-4 rounded-md shadow-md border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
                 >
-                  {log}
+                  {log.message}
                 </li>
               ))}
             </ul>

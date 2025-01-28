@@ -24,6 +24,7 @@ import Footer from "@/components/Footer";
 
 import { MapInteractionCSS } from "react-map-interaction";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import AITools from "@/components/AITools";
 
 const Test = () => {
   const [sidebarName, setSidebarName] = useState("");
@@ -34,7 +35,9 @@ const Test = () => {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const imageUrlFromState = useLocation().state?.imageUrl;
-  const idFromState = useLocation().state?.canvasId;
+  // const idFromState = useLocation().state?.canvasId;
+  const idFromState = localStorage.getItem("CanvasId");
+
   const navigate = useNavigate();
   const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
 
@@ -143,7 +146,17 @@ const Test = () => {
       initCanvas.backgroundColor = "#fff";
 
       const savedData = localStorage.getItem("project_data");
+
       if (savedData) {
+        const finalImageShape: { width: number; height: number } = JSON.parse(
+          localStorage.getItem("final_image_shape")
+        );
+        const renderedImageShape: { width: number; height: number } =
+          JSON.parse(localStorage.getItem("rendered_image_shape"));
+        const imageScale: { scaleX: number; scaleY: number } = JSON.parse(
+          localStorage.getItem("image_scale")
+        );
+
         try {
           const canvasJSON = JSON.parse(savedData);
           canvasJSON.objects.forEach((obj) => {
@@ -151,7 +164,7 @@ const Test = () => {
               obj.crossOrigin = "anonymous";
             }
           });
-          console.log(canvasJSON);
+
           const ensureSingleCallback = (canvas: fabric.Canvas) => {
             const objects = canvas.getObjects();
             const totalObjects = canvasJSON.objects?.length || 0;
@@ -188,31 +201,40 @@ const Test = () => {
               imageObject.hoverCursor = "default"; // Example: Change cursor on hover
               imageObject.crossOrigin = "anonymous";
 
-              const imageWidth = imageObject.width ?? 1;
-              const imageHeight = imageObject.height ?? 1;
+              // ------------------------ old code ---------------------
+              // const imageWidth = imageObject.width ?? 1;
+              // const imageHeight = imageObject.height ?? 1;
 
-              const needsScaling =
-                imageWidth > containerWidth || imageHeight > containerHeight;
+              // const needsScaling =
+              //   imageWidth > containerWidth || imageHeight > containerHeight;
 
-              if (needsScaling) {
-                const scaleX = containerWidth / imageWidth;
-                const scaleY = containerHeight / imageHeight;
-                const scale = Math.min(scaleX, scaleY);
+              // if (needsScaling) {
+              //   const scaleX = containerWidth / imageWidth;
+              //   const scaleY = containerHeight / imageHeight;
+              //   const scale = Math.min(scaleX, scaleY);
 
-                imageObject.scale(scale); // Scale the image
-              }
+              //   imageObject.scale(scale); // Scale the image
+              // }
 
-              const finalWidth = needsScaling
-                ? imageObject.getScaledWidth()
-                : imageWidth;
-              const finalHeight = needsScaling
-                ? imageObject.getScaledHeight()
-                : imageHeight;
+              // const finalWidth = needsScaling
+              //   ? imageObject.getScaledWidth()
+              //   : imageWidth;
+              // const finalHeight = needsScaling
+              //   ? imageObject.getScaledHeight()
+              //   : imageHeight;
 
+              // initCanvas.setDimensions({
+              //   width: finalWidth,
+              //   height: finalHeight,
+              // });
+
+              // ---------------old code end new code start ---------------------
               initCanvas.setDimensions({
-                width: finalWidth,
-                height: finalHeight,
+                width: renderedImageShape.width,
+                height: renderedImageShape.height,
               });
+              imageObject.scale(Math.min(imageScale.scaleX, imageScale.scaleY));
+
               imageObject.set({
                 left: 0,
                 top: 0,
@@ -220,31 +242,37 @@ const Test = () => {
                 hoverCursor: "default",
               });
 
-              initCanvas.getObjects().forEach((obj) => {
-                if (obj !== imageObject) {
-                  // Ensure the image is excluded
-                  const scalingFactorX =
-                    (imageObject.width || 1) / imageObject.getScaledWidth();
-                  const scalingFactorY =
-                    (imageObject.height || 1) / imageObject.getScaledHeight();
-
-                  obj.scaleX /= scalingFactorX;
-                  obj.scaleY /= scalingFactorY;
-                  obj.left /= scalingFactorX;
-                  obj.top /= scalingFactorY;
-                  obj.setCoords(); // Update coordinates
-                }
-              });
+              // initCanvas.getObjects().forEach((obj) => {
+              //   if (obj !== imageObject) {
+              //     obj.scaleX = 1;
+              //     obj.scaleY = 1;
+              //     obj.setCoords(); // Update coordinates
+              //   }
+              // });
             }
 
             initCanvas.renderAll();
             currentImageRef.current = imageObject; // Store the Fabric.js image object reference
             mainCanvasRef.current = initCanvas; // Store the Fabric.js canvas reference
             initCanvas.renderAll();
-            console.log("Canvas fully loaded and rendered.");
+
             canvasIdRef.current = localStorage.getItem("canvasId");
             localStorage.removeItem("project_data");
             localStorage.removeItem("canvasId");
+
+            setCurrentImageDim({
+              imageWidth: finalImageShape.width,
+              imageHeight: finalImageShape.height,
+            });
+
+            const mapX = containerWidth / 2 - renderedImageShape.width / 2;
+            const mapY = containerHeight / 2 - renderedImageShape.height / 2;
+
+            setMapState({ ...mapState, translation: { x: mapX, y: mapY } });
+
+            if (idFromState) {
+              canvasIdRef.current = idFromState;
+            }
           });
         } catch (error) {
           console.error("Failed to load canvas data:", error);
@@ -289,7 +317,9 @@ const Test = () => {
           mainCanvasRef.current = initCanvas;
 
           const mapX = containerWidth / 2 - finalWidth / 2;
-          setMapState({ ...mapState, translation: { x: mapX, y: 0 } });
+          const mapY = containerHeight / 2 - finalHeight / 2;
+
+          setMapState({ ...mapState, translation: { x: mapX, y: mapY } });
         });
       }
 
@@ -433,6 +463,21 @@ const Test = () => {
               </div>
               <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <AddText canvas={mainCanvasRef.current!} />
+              </div>
+            </div>
+          )}
+
+          {sidebarName === "AI" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                AI TOOLS
+              </div>
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <AITools
+                  canvas={mainCanvasRef.current!}
+                  imageRef={currentImageRef!}
+                  imageUrl={imageUrl}
+                />
               </div>
             </div>
           )}

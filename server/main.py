@@ -3,6 +3,7 @@ from flask_cors import CORS
 from routes.auth_routes import auth_routes
 from routes.project_routes import project_routes
 from routes.report_routes import report_routes
+from routes.image_proc_routes import image_proc_routes
 from dotenv import load_dotenv
 import os 
 load_dotenv()
@@ -33,6 +34,7 @@ def get_canvas_image(filename):
 app.register_blueprint(auth_routes)
 app.register_blueprint(project_routes)
 app.register_blueprint(report_routes)
+app.register_blueprint(image_proc_routes)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

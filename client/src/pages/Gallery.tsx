@@ -17,9 +17,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
-import { Eye, FileText, Heart, Star } from "lucide-react"; // Import Lucide icons
+import {
+  ArrowDownNarrowWideIcon,
+  ArrowUpNarrowWideIcon,
+  Eye,
+  FileText,
+  Heart,
+  Star,
+  Upload,
+} from "lucide-react"; // Import Lucide icons
 import Rating from "@/components/Rating";
 import SubmitRating from "@/components/SubmitRating";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Project {
   _id: string;
@@ -31,6 +47,9 @@ interface Project {
   bookmarked: boolean;
   rating_count: number;
   total_rating: number;
+  total_views: number;
+  total_bookmark: number;
+  similar_score?: number;
 }
 
 const Gallery: React.FC = () => {
@@ -52,6 +71,11 @@ const Gallery: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+
+  const [selectedFilter, setSelectedFilter] = useState<string>("rating");
+  const [sortOrder, setSortOrder] = useState<string>("descending");
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -80,18 +104,69 @@ const Gallery: React.FC = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    switch (selectedFilter) {
+      case "rating":
+        filteredProjects.sort((a, b) => {
+          const aValue = calculateRating(a.total_rating, a.rating_count);
+          const bValue = calculateRating(b.total_rating, b.rating_count);
+
+          return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+        });
+        break;
+      case "totalviews":
+        filteredProjects.sort((a, b) => {
+          const aValue = a.total_views;
+          const bValue = b.total_views;
+          return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+        });
+        break;
+      case "bookmark":
+        filteredProjects.sort((a, b) => {
+          const aValue = a.total_bookmark;
+          const bValue = b.total_bookmark;
+          return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+        });
+        break;
+      default:
+        filteredProjects.sort((a, b) => {
+          const aValue = calculateRating(a.total_rating, a.rating_count);
+          const bValue = calculateRating(b.total_rating, b.rating_count);
+
+          return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+        });
+        break;
+    }
+  }, [sortOrder, selectedFilter]);
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
-  const downloadImage = (url: string) => {
+  const downloadImage = async (url: string, projectId: string) => {
+    // Open image in a new tab
     const newTab = window.open(url, "_blank");
-    if (newTab) {
-      newTab.focus();
-    } else {
+    if (!newTab) {
       toast({
         description: "Failed to open the image in a new tab.",
         duration: 3000,
       });
+      return;
+    }
+
+    try {
+      // Send request to update total views in the backend
+      await apiClient.post(
+        "/projects/update_views",
+        { project_id: projectId },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error updating views:", error);
     }
   };
 
@@ -254,6 +329,64 @@ const Gallery: React.FC = () => {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files?.[0]) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({ description: "Please select an image first.", duration: 3000 });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("baseImage", selectedFile);
+
+    try {
+      const response = await apiClient.post(
+        "image_proc/similar_image",
+        formData,
+        {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        }
+      );
+      // Assuming response.data.similar_projects is an array of project IDs
+      const similarProjectsWithScores = response.data.similar_projects;
+      // Filter projects where the project_id is in similarProjectIds and map to include scores
+      const filtered = projects
+        .filter((project) =>
+          similarProjectsWithScores.some(
+            (similarProject) => similarProject.project_id === project.project_id
+          )
+        )
+        .map((project) => {
+          const similarProject = similarProjectsWithScores.find(
+            (similarProject) => similarProject.project_id === project.project_id
+          );
+          return {
+            ...project,
+            similar_score: similarProject?.score || 0, // Attach score to the project
+          };
+        });
+
+      // Sort the filtered projects by score in descending order
+      const sortedProjects = filtered.sort(
+        (a, b) => b.similar_score - a.similar_score
+      );
+
+      // Update filteredProjects with the sorted projects
+      setFilteredProjects(sortedProjects);
+
+      toast({
+        description: "Filtered Image Search successfull",
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({ description: "Image upload failed." + error, duration: 3000 });
+    }
+  };
   return (
     <div className="max-h-screen min-w-full flex flex-col">
       <Navbar />
@@ -267,16 +400,78 @@ const Gallery: React.FC = () => {
           Explore creative works from various users in the gallery.
         </div>
 
-        {/* Search Input */}
-        <div className="mb-4 flex justify-center">
-          <Input
-            placeholder="Search by username"
-            value={searchQuery}
-            onChange={handleSearch}
-            className="w-full sm:w-1/2 px-4 py-2 border rounded-lg"
-          />
+        <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4 p-4 rounded-lg shadow-sm">
+          <div className="relative w-full sm:w-1/3">
+            {/* Search Box with Upload Icon */}
+            <Input
+              type="text"
+              placeholder="Search by username"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e)}
+              className="w-full border rounded-lg p-2 pr-10"
+            />
+            <label
+              htmlFor="file-upload"
+              className="absolute right-3 top-2.5 cursor-pointer"
+            >
+              <Upload size={20} className="text-gray-500 hover:text-blue-500" />
+            </label>
+            <input
+              id="file-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </div>
+
+          <Button onClick={handleUpload} disabled={!selectedFile}>
+            Upload & Filter
+          </Button>
+
+          {/* Filter and Sort */}
+          <div className="flex items-center gap-4">
+            {/* Filter by Rating */}
+            <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+              <SelectTrigger className="w-48 border rounded-sm p-2 flex items-center justify-between shadow-sm">
+                {/* <SelectValue /> */}
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="release">All</SelectItem>
+                <SelectItem value="rating">Rating</SelectItem>
+                <SelectItem value="bookmark">BookMark</SelectItem>
+                <SelectItem value="totalviews">Views</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Sort Order (Icons) */}
+            <div className="flex items-center gap-2  p-2 rounded-lg shadow-sm">
+              <button
+                className={`p-2 rounded-full transition ${
+                  sortOrder === "ascending"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200"
+                }`}
+                onClick={() => setSortOrder("ascending")}
+              >
+                <ArrowUpNarrowWideIcon size={20} />
+              </button>
+              <button
+                className={`p-2 rounded-full transition ${
+                  sortOrder === "descending"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200"
+                }`}
+                onClick={() => setSortOrder("descending")}
+              >
+                <ArrowDownNarrowWideIcon size={20} />
+              </button>
+            </div>
+          </div>
         </div>
 
+        {/* Gallery Grid */}
         {/* Gallery Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 px-4 py-4">
           {filteredProjects.map((project) => (
@@ -284,12 +479,15 @@ const Gallery: React.FC = () => {
               key={project._id}
               className="w-full mx-auto bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
             >
+              {/* Image Section */}
               <div className="relative">
                 <img
                   src={project.canvas_image_url}
                   alt={`Image for project ${project.project_id}`}
                   className="object-cover w-full h-64 rounded-t-xl transition-all duration-300 transform hover:scale-105 pointer-events-none"
                 />
+
+                {/* Bookmark Icon - Top Left */}
                 <div className="absolute top-4 left-4 bg-white p-2 rounded-full shadow-md opacity-80 hover:opacity-100 transition-opacity">
                   <Heart
                     size={20}
@@ -298,34 +496,47 @@ const Gallery: React.FC = () => {
                     }`}
                     onClick={() =>
                       handleBookmark(project.project_id, project.bookmarked)
-                    } // Toggle bookmark when clicked
+                    }
                   />
                 </div>
-                {/* <div className="fixed w-full h-full top-0 left-0 z-10"></div> */}
+
+                {/* View Image Icon - Top Right */}
                 <div className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md opacity-80 hover:opacity-100 transition-opacity">
                   <Eye
                     className="text-gray-700 cursor-pointer"
                     size={20}
-                    onClick={() => downloadImage(project.canvas_image_url)}
+                    onClick={() =>
+                      downloadImage(
+                        project.canvas_image_url,
+                        project.project_id
+                      )
+                    }
                   />
                 </div>
               </div>
-              <CardContent className="p-4">
-                <CardDescription className="text-center text-lg font-semibold text-gray-800">
-                  <span>Created by: {project.username}</span>
-                </CardDescription>
-                {/* Display current rating */}
 
-                <div className="mt-2">
+              {/* Card Content */}
+              <CardContent className="p-4 flex flex-col gap-y-3">
+                {/* Views & Rating Row */}
+                <div className="flex justify-between items-center text-gray-600 text-sm">
+                  {/* Total Views */}
+                  <div className="flex items-center gap-1">
+                    <Eye size={16} className="text-gray-500" />
+                    <span>{project.total_views} Views</span>
+                  </div>
+
+                  {/* Rating */}
                   <Rating
                     rating={calculateRating(
                       project.total_rating,
                       project.rating_count
                     )}
-                  />{" "}
-                  {/* Use the rating from the project */}
+                  />
                 </div>
-                <div className="absolute bottom-4 right-4">
+
+                {/* Creator & Actions Row */}
+                <div className="flex justify-between items-center text-gray-800 font-semibold">
+                  <span>Created by: {project.username}</span>
                   <div className="flex gap-3">
                     <button
                       onClick={() => {

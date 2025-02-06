@@ -5,7 +5,7 @@ import IconComponent from "./icon-component";
 import { Button } from "./ui/button";
 
 import { Canvas, FabricImage } from "fabric";
-import { useState } from "react";
+import { useState, CSSProperties } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
@@ -33,6 +33,7 @@ type Props = {
   imageUrl: string;
   mapState: mapStateType;
   setMapState: (obj: mapStateType) => void;
+  setLoadState: (val: boolean) => void;
 };
 
 const Footer = ({
@@ -42,6 +43,7 @@ const Footer = ({
   imageUrl,
   mapState,
   setMapState,
+  setLoadState,
 }: Props) => {
   const { selectedObject, currentImageDim, loadedFromSaved } =
     useCanvasObjects();
@@ -51,7 +53,6 @@ const Footer = ({
   const [showUpdateButton, setShowUpdateButton] = useState(false);
   const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
   const [downloadFrame, setDownLoadFrame] = useState(false);
-  console.log(canvasId);
 
   // Function to convert Blob to File
   const convertBlobToFile = (url) => {
@@ -77,7 +78,7 @@ const Footer = ({
     });
 
     if (!canvas) return;
-
+    setLoadState(true);
     try {
       if (!canvas || !image) return;
 
@@ -202,6 +203,8 @@ const Footer = ({
       //   "project_data",
       //   JSON.stringify(response.data.data.project_data)
       // );
+
+      setLoadState(false);
 
       if (response.status === 201) {
         console.log("canvas saved successfully");

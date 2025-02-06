@@ -206,8 +206,3 @@ class Network(nn.Module):
         return F.mse_loss(gen_mean, style_mean) + F.mse_loss(gen_std, style_std)
     
 
-vgg_encoder = VGG_ENCODER(CFG.style_transfer_encoder_path).to(CFG.device)
-vgg_decoder = VGG_DECODER.to(CFG.device)
-style_transfer_model = Network(vgg_encoder, vgg_decoder).to(CFG.device)
-
-style_transfer_model.decoder.load_state_dict(torch.load(CFG.style_transfer_decoder_path, map_location=CFG.device, weights_only=True))

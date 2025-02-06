@@ -9,7 +9,7 @@ import {
   PenTool,
   Cpu,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, CSSProperties } from "react";
 
 import * as fabric from "fabric";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -25,6 +25,11 @@ import Footer from "@/components/Footer";
 import { MapInteractionCSS } from "react-map-interaction";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import AITools from "@/components/AITools";
+import ClipLoader from "react-spinners/ClipLoader";
+
+const override: CSSProperties = {
+  borderWidth: "5px",
+};
 
 const Test = () => {
   const [sidebarName, setSidebarName] = useState("");
@@ -51,6 +56,8 @@ const Test = () => {
     scale: 1,
     translation: { x: 100, y: 0 },
   });
+
+  const [spinnerLoading, setSpinnerLoading] = useState(false);
 
   // const handleContainerResize = () => {
   //   const container = document.getElementById("CanvasContainer");
@@ -348,6 +355,19 @@ const Test = () => {
 
   return (
     <div className="h-screen max-w-screen flex items-center relative">
+      {/* Full-screen overlay */}
+      {spinnerLoading && (
+        <div className="fixed w-full h-full top-0 left-0 z-10000 flex justify-center items-center">
+          <ClipLoader
+            color={"#3B82F6"}
+            loading={spinnerLoading}
+            cssOverride={override}
+            size={70}
+            aria-label="Loading Spinner"
+            data-testid="loader"
+          />
+        </div>
+      )}
       {/* Sidebar */}
       <div
         className={`flex items-center h-full ${sidebarName ? "w-[25%]" : ""}`}
@@ -530,6 +550,7 @@ const Test = () => {
             imageUrl={imageUrl}
             mapState={mapState}
             setMapState={setMapState}
+            setLoadState={setSpinnerLoading}
           />
         </div>
       </div>

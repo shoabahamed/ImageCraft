@@ -6,6 +6,12 @@ from werkzeug.utils import secure_filename
 import json
 from dotenv import load_dotenv
 from bson import ObjectId
+from PIL import Image
+from models.similarity_model import  get_embedding
+from torchvision import models
+import torch
+from model_config import CFG
+from utils.preprocessing import  get_similar_image_transform
 
 load_dotenv()
 
@@ -13,6 +19,7 @@ load_dotenv()
 db = get_db()
 projects_collection = db["Projects"]
 users_collection = db["Users"]
+embedding_collection = db['Embedding']
 ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
 CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
 
@@ -98,14 +105,42 @@ def save_project():
                 "granted_logs": [user_id],
                 "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename,
                 "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/canvas/"  + image_filename,
-                "total_rating": 0,
-                "rating_count": 0,
+                "total_rating": 5,
+                "rating_count": 1,
+                "total_views": 1,
+                "total_bookmark": 0,
                 "original_image_shape": original_image_shape,
                 "final_image_shape": final_image_shape,
                 "rendered_image_shape": rendered_image_shape,
                 "image_scale" : image_scale
                 
             }
+           
+
+
+           
+            # Open the original image
+            img = Image.open(original_image_file).convert('RGB')
+            img_transfrom = get_similar_image_transform(img_size=(224, 224))
+            
+            # load model
+            m = models.vgg16(weights=None)
+            m.load_state_dict(torch.load(CFG.similarity_model_path, map_location=CFG.device, weights_only=True))
+            sim_model = torch.nn.Sequential(*[m.features, m.avgpool, m.classifier[0]])
+        
+            
+            # getting embedding
+            with torch.no_grad():
+                img_emb = get_embedding(sim_model, img_transfrom(img)).to('cpu').detach().numpy()
+
+
+            project_emb = {
+                "project_id": canvas_id,
+                "is_public": is_public,
+                "embedding": img_emb.tolist()
+            }
+
+            embedding_collection.insert_one(project_emb)
             projects_collection.insert_one(new_project)
             response_message = "Project created successfully"
             status_code = 201
@@ -167,7 +202,9 @@ def get_all_projects():
             "original_image_url": 1,
             "canvas_image_url": 1,
             "total_rating": 1,
-            "rating_count": 1
+            "rating_count": 1,
+            "total_views": 1,
+            "total_bookmark": 1
         })
     
     # Convert the cursor to a list of dictionaries
@@ -218,8 +255,10 @@ def delete_project(project_id):
         if not  project_id:
             return jsonify({"success": False, "message": "Invalid report ID"}), 400
 
-        # Delete the report from the collection
+        # Delete the project from the collection
         result = projects_collection.delete_one({"project_id": project_id})
+        # delete embedding of the project from collection
+        result_emb = embedding_collection.delete_one({"project_id": project_id}) 
 
         
         if result.deleted_count == 0:
@@ -263,6 +302,12 @@ def update_project_visibility():
             {"$set": {"is_public": is_public}}
         )
 
+        # update in embedding collection
+        em_result = embedding_collection.update_one(
+            {"project_id": project_id},
+            {"$set": {"is_public": is_public}}
+        )
+
         # Check if the update was successful
         if result.modified_count == 1:
             visibility = "public" if is_public == "true" else "private"
@@ -292,11 +337,28 @@ def update_project_bookmark():
         # updating bookmarks of a user
         user = users_collection.find_one({"_id": ObjectId(user_id)})
         bookmarked_projects = set(user['bookmarked'])
+
+        # get the the project
+        project = projects_collection.find_one({"project_id": project_id})
         
+        
+        # get current bookmark count
+        current_bookmark_count = int(project.get("total_bookmark", 1))
+
         if(bookmark):
             bookmarked_projects = bookmarked_projects.union({project_id})
+            current_bookmark_count += 1
         else:
             bookmarked_projects = bookmarked_projects.difference({project_id})
+            current_bookmark_count -= 1
+
+
+        
+        # Update the project's bookmark count
+        result_project = projects_collection.update_one(
+            {"project_id": project_id},
+            {"$set": {"total_bookmark": current_bookmark_count}}
+        )
         
         result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
@@ -306,6 +368,8 @@ def update_project_bookmark():
             }
             }
         )
+
+
 
 
         if result.modified_count == 1:
@@ -336,7 +400,7 @@ def rate_project():
         rating_count = int(project.get("rating_count", 1)) + 1
         
  
-        print("ksdfjds")
+       
         # Update the project's visibility
         result = projects_collection.update_one(
             {"project_id": project_id},
@@ -348,6 +412,40 @@ def rate_project():
             return jsonify({"success": True, "message": f"Rating Successfull"}), 200
         else:
             return jsonify({"success": False, "message": "Rating Unsucessfull"}), 404
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+
+
+
+def update_project_view_count():
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+
+        if not project_id:
+            return jsonify({'message': 'Project Id missing'}), 400
+        
+        
+        # Fetch project by project_id from the database
+        project = projects_collection.find_one({"project_id": project_id})
+
+        
+        total_rating = int(project.get("total_views", 0)) + 1
+        
+ 
+       
+        # Update the project's visibility
+        result = projects_collection.update_one(
+            {"project_id": project_id},
+            {"$set": {"total_views": str(total_rating)}}
+        )
+
+
+        if result.modified_count == 1:
+            return jsonify({"success": True, "message": f"View Count Updated"}), 200
+        else:
+            return jsonify({"success": False, "message": "View Count Update Unsucessfull"}), 404
 
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

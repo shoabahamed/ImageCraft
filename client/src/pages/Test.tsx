@@ -124,7 +124,18 @@ const Test = () => {
     //   contWidth: containerWidth,
     //   contHeight: containerHeight,
     // });
-    setMapState({ ...mapState, scale: 0.9 });
+    const mapX =
+      containerWidth / 2 - currentImageRef.current.getScaledWidth() / 2;
+    const mapY =
+      containerHeight / 2 - currentImageRef.current.getScaledWidth() / 2;
+
+    setMapState({
+      ...mapState,
+      scale: 0.95,
+      translation: { x: mapX, y: mapY },
+    });
+
+    // setMapState({ ...mapState, scale: 0.9 });
   };
 
   useEffect(() => {
@@ -357,7 +368,7 @@ const Test = () => {
     <div className="h-screen max-w-screen flex items-center relative">
       {/* Full-screen overlay */}
       {spinnerLoading && (
-        <div className="fixed w-full h-full top-0 left-0 z-10000 flex justify-center items-center">
+        <div className="fixed w-full h-full top-0 left-0 z-50 flex bg-black opacity-40 justify-center items-center">
           <ClipLoader
             color={"#3B82F6"}
             loading={spinnerLoading}

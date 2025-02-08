@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import apiClient from "@/utils/appClient";
 import {
   Dialog,
@@ -13,6 +13,14 @@ import { Canvas, FabricImage } from "fabric";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useLogContext } from "@/hooks/useLogContext";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
+import { Textarea } from "./ui/textarea";
+import useSpeechToText from "@/hooks/useSpeechToText";
 
 type Props = {
   canvas: Canvas;
@@ -30,6 +38,72 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
   );
   const [backendImage, setBackendImage] = useState<null | string>(null);
   const [showImageAddButton, setShowImageAddButton] = useState(false);
+
+  // spekaer properties
+  const [textInput, setTextInput] = useState("");
+  const {
+    isListening,
+    transcript,
+    setTranscript,
+    startListening,
+    stopListening,
+  } = useSpeechToText({ continuous: true });
+
+  const startStopListening = () => {
+    if (isListening) {
+      stopVoiceInput();
+    } else {
+      startListening();
+    }
+  };
+
+  const stopVoiceInput = () => {
+    setTextInput(textInput);
+    stopListening();
+  };
+
+  const parseCommands = async (textCommand: string) => {
+    try {
+      const result = await apiClient.post(
+        "/text/parse_command",
+        { textCommand },
+        {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        }
+      );
+
+      toast({
+        description: result.data.message,
+        className: "bg-green-500 text-white",
+      });
+    } catch (error) {
+      toast({
+        description: `Failed to make project ${error}
+        }`,
+        className: "bg-red-500 text-white",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isListening) {
+      const finalText =
+        textInput +
+        (transcript.length ? (textInput.length ? " " : "") + transcript : "");
+
+      const startLength = textInput.length;
+
+      setTextInput(finalText.slice(startLength));
+    }
+  }, [transcript]);
+
+  useEffect(() => {
+    if (textInput.includes("execute")) {
+      parseCommands(textInput);
+    }
+  }, [textInput]);
+
+  // text processing end
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -236,6 +310,36 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="w-[90%]">
+        <Card>
+          <CardHeader>
+            <CardDescription className="text-center">Details</CardDescription>
+          </CardHeader>
+
+          <CardContent className="w-full flex flex-col gap-y-3">
+            <button
+              className="w-full custom-button"
+              onClick={() => startStopListening()}
+            >
+              {isListening ? "Stop" : "Speak"}
+            </button>
+            <Textarea
+              disabled={isListening}
+              className="h-[100px]"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+            ></Textarea>
+
+            <button
+              className="w-full custom-button"
+              onClick={() => parseCommands(textInput)}
+            >
+              Proceed
+            </button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

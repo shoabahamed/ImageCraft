@@ -26,13 +26,15 @@ import { MapInteractionCSS } from "react-map-interaction";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import AITools from "@/components/AITools";
 import ClipLoader from "react-spinners/ClipLoader";
+import { useCommonProps } from "@/hooks/appStore/CommonProps";
 
 const override: CSSProperties = {
   borderWidth: "5px",
 };
 
 const Test = () => {
-  const [sidebarName, setSidebarName] = useState("");
+  const sidebarName = useCommonProps((state) => state.sidebarName);
+  const setSidebarName = useCommonProps((state) => state.setSidebarName);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -131,7 +133,7 @@ const Test = () => {
 
     setMapState({
       ...mapState,
-      scale: 0.95,
+      scale: 0.9,
       translation: { x: mapX, y: mapY },
     });
 

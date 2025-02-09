@@ -29,6 +29,8 @@ type Props = {
 const CropSidebar = ({ canvas, image }: Props) => {
   const { addLog } = useLogContext();
   const { selectedObject, setSelectedObject } = useCanvasObjects();
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
 
   // Helper function to create shapes
   const getShape = (shapeType: string) => {
@@ -325,6 +327,75 @@ const CropSidebar = ({ canvas, image }: Props) => {
     }
   };
 
+  const handleBackGroundColorChange = (e) => {
+    canvas.backgroundColor = e.target.value;
+    addLog({
+      section: "arrange",
+      tab: "background",
+      event: "update",
+      message: `cavnvas background color changed to ${e.target.value}`,
+    });
+
+    setBackgroundColor(e.target.value);
+    canvas.renderAll();
+  };
+
+  const handleBackGroundImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image");
+        return;
+      }
+
+      const backgroundImageUrl = URL.createObjectURL(file);
+
+      const backgroundImage = new Image();
+      backgroundImage.src = backgroundImageUrl;
+
+      backgroundImage.onload = () => {
+        const fabricBackgroundImage = new FabricImage(backgroundImage);
+
+        const scaleX = image.getScaledWidth() / fabricBackgroundImage.width;
+
+        const scaleY = image.getScaledHeight() / fabricBackgroundImage.height;
+
+        fabricBackgroundImage.scaleX = scaleX;
+        fabricBackgroundImage.scaleY = scaleY;
+
+        canvas.backgroundImage = fabricBackgroundImage;
+        canvas.renderAll();
+
+        setBackgroundImage(fabricBackgroundImage);
+
+        addLog({
+          section: "arrange",
+          tab: "background",
+          event: "creation",
+          message: `added background image to canvas`,
+        });
+      };
+    }
+  };
+
+  const removeBackGroundImage = () => {
+    addLog({
+      section: "arrange",
+      tab: "background",
+      event: "reset",
+      message: `background removed from canvas`,
+    });
+
+    if (backgroundImage) {
+      canvas.backgroundImage = null;
+      canvas.renderAll();
+      setBackgroundImage(null);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
       {/* <div className="w-[90%]">
@@ -393,6 +464,59 @@ const CropSidebar = ({ canvas, image }: Props) => {
             <button className="w-full custom-button" onClick={handleShapeClip}>
               CUT
             </button>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="w-[90%]">
+        <Card>
+          <CardHeader>
+            <CardDescription className="text-center">
+              Canvas BackGround
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between gap-2">
+                <label
+                  htmlFor="color_picker"
+                  className="text-sm text-slate-400 mt-2"
+                >
+                  Color
+                </label>
+                <Input
+                  className="w-[25%] border-none cursor-pointer rounded"
+                  id="color_picker"
+                  type="color"
+                  value={backgroundColor}
+                  onChange={(e) => {
+                    handleBackGroundColorChange(e);
+                  }}
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="background-image"
+                  className="custom-button w-full"
+                >
+                  Add Image
+                </Label>
+                <Input
+                  id="background-image"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleBackGroundImageChange}
+                />
+              </div>
+              <div>
+                <button
+                  className="custom-button w-full"
+                  onClick={removeBackGroundImage}
+                >
+                  Remove Image
+                </button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

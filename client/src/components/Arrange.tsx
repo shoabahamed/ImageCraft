@@ -11,14 +11,11 @@ import {
   UnfoldVertical,
   UnfoldHorizontal,
 } from "lucide-react";
-import { Button } from "./ui/button";
 import { Canvas, FabricImage } from "fabric";
 import { useEffect, useState } from "react";
 import { useLogContext } from "@/hooks/useLogContext";
-import { Input } from "./ui/input";
 import ImageSize from "./ImageSize";
-import { Label } from "./ui/label";
-import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 
 type ArrangeProps = {
   canvas: Canvas;
@@ -27,10 +24,10 @@ type ArrangeProps = {
 
 const Arrange = ({ canvas, image }: ArrangeProps) => {
   const { addLog } = useLogContext();
-  const [rotateX, setRotateX] = useState(false);
-  const [rotateY, setRotateY] = useState(false);
-  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
+  const rotateX = useArrangeStore((state) => state.rotateX);
+  const rotateY = useArrangeStore((state) => state.rotateY);
+  const setRotateX = useArrangeStore((state) => state.setRotateX);
+  const setRotateY = useArrangeStore((state) => state.setRotateY);
 
   useEffect(() => {
     image.set({
@@ -53,75 +50,6 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
 
     setRotateX(false);
     setRotateY(false);
-  };
-
-  const handleBackGroundColorChange = (e) => {
-    canvas.backgroundColor = e.target.value;
-    addLog({
-      section: "arrange",
-      tab: "background",
-      event: "update",
-      message: `cavnvas background color changed to ${e.target.value}`,
-    });
-
-    setBackgroundColor(e.target.value);
-    canvas.renderAll();
-  };
-
-  const handleBackGroundImageChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-
-      if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image");
-        return;
-      }
-
-      const backgroundImageUrl = URL.createObjectURL(file);
-
-      const backgroundImage = new Image();
-      backgroundImage.src = backgroundImageUrl;
-
-      backgroundImage.onload = () => {
-        const fabricBackgroundImage = new FabricImage(backgroundImage);
-
-        const scaleX = image.getScaledWidth() / fabricBackgroundImage.width;
-
-        const scaleY = image.getScaledHeight() / fabricBackgroundImage.height;
-
-        fabricBackgroundImage.scaleX = scaleX;
-        fabricBackgroundImage.scaleY = scaleY;
-
-        canvas.backgroundImage = fabricBackgroundImage;
-        canvas.renderAll();
-
-        setBackgroundImage(fabricBackgroundImage);
-
-        addLog({
-          section: "arrange",
-          tab: "background",
-          event: "creation",
-          message: `added background image to canvas`,
-        });
-      };
-    }
-  };
-
-  const removeBackGroundImage = () => {
-    addLog({
-      section: "arrange",
-      tab: "background",
-      event: "reset",
-      message: `background removed from canvas`,
-    });
-
-    if (backgroundImage) {
-      canvas.backgroundImage = null;
-      canvas.renderAll();
-      setBackgroundImage(null);
-    }
   };
 
   return (
@@ -254,60 +182,6 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       </div>
       <div className="w-[90%]">
         <ImageSize canvas={canvas} image={image} />
-      </div>
-
-      <div className="w-[90%]">
-        <Card>
-          <CardHeader>
-            <CardDescription className="text-center">
-              Canvas BackGround
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between gap-2">
-                <label
-                  htmlFor="color_picker"
-                  className="text-sm text-slate-400 mt-2"
-                >
-                  Color
-                </label>
-                <Input
-                  className="w-[25%] border-none cursor-pointer rounded"
-                  id="color_picker"
-                  type="color"
-                  value={backgroundColor}
-                  onChange={(e) => {
-                    handleBackGroundColorChange(e);
-                  }}
-                />
-              </div>
-              <div>
-                <Label
-                  htmlFor="background-image"
-                  className="custom-button w-full"
-                >
-                  Add Image
-                </Label>
-                <Input
-                  id="background-image"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleBackGroundImageChange}
-                />
-              </div>
-              <div>
-                <button
-                  className="custom-button w-full"
-                  onClick={removeBackGroundImage}
-                >
-                  Remove Image
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

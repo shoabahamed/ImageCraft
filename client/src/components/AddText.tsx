@@ -32,6 +32,7 @@ import { Canvas, Textbox } from "fabric";
 import { Textarea } from "./ui/textarea";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
+import useAddTextStore from "@/hooks/appStore/AddTextStore";
 
 type AddTextProps = {
   canvas: Canvas;
@@ -41,22 +42,33 @@ const AddText = ({ canvas }: AddTextProps) => {
   const { selectedObject, setSelectedObject } = useCanvasObjects();
   const { addLog } = useLogContext();
 
-  // const [selectedObject, setSelectedObject] = useState<Textbox | null>(null);
-  const [textValue, setTextValue] = useState("");
-  const [textColorValue, setTextColorValue] = useState("#000000");
-  const [textFont, setTextFont] = useState("arial");
+  // Unpacking state values one by one
+  const textValue = useAddTextStore((state) => state.textValue);
+  const textColorValue = useAddTextStore((state) => state.textColorValue);
+  const textFont = useAddTextStore((state) => state.textFont);
+  const textSize = useAddTextStore((state) => state.textSize);
+  const textOpacity = useAddTextStore((state) => state.textOpacity);
+  const textLineSpacing = useAddTextStore((state) => state.textLineSpacing);
+  const textAlignValue = useAddTextStore((state) => state.textAlignValue);
+  const isUpper = useAddTextStore((state) => state.isUpper);
+  const isItalic = useAddTextStore((state) => state.isItalic);
+  const isBold = useAddTextStore((state) => state.isBold);
+  const isUnderLine = useAddTextStore((state) => state.isUnderLine);
 
-  const [textSize, setTextSize] = useState(20);
-  const [textOpacity, setTextOpacity] = useState(1);
-
-  const [textLineSpacing, setTextLineSpacing] = useState(1);
-
-  const [textAlignValue, setTextAlignValue] = useState("left");
-
-  const [isUpper, setUpper] = useState(false);
-  const [isItalic, setItalic] = useState(false);
-  const [isBold, setBold] = useState(false);
-  const [isUnderLine, setUnderLine] = useState(false);
+  // Unpacking setter functions one by one
+  const setTextValue = useAddTextStore((state) => state.setTextValue);
+  const setTextColorValue = useAddTextStore((state) => state.setTextColorValue);
+  const setTextFont = useAddTextStore((state) => state.setTextFont);
+  const setTextSize = useAddTextStore((state) => state.setTextSize);
+  const setTextOpacity = useAddTextStore((state) => state.setTextOpacity);
+  const setTextLineSpacing = useAddTextStore(
+    (state) => state.setTextLineSpacing
+  );
+  const setTextAlignValue = useAddTextStore((state) => state.setTextAlignValue);
+  const setUpper = useAddTextStore((state) => state.setUpper);
+  const setItalic = useAddTextStore((state) => state.setItalic);
+  const setBold = useAddTextStore((state) => state.setBold);
+  const setUnderLine = useAddTextStore((state) => state.setUnderLine);
 
   // Add text to canvas
   const addText = () => {

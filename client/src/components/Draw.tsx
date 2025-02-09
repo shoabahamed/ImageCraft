@@ -17,6 +17,7 @@ import CustomSlider from "./custom-slider";
 import * as fabric from "fabric";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
+import useDrawStore from "@/hooks/appStore/DrawStore";
 
 type DrawProps = {
   canvas: fabric.Canvas;
@@ -26,9 +27,15 @@ const Draw = ({ canvas }: DrawProps) => {
   const { firstLoad, setFirstLoad } = useState(false);
   const { selectedObject, setSelectedObject } = useCanvasObjects();
   const { addLog } = useLogContext();
-  const [brushSize, setBrushSize] = useState(3);
-  const [brushColor, setBrushColor] = useState("#00ff00");
-  const [brushType, setBrushType] = useState("none");
+  // Deconstruct each value individually from the store
+  const brushSize = useDrawStore((state) => state.brushSize);
+  const brushColor = useDrawStore((state) => state.brushColor);
+  const brushType = useDrawStore((state) => state.brushType);
+
+  // Deconstruct the setter functions individually as well
+  const setBrushSize = useDrawStore((state) => state.setBrushSize);
+  const setBrushColor = useDrawStore((state) => state.setBrushColor);
+  const setBrushType = useDrawStore((state) => state.setBrushType);
 
   const createBrush = (
     canvas: fabric.Canvas,

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Canvas, FabricImage, filters } from "fabric";
 import { Button } from "./ui/button";
 import { useLogContext } from "@/hooks/useLogContext";
+import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 
 type AdjustSidebarProps = {
   canvas: Canvas;
@@ -19,16 +20,34 @@ type AdjustSidebarProps = {
 const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   const { addLog } = useLogContext(); // Use log context
 
-  const [brightnessValue, setBrightnessValue] = useState(0);
-  const [contrastValue, setContrastValue] = useState(0);
-  const [saturationValue, setSaturationValue] = useState(0);
-  const [vibranceValue, setVibranceValue] = useState(0);
-  const [opacityValue, setOpacityValue] = useState(1);
-  const [hueValue, setHueValue] = useState(0);
-  const [blurValue, setBlurValue] = useState(0);
-  const [noiseValue, setNoiseValue] = useState(0);
-  const [pixelateValue, setPixelateValue] = useState(0);
-  const [predefinedFilter, setPredefinedFilter] = useState<string | null>(null);
+  const brightnessValue = useAdjustStore((state) => state.brightnessValue);
+  const contrastValue = useAdjustStore((state) => state.contrastValue);
+  const saturationValue = useAdjustStore((state) => state.saturationValue);
+  const vibranceValue = useAdjustStore((state) => state.vibranceValue);
+  const opacityValue = useAdjustStore((state) => state.opacityValue);
+  const hueValue = useAdjustStore((state) => state.hueValue);
+  const blurValue = useAdjustStore((state) => state.blurValue);
+  const noiseValue = useAdjustStore((state) => state.noiseValue);
+  const pixelateValue = useAdjustStore((state) => state.pixelateValue);
+  const predefinedFilter = useAdjustStore((state) => state.predefinedFilter);
+
+  // Set functions for each value
+  const setBrightnessValue = useAdjustStore(
+    (state) => state.setBrightnessValue
+  );
+  const setContrastValue = useAdjustStore((state) => state.setContrastValue);
+  const setSaturationValue = useAdjustStore(
+    (state) => state.setSaturationValue
+  );
+  const setVibranceValue = useAdjustStore((state) => state.setVibranceValue);
+  const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
+  const setHueValue = useAdjustStore((state) => state.setHueValue);
+  const setBlurValue = useAdjustStore((state) => state.setBlurValue);
+  const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
+  const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
+  const setPredefinedFilter = useAdjustStore(
+    (state) => state.setPredefinedFilter
+  );
 
   // Function to apply filters to the image
   const applyFilters = () => {
@@ -124,6 +143,7 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   useEffect(() => {
+    console.log("brighness updateed ", brightnessValue);
     applyFilters();
   }, [
     brightnessValue,

@@ -1,6 +1,6 @@
 import IconComponent from "@/components/icon-component";
 
-import { Home } from "lucide-react";
+import { Diamond, Home } from "lucide-react";
 import {
   Crop,
   RotateCwSquare,
@@ -27,6 +27,7 @@ import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import AITools from "@/components/AITools";
 import ClipLoader from "react-spinners/ClipLoader";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
+import AddShape from "@/components/AddShape";
 
 const override: CSSProperties = {
   borderWidth: "5px",
@@ -412,6 +413,13 @@ const Test = () => {
             sidebarName={sidebarName}
             setSidebarName={setSidebarName}
           />
+
+          <IconComponent
+            icon={<Diamond />}
+            iconName="Shape"
+            sidebarName={sidebarName}
+            setSidebarName={setSidebarName}
+          />
           <IconComponent
             icon={<PenTool />}
             iconName="PenTool"
@@ -466,6 +474,17 @@ const Test = () => {
                   canvas={mainCanvasRef.current!}
                   image={currentImageRef.current!}
                 />
+              </div>
+            </div>
+          )}
+
+          {sidebarName === "Shape" && (
+            <div className="w-full h-full">
+              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                Add Shapes
+              </div>
+              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <AddShape canvas={mainCanvasRef.current!} />
               </div>
             </div>
           )}

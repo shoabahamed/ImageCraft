@@ -13,7 +13,7 @@ type DrawStore = {
 const useDrawStore = create<DrawStore>((set) => ({
   brushSize: 3,
   brushColor: "#00ff00",
-  brushType: "none",
+  brushType: "pencil",
   setBrushSize: (size) => set({ brushSize: size }),
   setBrushColor: (color) => set({ brushColor: color }),
   setBrushType: (type) => set({ brushType: type }),

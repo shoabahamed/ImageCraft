@@ -2,13 +2,17 @@ from flask import jsonify, request, g
 from bson import ObjectId
 from config.db_config import get_db
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
 import datetime
+import os 
 
 load_dotenv()
 
 db = get_db()
 reports_collection = db["Reports"]
 projects_collection = db['Projects']
+style_image_collection = db['StyleImage']
+STYLE_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
 
 
 def submit_report():
@@ -349,15 +353,24 @@ def get_project_log(project_id):
             granted_logs = []
         
         
+
+        
         if(role == "admin" or user_id in granted_logs):
             logs = {
                 "project_data": project.get("project_data"),
                 "project_logs": project.get("project_logs"),
                 "original_image_url": project.get("original_image_url"),
-                "canvas_image_url": project.get("canvas_image_url")
+                "canvas_image_url": project.get("canvas_image_url"),
+                "original_image_shape": project.get('original_image_shape'),
+                "final_image_shape": project.get('final_image_shape'),
+                "total_views": project.get('total_views'),
+                "rating": int(project.get('total_rating')) / int(project.get('rating_count')),
+                "total_edits": len(project["project_logs"]),
+                "filter": "Sepia"
             }
             
-           
+            
+            
             return jsonify({"success": True, "message": "Logs returned successfully", "data": logs}), 200
         else:
             return jsonify({"success": False, "message": "You do not have necessary access"}), 401
@@ -365,4 +378,64 @@ def get_project_log(project_id):
         
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    
+
+
+
+def add_style_img():
+    try:
+        style_image = request.files.get('styleImage')
+        image_id = request.form.get("imageId")
+        image_name = request.form.get("imageName")
+
+        image_filename = secure_filename(f"{image_id}.png") 
+        image_path = f"{STYLE_IMG_FOLDER}/{image_filename}"
+
+
+        new_style_image = {
+            "image_id": image_id,
+            "image_name": image_name,
+            "image_url":os.getenv("BACKEND_SERVER") + "/server/static/style/" + image_filename
+        }
+
+        style_image_collection.insert_one(new_style_image)
+   
+
+        style_image.save(image_path)
+
+        return jsonify({"success": True, "message": "successflly uploaded"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+
+
+def get_all_style_img():
+    try:
+        style_images = list(style_image_collection.find({}, {"image_id": 1, "image_name": 1, "image_url": 1, "_id": 0}))
+     
+        
+        return jsonify({"success": True, "data": style_images}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+    
+
+def delete_style_img(image_id):
+    try:
+        if not image_id:
+            return jsonify({"error": "Image ID is required"}), 400
+        
+        result = style_image_collection.delete_one({"image_id": image_id})
+
+        image_filename = secure_filename(f"{image_id}.png") 
+        image_path = f"{STYLE_IMG_FOLDER}/{image_filename}"
+
+        os.remove(image_path)
+    
+        
+        if result.deleted_count == 0:
+            return jsonify({"error": "Image not found"}), 404
+        
+        return jsonify({"message": "Style image deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 

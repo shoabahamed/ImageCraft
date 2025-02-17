@@ -108,56 +108,6 @@ const Draw = ({ canvas }: DrawProps) => {
   useEffect(() => {
     if (!canvas) return;
 
-    // Function to handle selection of an object
-    const handleObjectCreated = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        setSelectedObject(activeObject); // Update the context with the selected object
-      }
-    };
-
-    const handleObjectUpdated = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
-        setSelectedObject(activeObject); // Update the context with the selected object
-      }
-    };
-
-    const handleObjectModified = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
-
-        setSelectedObject(activeObject); // Update the context with the selected object
-      }
-    };
-
-    const handleObjectScaled = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
-        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
-        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
-
-        addLog({
-          section: "draw",
-          tab: "draw",
-          event: "update",
-          message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
-          param: "scale",
-          objType: "brush",
-        });
-
-        setSelectedObject(activeObject); // Update the context with the selected object
-      }
-    };
-
-    // Function to handle deselection of objects
-    const handleObjectDeselected = () => {
-      setSelectedObject(null); // Clear the selected object in the context
-    };
-
     const handlePathCreated = () => {
       addLog({
         section: "draw",
@@ -166,22 +116,12 @@ const Draw = ({ canvas }: DrawProps) => {
         message: `created brush strokes`,
       });
     };
-    // Attach event listeners
-    canvas.on("selection:created", handleObjectCreated);
-    canvas.on("selection:updated", handleObjectUpdated);
-    canvas.on("object:modified", handleObjectModified);
-    canvas.on("object:scaling", handleObjectScaled);
-    canvas.on("selection:cleared", handleObjectDeselected);
+
     // Attach event listener for path creation
     canvas.on("path:created", handlePathCreated);
 
     // Cleanup event listeners on unmount or canvas changes
     return () => {
-      canvas.off("selection:created", handleObjectCreated);
-      canvas.off("selection:updated", handleObjectUpdated);
-      canvas.off("object:modified", handleObjectModified);
-      canvas.off("object:scaling", handleObjectScaled);
-      canvas.off("selection:cleared", handleObjectDeselected);
       // Attach event listener for path creation
       canvas.off("path:created", handlePathCreated);
     };
@@ -215,7 +155,7 @@ const Draw = ({ canvas }: DrawProps) => {
                 <SelectValue placeholder="Select a brush" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
+                {/* <SelectItem value="none">None</SelectItem> */}
                 <SelectItem value="pencil">Pencil</SelectItem>
                 <SelectItem value="circle">Circle</SelectItem>
                 <SelectItem value="spray">Spray</SelectItem>

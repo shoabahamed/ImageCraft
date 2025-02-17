@@ -124,8 +124,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
             activeObject.height! * activeObject.scaleY!
           );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
+          // setCropWidth(newWidth.toString());
+          // setCropHeight(newHeight.toString());
         }
       }
     };
@@ -162,8 +162,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
             activeObject.height! * activeObject.scaleY!
           );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
+          // setCropWidth(newWidth.toString());
+          // setCropHeight(newHeight.toString());
         }
       }
     };
@@ -193,8 +193,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
             activeObject.height! * activeObject.scaleY!
           );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
+          // setCropWidth(newWidth.toString());
+          // setCropHeight(newHeight.toString());
         }
       }
     };
@@ -207,14 +207,15 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
     return () => {
       if (!image.clipPath) {
+        console.log("sdkfd");
         canvas.getObjects().forEach((obj) => {
           if (obj.name?.startsWith("Frame")) {
             addLog({
               section: "crop&cut",
               tab: "cut",
               event: "deletion",
-              message: `deleted unused shape ${selectedObject.type}`,
-              objType: selectedObject.type,
+              message: `deleted unused shape ${obj.type}`,
+              objType: obj.type,
             });
 
             canvas.remove(obj);
@@ -330,7 +331,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
   const handleBackGroundColorChange = (e) => {
     canvas.backgroundColor = e.target.value;
     addLog({
-      section: "arrange",
+      section: "crop&cut",
       tab: "background",
       event: "update",
       message: `cavnvas background color changed to ${e.target.value}`,
@@ -372,7 +373,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         setBackgroundImage(fabricBackgroundImage);
 
         addLog({
-          section: "arrange",
+          section: "crop&cut",
           tab: "background",
           event: "creation",
           message: `added background image to canvas`,
@@ -383,7 +384,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
   const removeBackGroundImage = () => {
     addLog({
-      section: "arrange",
+      section: "crop&cut",
       tab: "background",
       event: "reset",
       message: `background removed from canvas`,

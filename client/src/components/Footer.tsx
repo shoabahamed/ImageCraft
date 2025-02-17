@@ -21,6 +21,13 @@ import {
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import WebSpeechComponent from "./webSpeechComponent";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type mapStateType = {
   scale: number;
@@ -54,6 +61,7 @@ const Footer = ({
   const [showUpdateButton, setShowUpdateButton] = useState(false);
   const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
   const [downloadFrame, setDownLoadFrame] = useState(false);
+  const [superResValue, setSuperResValue] = useState("none");
 
   // Function to convert Blob to File
   const convertBlobToFile = (url) => {
@@ -245,7 +253,7 @@ const Footer = ({
     }
   };
 
-  const downloadCanvas = () => {
+  const downloadCanvas = async () => {
     addLog({
       section: "canvas",
       tab: "canvas",
@@ -254,6 +262,8 @@ const Footer = ({
     });
 
     if (!canvas || !image) return;
+
+    let dataURL: string;
 
     let backgroundImage: null | FabricImage = null;
     if (canvas.backgroundImage) {
@@ -335,13 +345,7 @@ const Footer = ({
       );
 
       // Generate a data URL for the clipped image
-      const dataURL = outputCanvas.toDataURL();
-
-      // Trigger download
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "clipped-image.png";
-      link.click();
+      dataURL = outputCanvas.toDataURL();
 
       // Clean up output canvas
       outputCanvas.remove();
@@ -350,12 +354,56 @@ const Footer = ({
     } else {
       console.log("downloading full image");
       // Generate the data URL for the download
-      const dataURL = canvas.toDataURL();
+      dataURL = canvas.toDataURL();
+    }
 
-      // Create a temporary link element to trigger the download
+    if (superResValue !== "none") {
+      try {
+        setLoadState(true);
+        const response = await apiClient.post(
+          "/image_proc/super_res",
+          { image: dataURL, resolution: superResValue },
+
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${user?.token}`,
+            },
+          }
+        );
+        setLoadState(false);
+        if (response.status === 200) {
+          const base64Image = `data:image/png;base64,${response.data.image}`;
+          const link = document.createElement("a");
+          link.href = base64Image;
+          link.download =
+            frameObject && downloadFrame
+              ? "clipped-image.png"
+              : "canvas-image.png";
+          link.click();
+
+          toast({
+            description: "Successfull",
+            className: "bg-green-500 text-gray-900",
+            duration: 3000,
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            description: "Error Encountered inference",
+            className: "bg-green-500 text-gray-900",
+            duration: 3000,
+          });
+        }
+      } catch (error) {
+        console.error("Error sending image to backend:", error);
+      }
+    } else {
+      // Trigger download (optional, if you still want to download the image)
       const link = document.createElement("a");
       link.href = dataURL;
-      link.download = "canvas-image.png"; // Name of the file to be saved
+      link.download =
+        frameObject && downloadFrame ? "clipped-image.png" : "canvas-image.png";
       link.click();
     }
 
@@ -386,9 +434,22 @@ const Footer = ({
 
   const deleteObject = () => {
     if (selectedObject) {
+      let section = "unknown";
+      let tab = "unknown";
+      if (
+        selectedObject.type === "rect" ||
+        selectedObject.type === "circle" ||
+        selectedObject.type === "triangle" ||
+        selectedObject.type === "line" ||
+        selectedObject.type === "path"
+      ) {
+        section = "shape";
+        tab = "shape";
+      }
+
       addLog({
-        section: "crop&cut ----",
-        tab: "cut",
+        section: section,
+        tab: tab,
         event: "deletion",
         message: `deleted shape ${selectedObject.type}`,
         objType: selectedObject.type,
@@ -456,15 +517,43 @@ const Footer = ({
             <DialogHeader>
               <DialogTitle>Download Image</DialogTitle>
             </DialogHeader>
-            <div className="flex justify-between items-center mt-4">
-              <Label htmlFor="frame-download">Frame Only</Label>
-              <Switch
-                id="frame-download"
-                checked={downloadFrame}
-                onClick={() => setDownLoadFrame(!downloadFrame)}
-              />
+            <div className="flex flex-col justify-start space-y-8">
+              <div className="flex justify-between items-center mt-4">
+                <Label htmlFor="frame-download">Frame Only</Label>
+                <Switch
+                  id="frame-download"
+                  checked={downloadFrame}
+                  onClick={() => setDownLoadFrame(!downloadFrame)}
+                />
+              </div>
+
+              <div className="flex justify-between items-center mt-4">
+                <Label className="flex-1">Resolution</Label>
+                <div>
+                  <Select
+                    onValueChange={(value) => {
+                      setSuperResValue(value); // Set the value if the user is logged in
+                    }}
+                    defaultValue={superResValue}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a resolution" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="2x" disabled={!user}>
+                        2X
+                      </SelectItem>
+                      <SelectItem value="4x" disabled={!user}>
+                        4X
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
-            <DialogFooter className="mt-4">
+
+            <DialogFooter className="mt-6">
               <button className="custom-button" onClick={downloadCanvas}>
                 DownloadImage
               </button>
@@ -474,7 +563,17 @@ const Footer = ({
 
         <button
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300  px-6 py-3 text-blue-700"
-          onClick={onSaveCanvas}
+          onClick={() => {
+            if (user) {
+              onSaveCanvas();
+            } else {
+              toast({
+                description: "You need to log in first",
+                className: "bg-green-500 text-gray-900",
+                duration: 3000,
+              });
+            }
+          }}
         >
           {showUpdateButton ? "Update" : "Save"}
         </button>
@@ -486,9 +585,9 @@ const Footer = ({
             Delete
           </button>
         )}
-        <div className="relative flex items-center space-x-4">
+        {/* <div className="relative flex items-center space-x-4">
           <WebSpeechComponent />
-        </div>
+        </div> */}
       </div>
     </div>
   );

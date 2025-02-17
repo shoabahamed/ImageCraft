@@ -16,6 +16,8 @@ app = Flask(__name__)
 app.secret_key = os.getenv("APP_SECRET")
 app.config['ORG_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
 app.config['CANVAS_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
+app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
+
 CORS(app, resources={r"/server/static/*": {"origins": "*"}})
 # os.makedirs(app.config['ORG_IMG_FOLDER'], exist_ok=True)
 
@@ -28,6 +30,12 @@ def get_original_image(filename):
 def get_canvas_image(filename):
     print(filename)
     return send_from_directory(app.config['CANVAS_IMG_FOLDER'], filename, as_attachment=False)
+
+
+@app.route('/server/static/style/<string:filename>')
+def get_style_image(filename):
+    print(filename)
+    return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
 
 
 

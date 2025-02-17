@@ -17,10 +17,12 @@ import {
   Triangle as IconTriangle,
   Circle as IconCircle,
   Minus,
+  Brush,
 } from "lucide-react";
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
 import CustomSlider from "./custom-slider";
 import { Input } from "./ui/input";
+import Draw from "./Draw";
 
 type Props = {
   canvas: Canvas;
@@ -139,14 +141,55 @@ const AddShape = ({ canvas }: Props) => {
     const handleObjectDeselected = () => {
       setSelectedObject(null);
     };
+
+    const handleObjectScaled = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog({
+          section: "shape",
+          tab: "shape",
+          event: "update",
+          message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+          param: "scale",
+          objType: objectName,
+        });
+
+        setSelectedObject(activeObject); // Update the context with the selected object
+      }
+    };
+
+    const handleObjectModified = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.type !== "textbox") {
+        const objectName = activeObject.type || "Unknown Object";
+        addLog({
+          section: "shape",
+          tab: "shape",
+          event: "update",
+          message: `Modified selected object: ${objectName}`,
+          objType: objectName,
+        });
+      } else {
+        setSelectedObject(null);
+      }
+    };
+
     canvas.on("selection:created", handleObjectSelected);
     canvas.on("selection:updated", handleObjectSelected);
+    canvas.on("object:scaling", handleObjectScaled);
+    canvas.on("object:modified", handleObjectModified);
     canvas.on("selection:cleared", handleObjectDeselected);
 
     return () => {
       canvas.off("selection:created", handleObjectSelected);
       canvas.off("selection:updated", handleObjectSelected);
       canvas.off("selection:cleared", handleObjectDeselected);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
     };
   }, [canvas]);
 
@@ -198,7 +241,7 @@ const AddShape = ({ canvas }: Props) => {
           break;
       }
 
-      selectedObject.canvas?.renderAll();
+      canvas.renderAll();
     }
   };
 
@@ -238,6 +281,14 @@ const AddShape = ({ canvas }: Props) => {
   const stopDrawingRect = useCallback(() => {
     rectRef.current?.setCoords();
     rectRef.current = null;
+
+    addLog({
+      section: "shape",
+      tab: "shape",
+      event: "creation",
+      message: `created shape rect`,
+      objType: "rect",
+    });
   }, []);
 
   const activateAddingRect = () => {
@@ -301,6 +352,14 @@ const AddShape = ({ canvas }: Props) => {
   const stopDrawingLine = useCallback(() => {
     lineRef.current?.setCoords();
     lineRef.current = null;
+
+    addLog({
+      section: "shape",
+      tab: "shape",
+      event: "creation",
+      message: `created shape rect`,
+      objType: "line",
+    });
   }, []);
 
   const activateAddingLine = () => {
@@ -369,6 +428,14 @@ const AddShape = ({ canvas }: Props) => {
   const stopDrawingCircle = useCallback(() => {
     circleRef.current?.setCoords();
     circleRef.current = null;
+
+    addLog({
+      section: "shape",
+      tab: "shape",
+      event: "creation",
+      message: `created shape circle`,
+      objType: "circle",
+    });
   }, []);
 
   const activateAddingCircle = () => {
@@ -438,6 +505,14 @@ const AddShape = ({ canvas }: Props) => {
   const stopDrawingTriangle = useCallback(() => {
     triangleRef.current?.setCoords();
     triangleRef.current = null;
+
+    addLog({
+      section: "shape",
+      tab: "shape",
+      event: "creation",
+      message: `created shape triangle`,
+      objType: "triangle",
+    });
   }, []);
 
   const activateAddingTriangle = () => {
@@ -551,11 +626,33 @@ const AddShape = ({ canvas }: Props) => {
                 }}
                 extraStyles={`${shapeType === "line" ? "bg-slate-200" : ""}`}
               />
+
+              <IconComponent
+                icon={<Brush />}
+                iconName="Brush"
+                handleClick={() => {
+                  if (shapeType !== "brush") {
+                    deactivateAddingCircle();
+                    deactivateAddingRect();
+                    deactivateAddingTriangle();
+                    deactivateAddingLine();
+                    setShapeType("brush");
+                  } else {
+                    setShapeType("");
+                    canvas.isDrawingMode = false;
+                  }
+                }}
+                extraStyles={`${shapeType === "brush" ? "bg-slate-200" : ""}`}
+              />
             </div>
           </CardContent>
         </Card>
       </div>
-      {selectedObject ? (
+      {selectedObject &&
+      (selectedObject.type === "circle" ||
+        selectedObject.type === "line" ||
+        selectedObject.type === "triangle" ||
+        selectedObject.type === "rect") ? (
         <Card className="w-[90%]">
           <CardHeader>
             <CardDescription>Shape Properties</CardDescription>
@@ -577,12 +674,40 @@ const AddShape = ({ canvas }: Props) => {
                       : "#000000"
                   }
                   onChange={(e) => {
-                    if (selectedObject.type === "rect")
+                    if (selectedObject.type === "rect") {
+                      addLog({
+                        section: "shape",
+                        tab: "shape",
+                        event: "update",
+                        message: `rect fill color Changed from ${rectFill} to ${e.target.value}`,
+                        param: "fillColor",
+                        objType: "rect",
+                      });
+
                       setRectFill(e.target.value);
-                    else if (selectedObject.type === "circle")
+                    } else if (selectedObject.type === "circle") {
+                      addLog({
+                        section: "shape",
+                        tab: "shape",
+                        event: "update",
+                        message: `circle fill color Changed from ${circleFill} to ${e.target.value}`,
+                        param: "fillColor",
+                        objType: "cirle",
+                      });
+
                       setCircleFill(e.target.value);
-                    else if (selectedObject.type === "triangle")
+                    } else if (selectedObject.type === "triangle") {
+                      addLog({
+                        section: "shape",
+                        tab: "shape",
+                        event: "update",
+                        message: `triangle fill color Changed from ${triangleFill} to ${e.target.value}`,
+                        param: "fillColor",
+                        objType: "triangle",
+                      });
                       setTriangleFill(e.target.value);
+                    }
+
                     updateShapeProperties();
                   }}
                 />
@@ -603,14 +728,49 @@ const AddShape = ({ canvas }: Props) => {
                     : lineStroke
                 }
                 onChange={(e) => {
-                  if (selectedObject.type === "rect")
+                  if (selectedObject.type === "rect") {
+                    addLog({
+                      section: "shape",
+                      tab: "shape",
+                      event: "update",
+                      message: `rect stroke color Changed from ${rectStroke} to ${e.target.value}`,
+                      param: "stroke",
+                      objType: "rect",
+                    });
                     setRectStroke(e.target.value);
-                  else if (selectedObject.type === "circle")
+                  } else if (selectedObject.type === "circle") {
+                    addLog({
+                      section: "shape",
+                      tab: "shape",
+                      event: "update",
+                      message: `circle stroke color Changed from ${circleStroke} to ${e.target.value}`,
+                      param: "stroke",
+                      objType: "circle",
+                    });
                     setCircleStroke(e.target.value);
-                  else if (selectedObject.type === "triangle")
+                  } else if (selectedObject.type === "triangle") {
+                    addLog({
+                      section: "shape",
+                      tab: "shape",
+                      event: "update",
+                      message: `triangle stroke color Changed from ${triangleStroke} to ${e.target.value}`,
+                      param: "stroke",
+                      objType: "triangle",
+                    });
                     setTriangleStroke(e.target.value);
-                  else if (selectedObject.type === "line")
+                  } else if (selectedObject.type === "line") {
+                    addLog({
+                      section: "shape",
+                      tab: "shape",
+                      event: "update",
+                      message: `line stroke color Changed from ${lineStroke} to ${e.target.value}`,
+                      param: "stroke",
+                      objType: "line",
+                    });
+                    setTriangleStroke(e.target.value);
                     setLineStroke(e.target.value);
+                  }
+
                   updateShapeProperties();
                 }}
               />
@@ -627,6 +787,9 @@ const AddShape = ({ canvas }: Props) => {
                   setLineStrokeWidth(value);
                   updateShapeProperties();
                 }}
+                logName="Line Stroke width"
+                section={"shape"}
+                tab={"shape"}
               />
             ) : selectedObject.type === "circle" ? (
               <CustomSlider
@@ -639,6 +802,9 @@ const AddShape = ({ canvas }: Props) => {
                   setCircleRadius(value);
                   updateShapeProperties();
                 }}
+                logName="circle radius"
+                section={"shape"}
+                tab={"shape"}
               />
             ) : (
               <>
@@ -666,6 +832,9 @@ const AddShape = ({ canvas }: Props) => {
                       setTriangleWidth(value);
                     updateShapeProperties();
                   }}
+                  logName={selectedObject.type + "width"}
+                  section={"shape"}
+                  tab={"shape"}
                 />
                 <CustomSlider
                   sliderName="Height"
@@ -691,6 +860,9 @@ const AddShape = ({ canvas }: Props) => {
                       setTriangleHeight(value);
                     updateShapeProperties();
                   }}
+                  logName={selectedObject.type + "height"}
+                  section={"shape"}
+                  tab={"shape"}
                 />
               </>
             )}
@@ -727,10 +899,15 @@ const AddShape = ({ canvas }: Props) => {
                 else if (selectedObject.type === "line") setLineOpacity(value);
                 updateShapeProperties();
               }}
+              logName={selectedObject.type + "opacity"}
+              section={"shape"}
+              tab={"shape"}
             />
           </CardContent>
         </Card>
       ) : null}
+
+      {shapeType === "brush" && <Draw canvas={canvas} />}
     </div>
   );
 };

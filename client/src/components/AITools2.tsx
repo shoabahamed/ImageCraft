@@ -27,18 +27,41 @@ type Props = {
   imageUrl: string;
 };
 
-const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
+type StyleTemplate = {
+  image_id: string;
+  image_url: string;
+  image_name: string;
+};
+
+const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
   const { addLog } = useLogContext();
   const { toast } = useToast();
   const { user } = useAuthContext();
   const [openStylizeImage, setOpenStylizeImage] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<null | string>(
-    "./picasso.jpg"
-  );
+  const [uploadedImage, setUploadedImage] = useState<null | string>();
   const [backendImage, setBackendImage] = useState<null | string>(null);
   const [showImageAddButton, setShowImageAddButton] = useState(false);
+  const [styleImages, setStyleImages] = useState<StyleTemplate[] | []>([]);
 
-  // text processing end
+  useEffect(() => {
+    const get_style_images = async () => {
+      try {
+        const response = await apiClient.get("/all_style_img", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token}`,
+          },
+        });
+        const images = response.data.data;
+        setStyleImages(images);
+      } catch (error) {
+        console.error("Failed to fetch reports:", error);
+        toast({ description: "Failed to load reports", duration: 3000 });
+      }
+    };
+
+    get_style_images();
+  }, []);
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -71,15 +94,20 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
     return file;
   };
 
-  const handleStyleTransfer = async () => {
-    if (!uploadedImage) return;
+  const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
     try {
-      const originalImageFile = await convertToFile(imageUrl);
-      const styleImageFile = await convertToFile(uploadedImage);
-
       const formData = new FormData();
+
+      const originalImageFile = await convertToFile(imageUrl);
+      if (predefinedImageUrl.length > 0) {
+        const styleImageFile = await convertToFile(predefinedImageUrl);
+        formData.append("styleImage", styleImageFile);
+      } else {
+        const styleImageFile = await convertToFile(uploadedImage);
+        formData.append("styleImage", styleImageFile);
+      }
+
       formData.append("originalImage", originalImageFile);
-      formData.append("styleImage", styleImageFile);
 
       const response = await apiClient.post(
         "/image_proc/style_transfer",
@@ -92,6 +120,7 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
       );
 
       if (response.status === 200) {
+        setUploadedImage("");
         const base64Image = `data:image/png;base64,${response.data.image}`;
         // const base64Image =response.data.image
         setBackendImage(base64Image);
@@ -119,6 +148,12 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
       });
     }
   };
+
+  useEffect(() => {
+    if (backendImage) {
+      replaceImage();
+    }
+  }, [backendImage]);
 
   const replaceImage = () => {
     if (!canvas || !imageRef.current || !backendImage) return;
@@ -154,11 +189,11 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
 
       canvas.renderAll();
 
-      addLog({
-        objType: "canvas",
-        propType: "all",
-        message: "reseted canvas and changed image to stylized image",
-      });
+      // addLog({
+      //   objType: "canvas",
+      //   propType: "all",
+      //   message: "reseted canvas and changed image to stylized image",
+      // });
       toast({
         description: "Image change Successfull",
         className: "bg-green-500 text-gray-900",
@@ -246,8 +281,28 @@ const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
           </DialogContent>
         </Dialog>
       </div>
+      <div className="w-[85%] mt-2">
+        <div className="grid grid-cols-1 gap-4 w-full">
+          {styleImages.map((style, index) => (
+            <div
+              key={index}
+              className="relative rounded-lg overflow-hidden shadow-md cursor-pointer"
+              onClick={() => handleStyleTransfer(style.image_url)}
+            >
+              <img
+                src={style.image_url}
+                alt={style.image_name}
+                className="w-full h-32 object-cover"
+              />
+              <div className="absolute bottom-0 bg-black bg-opacity-60 text-white text-center w-full py-1 text-sm">
+                {style.image_name}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
 
-export default AITools;
+export default AITools2;

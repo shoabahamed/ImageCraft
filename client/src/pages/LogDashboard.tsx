@@ -6,7 +6,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Image, Edit, Brush, Filter, Info } from "lucide-react";
+import { Image, Edit, Brush, Filter, Info, Eye, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
@@ -57,6 +57,13 @@ type projectType = {
   project_logs: logType[];
   original_image_url: string;
   canvas_image_url: string;
+
+  original_image_shape: { width: number; height: number };
+  final_image_shape: { width: number; height: number };
+  total_views: number;
+  total_edits: number;
+  rating: number;
+  filter: string;
 };
 
 const LogDashboard = () => {
@@ -80,6 +87,7 @@ const LogDashboard = () => {
         });
 
         setProject(response.data.data);
+        console.log(response.data.data);
       } catch (err) {
         console.log("ksdjfd");
       }
@@ -138,71 +146,119 @@ const LogDashboard = () => {
     setSelectedLog(logs[data.editType] || ["No logs available."]);
   };
 
+  // Download logs as JSON
+  const downloadLogs = (logs: logType[]) => {
+    const dataStr = JSON.stringify(logs, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `project-logs-${projectId}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <header className="text-center py-4 bg-white shadow-md rounded-lg">
+      {/* <header className="text-center py-4 bg-white shadow-md rounded-lg">
         <h1 className="text-3xl font-bold text-gray-800">
           Image Edit Dashboard
         </h1>
         <p className="text-gray-600">A comprehensive view of your edits</p>
-      </header>
+      </header> */}
 
       {/* General Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-lg shadow-lg">
-        <div className="flex items-center gap-4">
-          <Image className="text-blue-500 w-8 h-8" />
-          <div>
-            <p className="text-gray-500">Original Image Shape</p>
-            <p className="text-xl font-semibold">1920x1080</p>
+      {project && (
+        <div className="bg-white p-8 rounded-lg shadow-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Image Section */}
+          <div className="flex flex-col items-center gap-4 border-r pr-4">
+            <Image className="text-blue-500 w-10 h-10" />
+            <p className="text-gray-500">Original Image</p>
+            <img
+              src={project.original_image_url}
+              alt="Original Image"
+              className="w-40 h-40 object-cover rounded-lg shadow-md"
+            />
+            <p className="text-sm text-gray-600">
+              {project.original_image_shape.width}x
+              {project.original_image_shape.height}
+            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Image className="text-green-500 w-8 h-8" />
-          <div>
-            <p className="text-gray-500">Final Image Shape</p>
-            <p className="text-xl font-semibold">800x600</p>
+
+          <div className="flex flex-col items-center gap-4 border-r pr-4">
+            <Image className="text-green-500 w-10 h-10" />
+            <p className="text-gray-500">Final Image</p>
+            <img
+              src={project.canvas_image_url}
+              alt="Final Image"
+              className="w-40 h-40 object-cover rounded-lg shadow-md"
+            />
+            <p className="text-sm text-gray-600">
+              {project.final_image_shape.width}x
+              {project.final_image_shape.height}
+            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Info className="text-cyan-500 w-8 h-8" />
-          <div>
-            <p className="text-gray-500">Image Size</p>
-            <p className="text-xl font-semibold">5 MB</p>
+
+          <div className="flex flex-col justify-between">
+            <div className="grid grid-cols-2 gap-6 justify-center">
+              <div className="flex items-center gap-4">
+                <Eye className="text-green-500 w-8 h-8" />
+                <div>
+                  <p className="text-gray-500">Total Views</p>
+                  <p className="text-xl font-semibold">{project.total_views}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Star className="text-yellow-500 w-8 h-8" />
+                <div>
+                  <p className="text-gray-500">Rating</p>
+                  <p className="text-xl font-semibold">{project.rating}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Edit className="text-purple-500 w-8 h-8" />
+                <div>
+                  <p className="text-gray-500">Total Edits</p>
+                  <p className="text-xl font-semibold">{project.total_edits}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Filter className="text-yellow-500 w-8 h-8" />
+                <div>
+                  <p className="text-gray-500">Filter</p>
+                  <p className="text-xl font-semibold">{project.filter}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <button
+                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                onClick={() => downloadLogs(project.project_logs)}
+              >
+                Download Logs
+              </button>
+            </div>
           </div>
+
+          {/* Stats Section */}
         </div>
-        <div className="flex items-center gap-4">
-          <Edit className="text-purple-500 w-8 h-8" />
-          <div>
-            <p className="text-gray-500">Total Edits</p>
-            <p className="text-xl font-semibold">500</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Brush className="text-pink-500 w-8 h-8" />
-          <div>
-            <p className="text-gray-500">Total Objects</p>
-            <p className="text-xl font-semibold">120</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Filter className="text-yellow-500 w-8 h-8" />
-          <div>
-            <p className="text-gray-500">Filter</p>
-            <p className="text-xl font-semibold">Sepia</p>
-          </div>
-        </div>
-      </div>
+      )}
+
       {/* Chart and Logs with Adjusted Space */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Chart Section - 2/3 of the Grid */}
-        <div className="bg-white p-6 rounded-lg shadow-lg col-span-2 flex flex-col">
+        <div className="bg-white p-6 rounded-lg shadow-lg col-span-2">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             Edit Frequency
           </h2>
           <ChartContainer
             config={chartConfig}
-            className="bg-white p-4 rounded-lg shadow-lg max-h-[500px] flex-grow"
+            className="bg-white p-4 rounded-lg shadow-lg"
           >
             <BarChart
               data={editData}
@@ -228,11 +284,9 @@ const LogDashboard = () => {
             </BarChart>
           </ChartContainer>
         </div>
-
-        {/* Log Information - 1/3 of the Grid */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Edit Logs</h2>
-          <div className="flex-grow overflow-y-scroll max-h-[500px] scroll-hiden">
+          <div className="overflow-y-auto max-h-[400px] border-t pt-4">
             {selectedLog ? (
               <ul className="list-disc list-inside space-y-2 text-gray-700">
                 {selectedLog.map((log, index) => (

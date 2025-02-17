@@ -28,6 +28,7 @@ import AITools from "@/components/AITools";
 import ClipLoader from "react-spinners/ClipLoader";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import AddShape from "@/components/AddShape";
+import AITools2 from "@/components/AiTools2";
 
 const override: CSSProperties = {
   borderWidth: "5px",
@@ -165,7 +166,7 @@ const Test = () => {
         height: containerHeight,
       });
 
-      initCanvas.backgroundColor = "#fff";
+      // initCanvas.backgroundColor = "#fff";
 
       const savedData = localStorage.getItem("project_data");
 
@@ -420,12 +421,12 @@ const Test = () => {
             sidebarName={sidebarName}
             setSidebarName={setSidebarName}
           />
-          <IconComponent
+          {/* <IconComponent
             icon={<PenTool />}
             iconName="PenTool"
             sidebarName={sidebarName}
             setSidebarName={setSidebarName}
-          />
+          /> */}
           <IconComponent
             icon={<Type />}
             iconName="Text"
@@ -503,17 +504,6 @@ const Test = () => {
             </div>
           )}
 
-          {sidebarName === "PenTool" && (
-            <div className="w-full h-full">
-              <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
-                Draw
-              </div>
-              <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <Draw canvas={mainCanvasRef.current!} />
-              </div>
-            </div>
-          )}
-
           {sidebarName === "Text" && (
             <div className="w-full h-full">
               <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
@@ -531,7 +521,7 @@ const Test = () => {
                 AI TOOLS
               </div>
               <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <AITools
+                <AITools2
                   canvas={mainCanvasRef.current!}
                   imageRef={currentImageRef!}
                   imageUrl={imageUrl}

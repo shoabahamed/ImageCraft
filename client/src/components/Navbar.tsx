@@ -255,7 +255,7 @@ const Navbar = () => {
           className="flex items-center space-x-2 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <p className="text-3xl font-bold italic">StyleForge</p>
+          <p className="text-3xl font-bold italic">PixelTune</p>
         </div>
         <div className="flex gap-9 items-center">
           {user ? (

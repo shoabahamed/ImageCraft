@@ -245,7 +245,7 @@ def get_project_by_id(project_id):
         "original_image_url": project["original_image_url"],
         "canvas_image_url": project["canvas_image_url"],
         "project_data": project['project_data'],
-        "project_logs": project['project_logs']
+        "project_logs": project['project_logs'],
     })
 
 

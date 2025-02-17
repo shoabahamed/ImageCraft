@@ -40,7 +40,7 @@ const Home = () => {
     <div className="flex flex-col h-screen w-screen">
       <Navbar />
       <div className="flex flex-grow flex-col justify-center items-center text-center px-6 md:px-12 lg:px-24">
-        <h2 className="text-4xl font-bold mb-4">StyleForge</h2>
+        <h2 className="text-4xl font-bold mb-4">PixelTune</h2>
         <p className="text-sm font-thin mb-2 italic text-slate-400">
           Forge your creativity. One pixel at a time.
         </p>
@@ -52,34 +52,19 @@ const Home = () => {
           Seamlessly integrate powerful tools to unlock unlimited possibilities.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          {user ? (
-            <form>
-              <Label htmlFor="picture" className="custom-button">
-                Load Image
-              </Label>
-
-              <Input
-                id="picture"
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-            </form>
-          ) : (
-            <button
-              className="custom-button"
-              onClick={() =>
-                toast({
-                  description: "You need to log in first",
-                  className: "bg-green-500 text-gray-900",
-                  duration: 5000,
-                })
-              }
-            >
+          <form>
+            <Label htmlFor="picture" className="custom-button">
               Load Image
-            </button>
-          )}
+            </Label>
+
+            <Input
+              id="picture"
+              type="file"
+              className="hidden"
+              accept="image/png, image/jpeg"
+              onChange={handleImageUpload}
+            />
+          </form>
 
           {user ? (
             <Link to="/projects">

@@ -27,3 +27,15 @@ def get_similar_image_transform(img_size=None):
 
   return T.Compose(*[transforms])
 
+
+def get_super_resolution_transform():
+    transforms = []
+        
+    transforms.append(T.ToImage())
+    transforms.append(T.ToDtype(torch.float32, scale=True))
+
+    transforms.append(T.ToPureTensor())
+    # transforms.append(T.Normalize(mean=[0.4488, 0.4371, 0.4040], std=[0.5, 0.5, 0.5]))
+    
+    return T.Compose(transforms)
+

@@ -1,18 +1,16 @@
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Redo, Undo, ZoomIn, ZoomOut } from "lucide-react";
+import { ZoomIn, ZoomOut, Pencil } from "lucide-react";
 import IconComponent from "./icon-component";
-import { Button } from "./ui/button";
 
 import { Canvas, FabricImage } from "fabric";
-import { useState, CSSProperties, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -20,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
-import WebSpeechComponent from "./webSpeechComponent";
+
 import {
   Select,
   SelectContent,
@@ -28,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCommonProps } from "@/hooks/appStore/CommonProps";
 
 type mapStateType = {
   scale: number;
@@ -58,10 +57,17 @@ const Footer = ({
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
-  const [showUpdateButton, setShowUpdateButton] = useState(false);
+
   const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
   const [downloadFrame, setDownLoadFrame] = useState(false);
   const [superResValue, setSuperResValue] = useState("none");
+
+  const projectName = useCommonProps((state) => state.projectName);
+  const setProjectName = useCommonProps((state) => state.setProjectName);
+  const showUpdateButton = useCommonProps((state) => state.showUpdateButton);
+  const setShowUpdateButton = useCommonProps(
+    (state) => state.setShowUpdateButton
+  );
 
   // Function to convert Blob to File
   const convertBlobToFile = (url) => {
@@ -93,6 +99,7 @@ const Footer = ({
 
       let backgroundImage: null | FabricImage = null;
       if (canvas.backgroundImage) {
+        // @ts-ignore
         backgroundImage = canvas.backgroundImage;
       }
 
@@ -196,8 +203,11 @@ const Footer = ({
         "imageScale",
         JSON.stringify({ scaleX: image.scaleX, scaleY: image.scaleY })
       );
+      // @ts-ignore
       formData.append("originalImage", originalImageFile); // Append the oringalimage file
+      // @ts-ignore
       formData.append("canvasImage", canvasImageFile); // Append the oringalimage
+      formData.append("projectName", projectName);
       formData.append("loadedFromSaved", loadedFromSaved ? "true" : "false");
 
       // Post JSON data to the backend with JWT in headers
@@ -267,6 +277,7 @@ const Footer = ({
 
     let backgroundImage: null | FabricImage = null;
     if (canvas.backgroundImage) {
+      // @ts-ignore
       backgroundImage = canvas.backgroundImage;
     }
 
@@ -309,8 +320,9 @@ const Footer = ({
     canvas.renderAll();
 
     // Find the object named "Frame" or starting with "Frame"
+
     const frameObject = canvas
-      .getObjects()
+      .getObjects() // @ts-ignore
       .find((obj) => obj.name?.startsWith("Frame"));
     if (frameObject && downloadFrame) {
       const clipBoundingBox = frameObject.getBoundingRect();
@@ -479,7 +491,17 @@ const Footer = ({
   };
 
   return (
-    <div className="flex w-full h-full items-center justify-center rounded-none border-slate-800 border-t-2 gap-4">
+    <div className="flex w-full items-center justify-between rounded-none border-slate-800 border-t-2 gap-4">
+      <div className="px-2 flex items-center gap-2">
+        <Pencil className="text-gray-400 w-5 h-5" /> {/* Pencil icon */}
+        <input
+          type="text"
+          className="bg-gray-800 text-white font-semibold px-2 py-1 rounded-md border border-gray-800 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+        />
+      </div>
+
       <div className="flex items-center">
         <IconComponent
           icon={<ZoomIn />}

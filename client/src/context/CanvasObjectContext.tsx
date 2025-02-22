@@ -1,4 +1,4 @@
-import React, { createContext, useState, ReactNode } from "react";
+import { createContext, useState, ReactNode } from "react";
 
 // Define the type of the canvas object
 type CanvasObject = any;

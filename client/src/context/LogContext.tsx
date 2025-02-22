@@ -1,4 +1,4 @@
-import React, { createContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useState, ReactNode, useEffect } from "react";
 
 type logType = {
   section: string;
@@ -42,7 +42,7 @@ export const LogProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log(logs);
+    // console.log(logs);
   });
 
   return (

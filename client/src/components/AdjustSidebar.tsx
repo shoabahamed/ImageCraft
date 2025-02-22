@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/card";
 
 import CustomSlider from "@/components/custom-slider";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Canvas, FabricImage, filters } from "fabric";
 import { Button } from "./ui/button";
 import { useLogContext } from "@/hooks/useLogContext";
@@ -51,6 +51,7 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
 
   // Function to apply filters to the image
   const applyFilters = () => {
+    // @ts-ignore
     const currentFilters: filters.BaseFilter[] = [];
 
     // Add predefined filter first if any
@@ -202,7 +203,7 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full gap-4">
+    <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <div className="w-[90%]">
         <Card>
           <CardHeader>

@@ -12,7 +12,7 @@ import {
   UnfoldHorizontal,
 } from "lucide-react";
 import { Canvas, FabricImage } from "fabric";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLogContext } from "@/hooks/useLogContext";
 import ImageSize from "./ImageSize";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";

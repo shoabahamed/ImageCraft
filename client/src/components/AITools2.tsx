@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import apiClient from "@/utils/appClient";
 import {
   Dialog,
@@ -13,13 +13,6 @@ import { Canvas, FabricImage } from "fabric";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useLogContext } from "@/hooks/useLogContext";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
-import { Textarea } from "./ui/textarea";
 
 type Props = {
   canvas: Canvas;
@@ -68,12 +61,12 @@ const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        addLog({
-          objType: "style_image",
-          propType: "image",
-          message: "uploaded style image",
-        });
-
+        // addLog({
+        //   objType: "style_image",
+        //   propType: "image",
+        //   message: "uploaded style image",
+        // });
+        // @ts-ignore
         setUploadedImage(reader.result);
       };
       reader.readAsDataURL(file);
@@ -81,10 +74,10 @@ const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
   };
 
   // Function to get the FabricImage URL
-  const getFabricImageURL = (fabricImage: FabricImage) => {
-    const imgElement = fabricImage.getElement();
-    return imgElement ? imgElement.src : "";
-  };
+  // const getFabricImageURL = (fabricImage: FabricImage) => {
+  //   const imgElement = fabricImage.getElement();
+  //   return imgElement ? imgElement.src : "";
+  // };
 
   const convertToFile = async (url: string) => {
     const response = await fetch(url);
@@ -184,7 +177,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
       }
 
       canvas.add(fabricImage);
-
+      // @ts-ignore
       imageRef.current = fabricImage;
 
       canvas.renderAll();
@@ -274,7 +267,10 @@ const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
                   Replace Image
                 </Button>
               )}
-              <Button className="custom-button" onClick={handleStyleTransfer}>
+              <Button
+                className="custom-button"
+                onClick={() => handleStyleTransfer()}
+              >
                 Process Images
               </Button>
             </DialogFooter>

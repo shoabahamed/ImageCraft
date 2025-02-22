@@ -8,6 +8,17 @@ import { Eye } from "lucide-react"; // Assuming you're using Lucide icons
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { number } from "zod";
+
 interface Project {
   _id: string;
   user_id: string;
@@ -21,6 +32,7 @@ interface Project {
   final_image_shape: { width: number; height: number };
   rendered_image_shape: { width: number; height: number };
   image_scale: { scaleX: number; scaleY: number };
+  project_name: string;
 }
 
 const Projects: React.FC = () => {
@@ -28,8 +40,26 @@ const Projects: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const projectPerPage = 4;
+  const [startIndex, setStartIndex] = useState(0);
+  const [endIndex, setEndIndex] = useState(projectPerPage);
+  const [currentPageNo, setCurrentPageNo] = useState(1);
+  const [pages, setPages] = useState<number[]>([1]);
+
+  const calculatePages = (totalProjects: number) => {
+    const totalPages = Math.ceil(totalProjects / projectPerPage);
+    console.log(totalProjects);
+    const temp: number[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+      temp.push(i);
+    }
+
+    return temp;
+  };
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -41,6 +71,8 @@ const Projects: React.FC = () => {
           },
         });
         setProjects(response.data.data.projects);
+        setFilteredProjects(response.data.data.projects);
+        setPages(calculatePages(response.data.data.projects.length));
         // console.log(response.data.data.projects);
       } catch (err) {
         setError("Failed to fetch projects");
@@ -53,6 +85,23 @@ const Projects: React.FC = () => {
     if (user) fetchProjects();
     else setProjects([]);
   }, [user]);
+
+  useEffect(() => {
+    const tempProjects = projects.filter((project) =>
+      project.project_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredProjects(tempProjects);
+    setPages(calculatePages(tempProjects.length));
+    setCurrentPageNo(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const eIndex = Math.max(currentPageNo * projectPerPage, 0);
+    const sIndex = Math.min(eIndex - projectPerPage, projects.length);
+
+    setStartIndex(sIndex);
+    setEndIndex(eIndex);
+  }, [currentPageNo]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -101,6 +150,7 @@ const Projects: React.FC = () => {
       setProjects(
         projects.filter((project) => project.project_id !== projectId)
       );
+      setCurrentPageNo(1);
       toast({
         description: "Project deleted successfully.",
         className: "bg-green-500 text-gray-900",
@@ -131,11 +181,13 @@ const Projects: React.FC = () => {
     project_logs: string,
     final_image_shape: object,
     rendered_image_shape: object,
-    image_scale: object
+    image_scale: object,
+    project_name: string
   ) => {
     localStorage.setItem("CanvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
     localStorage.setItem("project_logs", project_logs);
+    localStorage.setItem("project_name", project_name);
 
     localStorage.setItem(
       "final_image_shape",
@@ -152,15 +204,22 @@ const Projects: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      {/* Projects Title Section */}
       <div className="flex-1 flex flex-col gap-6 px-4 py-8">
-        {/* Projects Title Section */}
-        <div className="text-5xl font-extrabold text-center text-gray-800 mb-8">
+        <div className="text-5xl font-extrabold text-center text-gray-800 mb-4">
           Projects
         </div>
+        <input
+          type="text"
+          placeholder="Search by project name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full p-3 border rounded-md shadow-sm focus:ring focus:ring-gray-300"
+        />
 
         {/* Projects Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {projects.map((project) => (
+          {filteredProjects.slice(startIndex, endIndex).map((project) => (
             <Card
               key={project._id}
               className="relative w-full bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
@@ -191,7 +250,8 @@ const Projects: React.FC = () => {
                     project.project_logs,
                     project.final_image_shape,
                     project.rendered_image_shape,
-                    project.image_scale
+                    project.image_scale,
+                    project.project_name || "Untitled"
                   )
                 }
               >
@@ -233,6 +293,51 @@ const Projects: React.FC = () => {
           ))}
         </div>
       </div>
+
+      <Pagination className="flex justify-end p-7">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              className="cursor-pointer"
+              onClick={() => {
+                setCurrentPageNo(Math.max(currentPageNo - 1, 1));
+              }}
+            />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+
+          {pages
+            .slice(
+              Math.max(currentPageNo - 2, 0),
+              Math.min(currentPageNo + 1, pages.length)
+            )
+            .map((pageNo) => (
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => setCurrentPageNo(pageNo)}
+                  isActive={pageNo === currentPageNo}
+                  className="cursor-pointer"
+                >
+                  {pageNo}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              className="cursor-pointer"
+              onClick={() => {
+                setCurrentPageNo(Math.min(currentPageNo + 1, pages.length));
+              }}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };

@@ -35,6 +35,7 @@ def save_project():
         canvas_logs = request.form.get('canvasLogs')
         original_image_file = request.files.get('originalImage')  # Get the original image file from the form
         canvas_image_file = request.files.get('canvasImage')
+        project_name = request.form.get("projectName")
 
         # Retrieve JSON-like data from form fields
         original_image_shape = request.form.get('originalImageShape')
@@ -86,7 +87,7 @@ def save_project():
 
             projects_collection.update_one(
                 {"project_id": canvas_id, "user_id": user_id}, 
-                {"$set": {"project_data": canvas_data, "project_logs": canvas_logs, "final_image_shape": final_image_shape}}
+                {"$set": {"project_data": canvas_data, "project_logs": canvas_logs, "final_image_shape": final_image_shape, "project_name": project_name}}
             )
             response_message = "Project updated successfully"
             status_code = 200
@@ -112,7 +113,8 @@ def save_project():
                 "original_image_shape": original_image_shape,
                 "final_image_shape": final_image_shape,
                 "rendered_image_shape": rendered_image_shape,
-                "image_scale" : image_scale
+                "image_scale" : image_scale,
+                "project_name": project_name
                 
             }
            
@@ -120,27 +122,27 @@ def save_project():
 
            
             # Open the original image
-            img = Image.open(original_image_file).convert('RGB')
-            img_transfrom = get_similar_image_transform(img_size=(224, 224))
+            # img = Image.open(original_image_file).convert('RGB')
+            # img_transfrom = get_similar_image_transform(img_size=(224, 224))
             
-            # load model
-            m = models.vgg16(weights=None)
-            m.load_state_dict(torch.load(CFG.similarity_model_path, map_location=CFG.device, weights_only=True))
-            sim_model = torch.nn.Sequential(*[m.features, m.avgpool, m.classifier[0]])
+            # # load model
+            # m = models.vgg16(weights=None)
+            # m.load_state_dict(torch.load(CFG.similarity_model_path, map_location=CFG.device, weights_only=True))
+            # sim_model = torch.nn.Sequential(*[m.features, m.avgpool, m.classifier[0]])
         
             
-            # getting embedding
-            with torch.no_grad():
-                img_emb = get_embedding(sim_model, img_transfrom(img)).to('cpu').detach().numpy()
+            # # getting embedding
+            # with torch.no_grad():
+            #     img_emb = get_embedding(sim_model, img_transfrom(img)).to('cpu').detach().numpy()
 
 
-            project_emb = {
-                "project_id": canvas_id,
-                "is_public": is_public,
-                "embedding": img_emb.tolist()
-            }
+            # project_emb = {
+            #     "project_id": canvas_id,
+            #     "is_public": is_public,
+            #     "embedding": img_emb.tolist()
+            # }
 
-            embedding_collection.insert_one(project_emb)
+            # embedding_collection.insert_one(project_emb)
             projects_collection.insert_one(new_project)
             response_message = "Project created successfully"
             status_code = 201

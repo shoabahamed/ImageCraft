@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -265,7 +264,9 @@ const AdminPanel2: React.FC = () => {
           Authorization: `Bearer ${user?.token}`,
         },
       });
+      // @ts-ignore
       setStyleImages(styleImages.filter((image) => image.image_id !== imageId));
+
       toast({
         description: "Style image deleted successfully",
         duration: 3000,

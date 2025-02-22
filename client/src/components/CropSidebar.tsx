@@ -4,7 +4,6 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import IconComponent from "./icon-component";
@@ -116,55 +115,56 @@ const CropSidebar = ({ canvas, image }: Props) => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
 
-          // setCropWidth(newWidth.toString());
-          // setCropHeight(newHeight.toString());
-        }
+        // if (activeObject.cropRect != undefined) {
+        // const newWidth = Math.floor(
+        //   activeObject.width! * activeObject.scaleX!
+        // );
+        // const newHeight = Math.floor(
+        //   activeObject.height! * activeObject.scaleY!
+        // );
+
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
+        // }
       }
     };
 
     const handleObjectUpdated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
+        // const objectName = activeObject.type || "Unknown Object";
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
+        // if (activeObject.cropRect != undefined) {
+        // const newWidth = Math.floor(
+        //   activeObject.width! * activeObject.scaleX!
+        // );
+        // const newHeight = Math.floor(
+        //   activeObject.height! * activeObject.scaleY!
+        // );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
-        }
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
+        // }
       }
     };
 
     const handleObjectModified = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
+        // const objectName = activeObject.type || "Unknown Object";
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
+        // if (activeObject.cropRect != undefined) {
+        // const newWidth = Math.floor(
+        //   activeObject.width! * activeObject.scaleX!
+        // );
+        // const newHeight = Math.floor(
+        //   activeObject.height! * activeObject.scaleY!
+        // );
 
-          // setCropWidth(newWidth.toString());
-          // setCropHeight(newHeight.toString());
-        }
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
+        // }
       }
     };
 
@@ -185,17 +185,16 @@ const CropSidebar = ({ canvas, image }: Props) => {
         });
 
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
+        // if (activeObject.cropRect != undefined) {
+        //   const newWidth = Math.floor(
+        //     activeObject.width! * activeObject.scaleX!
+        //   );
+        //   const newHeight = Math.floor(
+        //     activeObject.height! * activeObject.scaleY!
+        //   );
 
-          // setCropWidth(newWidth.toString());
-          // setCropHeight(newHeight.toString());
-        }
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
       }
     };
 
@@ -209,6 +208,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
       if (!image.clipPath) {
         console.log("sdkfd");
         canvas.getObjects().forEach((obj) => {
+          // @ts-ignore
           if (obj.name?.startsWith("Frame")) {
             addLog({
               section: "crop&cut",
@@ -233,41 +233,41 @@ const CropSidebar = ({ canvas, image }: Props) => {
   }, [canvas]);
 
   // Add crop handler to precisely surround the canvas
-  const addCropHandler = () => {
-    if (selectedObject) {
-      image.clipPath = null; // Remove the clipping path
-      canvas.remove(selectedObject);
-    }
+  // const addCropHandler = () => {
+  //   if (selectedObject) {
+  //     image.clipPath = null; // Remove the clipping path
+  //     canvas.remove(selectedObject);
+  //   }
 
-    // Get actual canvas dimensions
-    const canvasWidth = canvas.getWidth();
-    const canvasHeight = canvas.getHeight();
+  //   // Get actual canvas dimensions
+  //   const canvasWidth = canvas.getWidth();
+  //   const canvasHeight = canvas.getHeight();
 
-    // Create a rectangle exactly surrounding the canvas
-    const cropRect = new Rect({
-      top: 0, // Start at the top-left corner
-      left: 0,
-      width: canvasWidth, // Match canvas width
-      height: canvasHeight, // Match canvas height
-      fill: "000",
-      opacity: 0.5,
-      stroke: "#00ff00",
-      strokeWidth: 5, // Border thickness
-      selectable: true, // Allow selection
-      lockMovementX: true, // Lock horizontal movement
-      lockMovementY: true, // Lock vertical movement
-      lockRotation: true, // Prevent rotation
-      hasControls: true, // Allow resizing/scaling
-      lockScalingFlip: true, // Prevent scaling to flip
-    });
+  //   // Create a rectangle exactly surrounding the canvas
+  //   const cropRect = new Rect({
+  //     top: 0, // Start at the top-left corner
+  //     left: 0,
+  //     width: canvasWidth, // Match canvas width
+  //     height: canvasHeight, // Match canvas height
+  //     fill: "000",
+  //     opacity: 0.5,
+  //     stroke: "#00ff00",
+  //     strokeWidth: 5, // Border thickness
+  //     selectable: true, // Allow selection
+  //     lockMovementX: true, // Lock horizontal movement
+  //     lockMovementY: true, // Lock vertical movement
+  //     lockRotation: true, // Prevent rotation
+  //     hasControls: true, // Allow resizing/scaling
+  //     lockScalingFlip: true, // Prevent scaling to flip
+  //   });
 
-    cropRect.set({ cropRect: true });
+  //   cropRect.set({ cropRect: true });
 
-    // Add the crop rectangle to the canvas
-    canvas.add(cropRect);
-    canvas.setActiveObject(cropRect);
-    canvas.renderAll();
-  };
+  //   // Add the crop rectangle to the canvas
+  //   canvas.add(cropRect);
+  //   canvas.setActiveObject(cropRect);
+  //   canvas.renderAll();
+  // };
 
   // Function to add shapes to the canvas
   const addShape = (shapeType: string) => {

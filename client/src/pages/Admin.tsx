@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -18,7 +17,6 @@ import { Trash, MessageCircle, CheckCircle, FileText } from "lucide-react"; // C
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,

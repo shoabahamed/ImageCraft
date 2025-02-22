@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -214,6 +214,7 @@ const AddText = ({ canvas }: AddTextProps) => {
         //     message: `Modified texbox object with ID: ${textObj.get("id")}`,
         //   });
         // }, 0);
+        console.log(textObj.angle);
       } else {
         setSelectedObject(null);
       }
@@ -228,7 +229,7 @@ const AddText = ({ canvas }: AddTextProps) => {
         addLog({
           section: "text",
           tab: "text",
-          event: "update",
+          event: "update", // @ts-ignore
           message: `Scaled text ${activeObject.text}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
           param: "scale",
           objType: "text",
@@ -278,7 +279,7 @@ const AddText = ({ canvas }: AddTextProps) => {
       addLog({
         section: "text",
         tab: "text",
-        event: "deletion",
+        event: "deletion", // @ts-ignore
         message: `deleted text ${activeObject.text}`,
       });
 
@@ -309,7 +310,7 @@ const AddText = ({ canvas }: AddTextProps) => {
       addLog({
         section: "text",
         tab: "text",
-        event: "update",
+        event: "update", // @ts-ignore
         message: `changed text ${selectedObject.text} font ${textFont} to ${value}`,
         param: "font",
         objType: "text",

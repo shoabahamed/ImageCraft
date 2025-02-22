@@ -24,7 +24,8 @@ type DrawProps = {
 };
 
 const Draw = ({ canvas }: DrawProps) => {
-  const { firstLoad, setFirstLoad } = useState(false);
+  // const { firstLoad, setFirstLoad } = useState(false);
+  // @ts-ignore
   const { selectedObject, setSelectedObject } = useCanvasObjects();
   const { addLog } = useLogContext();
   // Deconstruct each value individually from the store

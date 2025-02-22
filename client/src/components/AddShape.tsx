@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Canvas, Rect, Circle, Triangle, Ellipse, Line } from "fabric";
+import { Canvas, Rect, Circle, Triangle, Line } from "fabric";
 import {
   Card,
   CardContent,
@@ -13,7 +13,6 @@ import { useLogContext } from "@/hooks/useLogContext";
 
 import {
   Square,
-  Blend,
   Triangle as IconTriangle,
   Circle as IconCircle,
   Minus,

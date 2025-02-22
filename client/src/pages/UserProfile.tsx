@@ -169,7 +169,7 @@ const UserDashboard: React.FC = () => {
                             size="sm"
                             onClick={() =>
                               downloadAsFile(
-                                report.admin_response.logs,
+                                report.admin_response?.logs,
                                 `logs-${report.id}.txt`
                               )
                             }

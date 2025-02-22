@@ -2,7 +2,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import apiClient from "@/utils/appClient";
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,10 +21,7 @@ import {
   ArrowDownNarrowWideIcon,
   ArrowUpNarrowWideIcon,
   Eye,
-  FileText,
   Heart,
-  Star,
-  Upload,
 } from "lucide-react"; // Import Lucide icons
 import Rating from "@/components/Rating";
 import SubmitRating from "@/components/SubmitRating";
@@ -393,7 +390,7 @@ const Gallery: React.FC = () => {
       <div className="flex-1 flex flex-col gap-6 px-4 py-8">
         {/* Gallery Title Section */}
         <div className="text-5xl font-extrabold text-center text-gray-800">
-          Gallery
+          Public Gallery
         </div>
 
         <div className="text-xl text-center text-gray-500 mb-2 italic">
@@ -410,24 +407,7 @@ const Gallery: React.FC = () => {
               onChange={(e) => handleSearch(e)}
               className="w-full border rounded-lg p-2 pr-10"
             />
-            <label
-              htmlFor="file-upload"
-              className="absolute right-3 top-2.5 cursor-pointer"
-            >
-              <Upload size={20} className="text-gray-500 hover:text-blue-500" />
-            </label>
-            <input
-              id="file-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
           </div>
-
-          <Button onClick={handleUpload} disabled={!selectedFile}>
-            Upload & Filter
-          </Button>
 
           {/* Filter and Sort */}
           <div className="flex items-center gap-4">

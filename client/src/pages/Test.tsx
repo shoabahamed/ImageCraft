@@ -531,7 +531,7 @@ const Test = () => {
                 <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                   AI TOOLS
                 </div>
-                <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <AITools2
                     canvas={mainCanvasRef.current!}
                     imageRef={currentImageRef!}

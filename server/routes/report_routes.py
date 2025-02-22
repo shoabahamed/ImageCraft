@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message, get_project_log
+from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message, get_project_log, add_style_img, get_all_style_img, delete_style_img
 from middleware.auth import auth_middleware
 
 report_routes = Blueprint("report_routes", __name__)
@@ -143,6 +143,53 @@ def get_project_log_route(project_id):
 
     # For POST requests, proceed with save_report logic
     return get_project_log(project_id)
+
+
+
+
+@report_routes.route("/api/add_style_img", methods=["OPTIONS", "POST"])
+def add_style_img_route():
+
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+
+    # For POST requests, proceed with save_report logic
+    return add_style_img()
+
+
+
+
+@report_routes.route("/api/all_style_img", methods=["OPTIONS", "GET"])
+def get_all_style_img_route():
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+
+    # For POST requests, proceed with save_report logic
+    return get_all_style_img()
+
+
+
+
+
+@report_routes.route("/api/delete_style_img/<image_id>", methods=["OPTIONS", "DELETE"])
+def delete_style_image_route(image_id):
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+    return delete_style_img(image_id)
 
 
 

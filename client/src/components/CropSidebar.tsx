@@ -4,7 +4,6 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import IconComponent from "./icon-component";
@@ -29,6 +28,8 @@ type Props = {
 const CropSidebar = ({ canvas, image }: Props) => {
   const { addLog } = useLogContext();
   const { selectedObject, setSelectedObject } = useCanvasObjects();
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
 
   // Helper function to create shapes
   const getShape = (shapeType: string) => {
@@ -107,6 +108,10 @@ const CropSidebar = ({ canvas, image }: Props) => {
         image.clipPath = null; // Remove the clipping path
       }
 
+      if (image.clipPath) {
+        image.clipPath = null; // Remove the clipping path
+      }
+
       setSelectedObject(null);
     };
 
@@ -114,55 +119,56 @@ const CropSidebar = ({ canvas, image }: Props) => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
-        }
+        // if (activeObject.cropRect != undefined) {
+        // const newWidth = Math.floor(
+        //   activeObject.width! * activeObject.scaleX!
+        // );
+        // const newHeight = Math.floor(
+        //   activeObject.height! * activeObject.scaleY!
+        // );
+
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
+        // }
       }
     };
 
     const handleObjectUpdated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
+        // const objectName = activeObject.type || "Unknown Object";
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
+        // if (activeObject.cropRect != undefined) {
+        // const newWidth = Math.floor(
+        //   activeObject.width! * activeObject.scaleX!
+        // );
+        // const newHeight = Math.floor(
+        //   activeObject.height! * activeObject.scaleY!
+        // );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
-        }
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
+        // }
       }
     };
 
     const handleObjectModified = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
+        // const objectName = activeObject.type || "Unknown Object";
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
+        // if (activeObject.cropRect != undefined) {
+        // const newWidth = Math.floor(
+        //   activeObject.width! * activeObject.scaleX!
+        // );
+        // const newHeight = Math.floor(
+        //   activeObject.height! * activeObject.scaleY!
+        // );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
-        }
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
+        // }
       }
     };
 
@@ -183,17 +189,16 @@ const CropSidebar = ({ canvas, image }: Props) => {
         });
 
         setSelectedObject(activeObject);
-        if (activeObject.cropRect != undefined) {
-          const newWidth = Math.floor(
-            activeObject.width! * activeObject.scaleX!
-          );
-          const newHeight = Math.floor(
-            activeObject.height! * activeObject.scaleY!
-          );
+        // if (activeObject.cropRect != undefined) {
+        //   const newWidth = Math.floor(
+        //     activeObject.width! * activeObject.scaleX!
+        //   );
+        //   const newHeight = Math.floor(
+        //     activeObject.height! * activeObject.scaleY!
+        //   );
 
-          setCropWidth(newWidth.toString());
-          setCropHeight(newHeight.toString());
-        }
+        // setCropWidth(newWidth.toString());
+        // setCropHeight(newHeight.toString());
       }
     };
 
@@ -202,17 +207,21 @@ const CropSidebar = ({ canvas, image }: Props) => {
     canvas.on("selection:cleared", handleObjectCleared);
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
+    canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:scaling", handleObjectScaled);
 
     return () => {
       if (!image.clipPath) {
+        console.log("sdkfd");
         canvas.getObjects().forEach((obj) => {
+          // @ts-ignore
           if (obj.name?.startsWith("Frame")) {
             addLog({
               section: "crop&cut",
               tab: "cut",
               event: "deletion",
-              message: `deleted unused shape ${selectedObject.type}`,
-              objType: selectedObject.type,
+              message: `deleted unused shape ${obj.type}`,
+              objType: obj.type,
             });
 
             canvas.remove(obj);
@@ -226,49 +235,53 @@ const CropSidebar = ({ canvas, image }: Props) => {
       canvas.off("selection:cleared", handleObjectCleared);
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
     };
   }, [canvas]);
 
   // Add crop handler to precisely surround the canvas
-  const addCropHandler = () => {
-    if (selectedObject) {
-      image.clipPath = null; // Remove the clipping path
-      canvas.remove(selectedObject);
-    }
+  // const addCropHandler = () => {
+  //   if (selectedObject) {
+  //     image.clipPath = null; // Remove the clipping path
+  //     canvas.remove(selectedObject);
+  //   }
 
-    // Get actual canvas dimensions
-    const canvasWidth = canvas.getWidth();
-    const canvasHeight = canvas.getHeight();
+  //   // Get actual canvas dimensions
+  //   const canvasWidth = canvas.getWidth();
+  //   const canvasHeight = canvas.getHeight();
 
-    // Create a rectangle exactly surrounding the canvas
-    const cropRect = new Rect({
-      top: 0, // Start at the top-left corner
-      left: 0,
-      width: canvasWidth, // Match canvas width
-      height: canvasHeight, // Match canvas height
-      fill: "000",
-      opacity: 0.5,
-      stroke: "#00ff00",
-      strokeWidth: 5, // Border thickness
-      selectable: true, // Allow selection
-      lockMovementX: true, // Lock horizontal movement
-      lockMovementY: true, // Lock vertical movement
-      lockRotation: true, // Prevent rotation
-      hasControls: true, // Allow resizing/scaling
-      lockScalingFlip: true, // Prevent scaling to flip
-    });
+  //   // Create a rectangle exactly surrounding the canvas
+  //   const cropRect = new Rect({
+  //     top: 0, // Start at the top-left corner
+  //     left: 0,
+  //     width: canvasWidth, // Match canvas width
+  //     height: canvasHeight, // Match canvas height
+  //     fill: "000",
+  //     opacity: 0.5,
+  //     stroke: "#00ff00",
+  //     strokeWidth: 5, // Border thickness
+  //     selectable: true, // Allow selection
+  //     lockMovementX: true, // Lock horizontal movement
+  //     lockMovementY: true, // Lock vertical movement
+  //     lockRotation: true, // Prevent rotation
+  //     hasControls: true, // Allow resizing/scaling
+  //     lockScalingFlip: true, // Prevent scaling to flip
+  //   });
 
-    cropRect.set({ cropRect: true });
+  //   cropRect.set({ cropRect: true });
 
-    // Add the crop rectangle to the canvas
-    canvas.add(cropRect);
-    canvas.setActiveObject(cropRect);
-    canvas.renderAll();
-  };
+  //   // Add the crop rectangle to the canvas
+  //   canvas.add(cropRect);
+  //   canvas.setActiveObject(cropRect);
+  //   canvas.renderAll();
+  // };
 
   // Function to add shapes to the canvas
   const addShape = (shapeType: string) => {
     if (selectedObject) {
+      // TODO: add log here
+
       // TODO: add log here
 
       image.clipPath = null; // Remove the clipping path
@@ -280,7 +293,16 @@ const CropSidebar = ({ canvas, image }: Props) => {
     canvas.add(shape);
     canvas.setActiveObject(shape); // Set the newly added shape as the active object
     setSelectedObject(shape);
+    setSelectedObject(shape);
     canvas.renderAll();
+
+    addLog({
+      section: "crop&cut",
+      tab: "cut",
+      event: "creation",
+      message: "created and selected shape " + shape.type + " for clipping",
+      objType: shape.type,
+    });
 
     addLog({
       section: "crop&cut",
@@ -294,6 +316,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
   // Function to apply clipping
   const handleShapeClip = () => {
     if (selectedObject) {
+      addLog({
+        section: "crop&cut",
+        tab: "cut",
+        event: "update",
+        message: `applied ${selectedObject.type} to cut the image`,
+        objType: selectedObject.type,
+      });
+
       addLog({
         section: "crop&cut",
         tab: "cut",
@@ -319,14 +349,92 @@ const CropSidebar = ({ canvas, image }: Props) => {
         objType: selectedObject.type,
       });
 
+      addLog({
+        section: "crop&cut",
+        tab: "cut",
+        event: "reset",
+        message: `removed ${selectedObject.type} cut from image`,
+        objType: selectedObject.type,
+      });
+
       image.clipPath = null; // Remove the clipping path
       canvas.remove(selectedObject);
       canvas.renderAll();
     }
   };
 
+  const handleBackGroundColorChange = (e) => {
+    canvas.backgroundColor = e.target.value;
+    addLog({
+      section: "crop&cut",
+      tab: "background",
+      event: "update",
+      message: `cavnvas background color changed to ${e.target.value}`,
+    });
+
+    setBackgroundColor(e.target.value);
+    canvas.renderAll();
+  };
+
+  const handleBackGroundImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image");
+        return;
+      }
+
+      const backgroundImageUrl = URL.createObjectURL(file);
+
+      const backgroundImage = new Image();
+      backgroundImage.src = backgroundImageUrl;
+
+      backgroundImage.onload = () => {
+        const fabricBackgroundImage = new FabricImage(backgroundImage);
+
+        const scaleX = image.getScaledWidth() / fabricBackgroundImage.width;
+
+        const scaleY = image.getScaledHeight() / fabricBackgroundImage.height;
+
+        fabricBackgroundImage.scaleX = scaleX;
+        fabricBackgroundImage.scaleY = scaleY;
+
+        canvas.backgroundImage = fabricBackgroundImage;
+        canvas.renderAll();
+
+        setBackgroundImage(fabricBackgroundImage);
+
+        addLog({
+          section: "crop&cut",
+          tab: "background",
+          event: "creation",
+          message: `added background image to canvas`,
+        });
+      };
+    }
+  };
+
+  const removeBackGroundImage = () => {
+    addLog({
+      section: "crop&cut",
+      tab: "background",
+      event: "reset",
+      message: `background removed from canvas`,
+    });
+
+    if (backgroundImage) {
+      canvas.backgroundImage = null;
+      canvas.renderAll();
+      setBackgroundImage(null);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
+      {/* <div className="w-[90%]">
       {/* <div className="w-[90%]">
         <Card>
           <CardHeader>
@@ -357,10 +465,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
               <Button onClick={addCropHandler} className="w-full">
                 Start Cropping
               </Button>
+              <Button onClick={addCropHandler} className="w-full">
+                Start Cropping
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div> */}
+      {/* </div>  */}
 
       <div className="w-[90%]">
         <Card>
@@ -390,9 +502,63 @@ const CropSidebar = ({ canvas, image }: Props) => {
                 handleClick={() => addShape("elipse")}
               />
             </div>
+
             <button className="w-full custom-button" onClick={handleShapeClip}>
               CUT
             </button>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="w-[90%]">
+        <Card>
+          <CardHeader>
+            <CardDescription className="text-center">
+              Canvas BackGround
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between gap-2">
+                <label
+                  htmlFor="color_picker"
+                  className="text-sm text-slate-400 mt-2"
+                >
+                  Color
+                </label>
+                <Input
+                  className="w-[25%] border-none cursor-pointer rounded"
+                  id="color_picker"
+                  type="color"
+                  value={backgroundColor}
+                  onChange={(e) => {
+                    handleBackGroundColorChange(e);
+                  }}
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="background-image"
+                  className="custom-button w-full"
+                >
+                  Add Image
+                </Label>
+                <Input
+                  id="background-image"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleBackGroundImageChange}
+                />
+              </div>
+              <div>
+                <button
+                  className="custom-button w-full"
+                  onClick={removeBackGroundImage}
+                >
+                  Remove Image
+                </button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

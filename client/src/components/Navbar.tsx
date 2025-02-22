@@ -71,7 +71,7 @@ const Navbar = () => {
     const username = urlParams.get("username");
 
     // If email and token are present, store them and clear the query string
-    if (email && token && role) {
+    if (email && token && role && username) {
       const userData = { email, token, role, username };
       localStorage.setItem("user", JSON.stringify(userData));
       dispatch({ type: "LOGIN", payload: userData });

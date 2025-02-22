@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.project_contoller import save_project, get_projects, get_all_projects, get_project_by_id, delete_project, update_project_visibility, update_project_bookmark, rate_project
+from controllers.project_contoller import save_project, get_projects, get_all_projects, get_project_by_id, delete_project, update_project_visibility, update_project_bookmark, rate_project, update_project_view_count
 from middleware.auth import auth_middleware
 
 project_routes = Blueprint("project_routes", __name__)
@@ -132,6 +132,21 @@ def rate_project_route():
 
     # For POST requests, proceed with save_project logic
     return rate_project()
+
+
+
+@project_routes.route("/api/projects/update_views", methods=["OPTIONS", "POST"])
+def update_project_view_count_route():
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+
+    # For POST requests, proceed with save_project logic
+    return update_project_view_count()
 
 
 

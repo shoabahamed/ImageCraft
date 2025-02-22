@@ -459,7 +459,6 @@ const Gallery: React.FC = () => {
               key={project._id}
               className="w-full mx-auto bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
             >
-              {/* Image Section */}
               <div className="relative">
                 <img
                   src={project.canvas_image_url}

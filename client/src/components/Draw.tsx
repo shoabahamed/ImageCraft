@@ -117,7 +117,6 @@ const Draw = ({ canvas }: DrawProps) => {
         message: `created brush strokes`,
       });
     };
-
     // Attach event listener for path creation
     canvas.on("path:created", handlePathCreated);
 

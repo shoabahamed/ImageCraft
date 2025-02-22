@@ -67,7 +67,6 @@ def apply_style_transfer():
     stylized_img.save(buffer, format="png")
     buffer.seek(0)
     image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
     return jsonify({"success": True, "message": "Style Trasnfer Successfull", "image": image_base64}), 200
 
   except Exception as e:

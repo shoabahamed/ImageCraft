@@ -108,6 +108,10 @@ const CropSidebar = ({ canvas, image }: Props) => {
         image.clipPath = null; // Remove the clipping path
       }
 
+      if (image.clipPath) {
+        image.clipPath = null; // Remove the clipping path
+      }
+
       setSelectedObject(null);
     };
 
@@ -203,6 +207,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
     canvas.on("selection:cleared", handleObjectCleared);
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
+    canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:scaling", handleObjectScaled);
 
     return () => {
       if (!image.clipPath) {
@@ -227,6 +233,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
       canvas.off("selection:created", handleObjectCreated);
       canvas.off("selection:updated", handleObjectUpdated);
       canvas.off("selection:cleared", handleObjectCleared);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
     };
@@ -274,6 +282,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
     if (selectedObject) {
       // TODO: add log here
 
+      // TODO: add log here
+
       image.clipPath = null; // Remove the clipping path
       canvas.remove(selectedObject);
     }
@@ -283,7 +293,16 @@ const CropSidebar = ({ canvas, image }: Props) => {
     canvas.add(shape);
     canvas.setActiveObject(shape); // Set the newly added shape as the active object
     setSelectedObject(shape);
+    setSelectedObject(shape);
     canvas.renderAll();
+
+    addLog({
+      section: "crop&cut",
+      tab: "cut",
+      event: "creation",
+      message: "created and selected shape " + shape.type + " for clipping",
+      objType: shape.type,
+    });
 
     addLog({
       section: "crop&cut",
@@ -305,6 +324,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
         objType: selectedObject.type,
       });
 
+      addLog({
+        section: "crop&cut",
+        tab: "cut",
+        event: "update",
+        message: `applied ${selectedObject.type} to cut the image`,
+        objType: selectedObject.type,
+      });
+
       selectedObject.absolutePositioned = true; // Required for proper clipping
       image.clipPath = selectedObject;
       canvas.renderAll();
@@ -314,6 +341,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
   // Reset clipping
   const resetClip = () => {
     if (image.clipPath && selectedObject) {
+      addLog({
+        section: "crop&cut",
+        tab: "cut",
+        event: "reset",
+        message: `removed ${selectedObject.type} cut from image`,
+        objType: selectedObject.type,
+      });
+
       addLog({
         section: "crop&cut",
         tab: "cut",
@@ -400,6 +435,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
       {/* <div className="w-[90%]">
+      {/* <div className="w-[90%]">
         <Card>
           <CardHeader>
             <CardDescription>Crop</CardDescription>
@@ -429,10 +465,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
               <Button onClick={addCropHandler} className="w-full">
                 Start Cropping
               </Button>
+              <Button onClick={addCropHandler} className="w-full">
+                Start Cropping
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div> */}
+      {/* </div>  */}
 
       <div className="w-[90%]">
         <Card>
@@ -462,6 +502,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
                 handleClick={() => addShape("elipse")}
               />
             </div>
+
             <button className="w-full custom-button" onClick={handleShapeClip}>
               CUT
             </button>

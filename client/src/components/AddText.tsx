@@ -89,6 +89,7 @@ const AddText = ({ canvas }: AddTextProps) => {
       fontStyle: isItalic ? "italic" : "normal",
     });
     text.set("id", textId);
+    text.set("id", textId);
     text.set("isUpper", isUpper);
     text.set({
       // lockScalingX: true, // Disable horizontal scaling
@@ -97,6 +98,12 @@ const AddText = ({ canvas }: AddTextProps) => {
     });
     canvas.add(text);
     canvas.setActiveObject(text);
+    addLog({
+      section: "text",
+      tab: "text",
+      event: "create",
+      message: `Created text object with ID ${textId}`,
+    });
     addLog({
       section: "text",
       tab: "text",
@@ -262,10 +269,16 @@ const AddText = ({ canvas }: AddTextProps) => {
     canvas.on("selection:updated", handleObjectUpdated);
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
+    canvas.on("selection:updated", handleObjectUpdated);
+    canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:scaling", handleObjectScaled);
     canvas.on("selection:cleared", handleObjectDeselected);
 
     return () => {
       canvas.off("selection:created", handleObjectSelected);
+      canvas.off("selection:updated", handleObjectUpdated);
+      canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:scaling", handleObjectScaled);
       canvas.off("selection:updated", handleObjectUpdated);
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);

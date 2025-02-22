@@ -100,6 +100,7 @@ const Home = () => {
               }
             >
               Gallery
+              Gallery
             </button>
           )}
         </div>

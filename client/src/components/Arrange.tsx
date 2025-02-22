@@ -16,6 +16,9 @@ import { useEffect } from "react";
 import { useLogContext } from "@/hooks/useLogContext";
 import ImageSize from "./ImageSize";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
 type ArrangeProps = {
   canvas: Canvas;
@@ -183,6 +186,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       <div className="w-[90%]">
         <ImageSize canvas={canvas} image={image} />
       </div>
+
     </div>
   );
 };

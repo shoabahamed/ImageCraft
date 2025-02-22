@@ -17,7 +17,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { number } from "zod";
+
 
 interface Project {
   _id: string;
@@ -76,6 +76,7 @@ const Projects: React.FC = () => {
         // console.log(response.data.data.projects);
       } catch (err) {
         setError("Failed to fetch projects");
+        console.error(err);
         console.error(err);
       } finally {
         setLoading(false);

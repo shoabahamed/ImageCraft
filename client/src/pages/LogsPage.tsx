@@ -38,7 +38,6 @@ const LogsPage: React.FC = () => {
             },
           }
         );
-
         setLogs(response.data);
       } catch (error) {
         toast({

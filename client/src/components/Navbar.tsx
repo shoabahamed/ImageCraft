@@ -244,6 +244,10 @@ const Navbar = () => {
     navigate("/");
   };
 
+  const navigateToGallery = () => {
+    navigate("/gallery");
+  };
+
   return (
     <nav className="w-full pt-3">
       <div className="flex items-center justify-between mx-3 border-b-2 border-slate-300 pb-3">
@@ -251,7 +255,7 @@ const Navbar = () => {
           className="flex items-center space-x-2 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <p className="text-3xl font-bold italic">PixelTune</p>
+          <p className="text-3xl font-bold italic">StyleForge</p>
         </div>
         <div className="flex gap-9 items-center">
           {user ? (

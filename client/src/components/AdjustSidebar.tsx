@@ -128,9 +128,25 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
         message: `removed filter ${predefinedFilter} `,
       });
     }
+    if (predefinedFilter) {
+      addLog({
+        section: "adjust",
+        tab: "filter",
+        event: "deletion",
+        message: `removed filter ${predefinedFilter} `,
+      });
+    }
     if (predefinedFilter && filterType === predefinedFilter) {
       setPredefinedFilter("");
     } else {
+      addLog({
+        section: "adjust",
+        tab: "filter",
+        event: "update",
+        message: `applied filter ${filterType} `,
+        value: predefinedFilter,
+      });
+
       addLog({
         section: "adjust",
         tab: "filter",
@@ -171,6 +187,13 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
       message: `reseted all image color properties `,
     });
 
+    addLog({
+      section: "adjust",
+      tab: "color",
+      event: "reset",
+      message: `reseted all image color properties `,
+    });
+
     setBrightnessValue(0);
     setVibranceValue(0);
     setContrastValue(0);
@@ -186,6 +209,13 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
       message: `reseted all image detail properties `,
     });
 
+    addLog({
+      section: "adjust",
+      tab: "detail",
+      event: "reset",
+      message: `reseted all image detail properties `,
+    });
+
     setOpacityValue(1);
     setPixelateValue(0);
     setNoiseValue(0);
@@ -193,6 +223,12 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   const handleFilterReset = () => {
+    addLog({
+      section: "adjust",
+      tab: "filter",
+      event: "deletion",
+      message: `removed all filters`,
+    });
     addLog({
       section: "adjust",
       tab: "filter",

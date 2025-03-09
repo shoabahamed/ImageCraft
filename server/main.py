@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 from flask_cors import CORS
 from routes.auth_routes import auth_routes
 from routes.project_routes import project_routes
@@ -11,7 +11,7 @@ load_dotenv()
 
 
 app = Flask(__name__)
-
+app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # ✅ Allow 50MB file uploads
 
 app.secret_key = os.getenv("APP_SECRET")
 app.config['ORG_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
@@ -36,7 +36,6 @@ def get_canvas_image(filename):
 def get_style_image(filename):
     print(filename)
     return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
-
 
 
 # Register Blueprints

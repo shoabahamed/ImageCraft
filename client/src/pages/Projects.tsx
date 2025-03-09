@@ -18,7 +18,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-
 interface Project {
   _id: string;
   user_id: string;
@@ -33,6 +32,8 @@ interface Project {
   rendered_image_shape: { width: number; height: number };
   image_scale: { scaleX: number; scaleY: number };
   project_name: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 const Projects: React.FC = () => {
@@ -52,7 +53,7 @@ const Projects: React.FC = () => {
 
   const calculatePages = (totalProjects: number) => {
     const totalPages = Math.ceil(totalProjects / projectPerPage);
-    console.log(totalProjects);
+    // console.log(totalProjects);
     const temp: number[] = [];
     for (let i = 1; i <= totalPages; i++) {
       temp.push(i);
@@ -70,9 +71,22 @@ const Projects: React.FC = () => {
             Authorization: `Bearer ${user?.token}`,
           },
         });
-        setProjects(response.data.data.projects);
-        setFilteredProjects(response.data.data.projects);
-        setPages(calculatePages(response.data.data.projects.length));
+
+        const fetchedProjects = response.data.data.projects.map(
+          (project: Project) => ({
+            ...project,
+            created_at: new Date(project.created_at),
+            updated_at: new Date(project.updated_at),
+          })
+        );
+
+        const sortedProjects = fetchedProjects.sort((a, b) => {
+          return b.updated_at.getTime() - a.updated_at.getTime();
+        });
+
+        setProjects(sortedProjects);
+        setFilteredProjects(sortedProjects);
+        setPages(calculatePages(sortedProjects.length));
         // console.log(response.data.data.projects);
       } catch (err) {
         setError("Failed to fetch projects");
@@ -132,6 +146,13 @@ const Projects: React.FC = () => {
             : project
         )
       );
+      setFilteredProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project.project_id === projectId
+            ? { ...project, is_public: isPublic ? "true" : "false" }
+            : project
+        )
+      );
     } catch (error) {
       toast({
         description: `Failed to make project ${
@@ -150,6 +171,9 @@ const Projects: React.FC = () => {
 
       setProjects(
         projects.filter((project) => project.project_id !== projectId)
+      );
+      setFilteredProjects(
+        filteredProjects.filter((project) => project.project_id !== projectId)
       );
       setCurrentPageNo(1);
       toast({
@@ -315,7 +339,7 @@ const Projects: React.FC = () => {
               Math.min(currentPageNo + 1, pages.length)
             )
             .map((pageNo) => (
-              <PaginationItem>
+              <PaginationItem key={pageNo}>
                 <PaginationLink
                   onClick={() => setCurrentPageNo(pageNo)}
                   isActive={pageNo === currentPageNo}

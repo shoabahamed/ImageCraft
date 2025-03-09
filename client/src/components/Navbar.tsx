@@ -30,6 +30,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { Link, useNavigate } from "react-router-dom";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 const signupformSchema = z.object({
   username: z.string().min(2, {
@@ -57,6 +58,7 @@ const loginformSchema = z.object({
 const Navbar = () => {
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { user, dispatch } = useAuthContext();
   const navigate = useNavigate();
 
@@ -344,7 +346,27 @@ const Navbar = () => {
                               <FormItem className="grid gap-2">
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="123456" {...field} />
+                                  <div className=" relative">
+                                    <Input
+                                      placeholder="123456"
+                                      {...field}
+                                      type={showPassword ? "text" : "password"}
+                                    />
+
+                                    <button
+                                      type="button"
+                                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                      onClick={() =>
+                                        setShowPassword((prev) => !prev)
+                                      }
+                                    >
+                                      {showPassword ? (
+                                        <EyeIcon className="w-5 h-5 text-gray-500" />
+                                      ) : (
+                                        <EyeOffIcon className="w-5 h-5 text-gray-500" />
+                                      )}
+                                    </button>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -439,7 +461,26 @@ const Navbar = () => {
                               <FormItem>
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="123456" {...field} />
+                                  <div className="relative">
+                                    <Input
+                                      placeholder="123456"
+                                      {...field}
+                                      type={showPassword ? "text" : "password"}
+                                    />
+                                    <button
+                                      type="button"
+                                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                      onClick={() =>
+                                        setShowPassword((prev) => !prev)
+                                      }
+                                    >
+                                      {showPassword ? (
+                                        <EyeIcon className="w-5 h-5 text-gray-500" />
+                                      ) : (
+                                        <EyeOffIcon className="w-5 h-5 text-gray-500" />
+                                      )}
+                                    </button>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

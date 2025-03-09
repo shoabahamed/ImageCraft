@@ -34,11 +34,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 interface Project {
   _id: string;
   user_id: string;
   username: string;
   project_id: string;
+  project_name: string;
   original_image_url: string;
   canvas_image_url: string;
   bookmarked: boolean;
@@ -47,6 +58,8 @@ interface Project {
   total_views: number;
   total_bookmark: number;
   similar_score?: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 const Gallery: React.FC = () => {
@@ -69,10 +82,27 @@ const Gallery: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
 
-  const [selectedFilter, setSelectedFilter] = useState<string>("rating");
+  const [selectedFilter, setSelectedFilter] = useState<string>("release");
   const [sortOrder, setSortOrder] = useState<string>("descending");
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const projectPerPage = 8;
+  const [startIndex, setStartIndex] = useState(0);
+  const [endIndex, setEndIndex] = useState(projectPerPage);
+  const [currentPageNo, setCurrentPageNo] = useState(1);
+  const [pages, setPages] = useState<number[]>([1]);
+
+  const calculatePages = (totalProjects: number) => {
+    const totalPages = Math.ceil(totalProjects / projectPerPage);
+    // console.log(totalProjects);
+    const temp: number[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+      temp.push(i);
+    }
+
+    return temp;
+  };
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -83,9 +113,21 @@ const Gallery: React.FC = () => {
             Authorization: `Bearer ${user?.token}`,
           },
         });
-        setProjects(response.data.data.projects);
-        setFilteredProjects(response.data.data.projects);
-        // console.log(response.data.data.projects);
+        const fetchedProjects = response.data.data.projects.map(
+          (project: Project) => ({
+            ...project,
+            created_at: new Date(project.created_at),
+            updated_at: new Date(project.updated_at),
+          })
+        );
+
+        const sortedProjects = fetchedProjects.sort((a, b) => {
+          return b.updated_at.getTime() - a.updated_at.getTime();
+        });
+
+        setProjects(sortedProjects);
+        setFilteredProjects(sortedProjects);
+        setPages(calculatePages(sortedProjects.length));
       } catch (err) {
         setError("Failed to fetch projects");
         console.error(err);
@@ -102,9 +144,20 @@ const Gallery: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
+    const tempProjects = projects.filter((project) =>
+      project.username.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     switch (selectedFilter) {
+      case "release":
+        tempProjects.sort((a, b) => {
+          return sortOrder === "ascending"
+            ? a.updated_at.getTime() - b.updated_at.getTime()
+            : b.updated_at.getTime() - a.updated_at.getTime();
+        });
+        break;
       case "rating":
-        filteredProjects.sort((a, b) => {
+        tempProjects.sort((a, b) => {
           const aValue = calculateRating(a.total_rating, a.rating_count);
           const bValue = calculateRating(b.total_rating, b.rating_count);
 
@@ -112,29 +165,40 @@ const Gallery: React.FC = () => {
         });
         break;
       case "totalviews":
-        filteredProjects.sort((a, b) => {
+        tempProjects.sort((a, b) => {
           const aValue = a.total_views;
           const bValue = b.total_views;
           return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
         });
         break;
       case "bookmark":
-        filteredProjects.sort((a, b) => {
+        tempProjects.sort((a, b) => {
           const aValue = a.total_bookmark;
           const bValue = b.total_bookmark;
           return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
         });
         break;
       default:
-        filteredProjects.sort((a, b) => {
-          const aValue = calculateRating(a.total_rating, a.rating_count);
-          const bValue = calculateRating(b.total_rating, b.rating_count);
-
-          return sortOrder === "ascending" ? aValue - bValue : bValue - aValue;
+        tempProjects.sort((a, b) => {
+          return sortOrder === "ascending"
+            ? a.updated_at.getTime() - b.updated_at.getTime()
+            : b.updated_at.getTime() - a.updated_at.getTime();
         });
         break;
     }
-  }, [sortOrder, selectedFilter]);
+
+    setFilteredProjects(tempProjects);
+    setPages(calculatePages(tempProjects.length));
+    setCurrentPageNo(1);
+  }, [searchQuery, sortOrder, selectedFilter]);
+
+  useEffect(() => {
+    const eIndex = Math.max(currentPageNo * projectPerPage, 0);
+    const sIndex = Math.min(eIndex - projectPerPage, projects.length);
+
+    setStartIndex(sIndex);
+    setEndIndex(eIndex);
+  }, [currentPageNo]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -310,22 +374,6 @@ const Gallery: React.FC = () => {
     }
   };
 
-  // Handle search input change
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQuery(query);
-
-    // Filter projects based on the search query
-    if (query === "") {
-      setFilteredProjects(projects);
-    } else {
-      const filtered = projects.filter((project) =>
-        project.username.toLowerCase().includes(query)
-      );
-      setFilteredProjects(filtered);
-    }
-  };
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files?.[0]) {
       setSelectedFile(event.target.files[0]);
@@ -384,6 +432,7 @@ const Gallery: React.FC = () => {
       toast({ description: "Image upload failed." + error, duration: 3000 });
     }
   };
+
   return (
     <div className="max-h-screen min-w-full flex flex-col">
       <Navbar />
@@ -404,7 +453,7 @@ const Gallery: React.FC = () => {
               type="text"
               placeholder="Search by username"
               value={searchQuery}
-              onChange={(e) => handleSearch(e)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full border rounded-lg p-2 pr-10"
             />
           </div>
@@ -418,7 +467,7 @@ const Gallery: React.FC = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="release">All</SelectItem>
+                <SelectItem value="release">Lastest</SelectItem>
                 <SelectItem value="rating">Rating</SelectItem>
                 <SelectItem value="bookmark">BookMark</SelectItem>
                 <SelectItem value="totalviews">Views</SelectItem>
@@ -435,7 +484,7 @@ const Gallery: React.FC = () => {
                 }`}
                 onClick={() => setSortOrder("ascending")}
               >
-                <ArrowUpNarrowWideIcon size={20} />
+                <ArrowDownNarrowWideIcon size={20} />
               </button>
               <button
                 className={`p-2 rounded-full transition ${
@@ -445,16 +494,15 @@ const Gallery: React.FC = () => {
                 }`}
                 onClick={() => setSortOrder("descending")}
               >
-                <ArrowDownNarrowWideIcon size={20} />
+                <ArrowUpNarrowWideIcon size={20} />
               </button>
             </div>
           </div>
         </div>
 
         {/* Gallery Grid */}
-        {/* Gallery Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 px-4 py-4">
-          {filteredProjects.map((project) => (
+          {filteredProjects.slice(startIndex, endIndex).map((project) => (
             <Card
               key={project._id}
               className="w-full mx-auto bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
@@ -543,6 +591,53 @@ const Gallery: React.FC = () => {
             </Card>
           ))}
         </div>
+      </div>
+
+      <div>
+        <Pagination className="flex justify-end p-7">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                className="cursor-pointer"
+                onClick={() => {
+                  setCurrentPageNo(Math.max(currentPageNo - 1, 1));
+                }}
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+
+            {pages
+              .slice(
+                Math.max(currentPageNo - 2, 0),
+                Math.min(currentPageNo + 1, pages.length)
+              )
+              .map((pageNo) => (
+                <PaginationItem key={pageNo}>
+                  <PaginationLink
+                    onClick={() => setCurrentPageNo(pageNo)}
+                    isActive={pageNo === currentPageNo}
+                    className="cursor-pointer"
+                  >
+                    {pageNo}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                className="cursor-pointer"
+                onClick={() => {
+                  setCurrentPageNo(Math.min(currentPageNo + 1, pages.length));
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
 
       {/* Rate Modal */}

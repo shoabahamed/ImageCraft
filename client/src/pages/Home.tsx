@@ -57,7 +57,7 @@ const Home = () => {
       },
     });
 
-  const hanldeImageUpload = (imageUrl: string) => {
+  const handleImageUpload = (imageUrl: string) => {
     navigate("/mainpage", { state: { imageUrl } });
   };
 
@@ -99,7 +99,6 @@ const Home = () => {
                 })
               }
             >
-              Gallery
               Gallery
             </button>
           )}
@@ -155,7 +154,7 @@ const Home = () => {
               <button
                 className="custom-button w-32"
                 onClick={() => {
-                  hanldeImageUpload(dataURL);
+                  handleImageUpload(dataURL);
                 }}
               >
                 Upload

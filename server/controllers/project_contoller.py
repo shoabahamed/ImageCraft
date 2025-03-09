@@ -12,6 +12,7 @@ from torchvision import models
 import torch
 from model_config import CFG
 from utils.preprocessing import  get_similar_image_transform
+import datetime
 
 load_dotenv()
 
@@ -27,29 +28,47 @@ CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
 
 def save_project():
     try:
+        # print(f"Request content length: {request.content_length} bytes")
+        # print(f"Request headers: {request.headers}")
+        # print('hello')
+        raw_data = request.get_data()
+        # print(f"🔍 Content-Type: {request.content_type}")
+        # print(raw_data)
+        # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} bytes")
+        # # print(request.form["test"])
+        # print(f"Received form keys: {list(request.form.keys())}")
+        # print(f"Received file keys: {list(request.files.keys())}")
+
         user_id = str(g._id)  # Extracted by the middleware
+  
+        # print(request.form.get("username"))
         usename = request.form.get("username")
+    
         canvas_id = request.form.get('canvasId')
+      
         is_public = request.form.get("isPublic")
+        
         canvas_data = request.form.get('canvasData')  # JSON string
+        
         canvas_logs = request.form.get('canvasLogs')
+        
         original_image_file = request.files.get('originalImage')  # Get the original image file from the form
         canvas_image_file = request.files.get('canvasImage')
         project_name = request.form.get("projectName")
-
+        
         # Retrieve JSON-like data from form fields
         original_image_shape = request.form.get('originalImageShape')
         final_image_shape = request.form.get('finalImageShape')
         image_scale = request.form.get('imageScale')
         rendered_image_shape = request.form.get("renderedImageShape")
 
-   
+        # print(rendered_image_shape)
         # Parse the JSON strings into Python dictionaries (optional)
         original_image_shape = eval(original_image_shape)
         final_image_shape = eval(final_image_shape)
         image_scale = eval(image_scale)
         rendered_image_shape = eval(rendered_image_shape)
-
+        # print(rendered_image_shape)
         # whether loaded from saved
         loaded_from_saved = request.form.get("loadedFromSaved")
 
@@ -64,37 +83,46 @@ def save_project():
         except json.JSONDecodeError:
             return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
         
+      
         
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png") 
         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
         
-
-     
+   
+        
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
             if obj.get("type").lower() == "image":
                 obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename
 
-
+     
         # Check if a project with the given project_id already exists
         existing_project = projects_collection.find_one({"project_id": canvas_id, "user_id": user_id})
         if existing_project:
             # Update the existing project
-
+            print("into existing one")
             canvas_image_file.save(canvas_image_path)
 
             projects_collection.update_one(
                 {"project_id": canvas_id, "user_id": user_id}, 
-                {"$set": {"project_data": canvas_data, "project_logs": canvas_logs, "final_image_shape": final_image_shape, "project_name": project_name}}
+                {"$set": {
+                    "project_data": canvas_data,
+                    "project_logs": canvas_logs, 
+                    "final_image_shape": final_image_shape, 
+                    "project_name": project_name,
+                    "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
+                }}
             )
             response_message = "Project updated successfully"
             status_code = 200
             
         else:
+            print('sdjf')
             original_image_file.save(original_image_path)
             canvas_image_file.save(canvas_image_path)
+            print('sdjf')
             # Create a new project
             new_project = {
                 "user_id": user_id,
@@ -114,7 +142,9 @@ def save_project():
                 "final_image_shape": final_image_shape,
                 "rendered_image_shape": rendered_image_shape,
                 "image_scale" : image_scale,
-                "project_name": project_name
+                "project_name": project_name,
+                "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
+                "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
                 
             }
            
@@ -153,6 +183,7 @@ def save_project():
         return jsonify({"success": True, "message": response_message, "data": response}), status_code
 
     except Exception as e:
+
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
 def get_projects():
@@ -206,7 +237,10 @@ def get_all_projects():
             "total_rating": 1,
             "rating_count": 1,
             "total_views": 1,
-            "total_bookmark": 1
+            "total_bookmark": 1,
+            "updated_at" : 1,
+            "created_at": 1,
+            "project_name": 1
         })
     
     # Convert the cursor to a list of dictionaries
@@ -293,6 +327,7 @@ def update_project_visibility():
             is_public = "false"
         
         
+        
         # Validate input
         if not project_id or is_public is None:
             return jsonify({"success": False, "message": "Invalid data"}), 400
@@ -303,12 +338,12 @@ def update_project_visibility():
             {"project_id": project_id},
             {"$set": {"is_public": is_public}}
         )
-
-        # update in embedding collection
-        em_result = embedding_collection.update_one(
-            {"project_id": project_id},
-            {"$set": {"is_public": is_public}}
-        )
+        
+        # # update in embedding collection
+        # em_result = embedding_collection.update_one(
+        #     {"project_id": project_id},
+        #     {"$set": {"is_public": is_public}}
+        # )
 
         # Check if the update was successful
         if result.modified_count == 1:
@@ -343,7 +378,7 @@ def update_project_bookmark():
         # get the the project
         project = projects_collection.find_one({"project_id": project_id})
         
-        
+        print("dsjf")
         # get current bookmark count
         current_bookmark_count = int(project.get("total_bookmark", 1))
 
@@ -354,7 +389,7 @@ def update_project_bookmark():
             bookmarked_projects = bookmarked_projects.difference({project_id})
             current_bookmark_count -= 1
 
-
+        print("dkfj")
         
         # Update the project's bookmark count
         result_project = projects_collection.update_one(

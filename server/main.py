@@ -23,18 +23,15 @@ CORS(app, resources={r"/server/static/*": {"origins": "*"}})
 
 @app.route('/server/static/original/<string:filename>')
 def get_original_image(filename):
-    print(filename)
     return send_from_directory(app.config['ORG_IMG_FOLDER'], filename, as_attachment=False)
 
 @app.route('/server/static/canvas/<string:filename>')
 def get_canvas_image(filename):
-    print(filename)
     return send_from_directory(app.config['CANVAS_IMG_FOLDER'], filename, as_attachment=False)
 
 
 @app.route('/server/static/style/<string:filename>')
 def get_style_image(filename):
-    print(filename)
     return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
 
 

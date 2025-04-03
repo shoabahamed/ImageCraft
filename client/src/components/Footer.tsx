@@ -30,6 +30,9 @@ import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router-dom";
 
+// TODO: saving canvas when style transfer has been done
+// TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
+
 type mapStateType = {
   scale: number;
   translation: { x: number; y: number };
@@ -202,6 +205,7 @@ const Footer = ({
 
       // json data
       const canvasJSON = canvas.toJSON();
+      canvasJSON.objects[0].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
 
       // Convert canvas image (Data URL) to a Blob and then to a File
       const canvasImageFile = await convertBlobToFile(canvasDataUrl);
@@ -211,10 +215,11 @@ const Footer = ({
       // Create FormData object and append the image and other canvas data
       const formData = new FormData();
       formData.append("canvasId", canvasId);
-      formData.append("username", user?.username); // Append the oringalimage file
-      formData.append("isPublic", "false"); // Append the oringalimage file
-      formData.append("canvasData", JSON.stringify(canvasJSON)); // Add canvas data as a string
-      formData.append("canvasLogs", JSON.stringify(logs)); // Append the oringalimage file
+      formData.append("username", user?.username);
+      formData.append("isPublic", "false");
+      formData.append("canvasData", JSON.stringify(canvasJSON));
+      formData.append("canvasLogs", JSON.stringify(logs));
+
       formData.append(
         "originalImageShape",
         JSON.stringify({ width: image.width, height: image.height })
@@ -238,9 +243,9 @@ const Footer = ({
         JSON.stringify({ scaleX: image.scaleX, scaleY: image.scaleY })
       );
       // @ts-ignore
-      formData.append("originalImage", originalImageFile); // Append the oringalimage file
+      formData.append("originalImage", originalImageFile);
       // @ts-ignore
-      formData.append("canvasImage", canvasImageFile); // Append the oringalimage
+      formData.append("canvasImage", canvasImageFile);
       formData.append("projectName", projectName);
       formData.append("loadedFromSaved", loadedFromSaved ? "true" : "false");
 
@@ -253,9 +258,6 @@ const Footer = ({
           headers: {
             Authorization: `Bearer ${user?.token}`, // Include 'Bearer'
           },
-          timeout: 60000, // Increase timeout to 60 seconds (or more if needed)
-          maxContentLength: Infinity, // Allow unlimited content length
-          maxBodyLength: Infinity, // Allow unlimited body length
         }
       );
 

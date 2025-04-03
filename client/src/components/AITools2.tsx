@@ -14,10 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useLogContext } from "@/hooks/useLogContext";
 
+// TODO: saving image when style transfer have been done
+// TODO: ability to restore original image after style transfer
+
 type Props = {
   canvas: Canvas;
   imageRef: React.RefObject<FabricImage>;
   imageUrl: string;
+  setLoadSate: (value: boolean) => void;
 };
 
 type StyleTemplate = {
@@ -26,7 +30,7 @@ type StyleTemplate = {
   image_name: string;
 };
 
-const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
+const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const { addLog } = useLogContext();
   const { toast } = useToast();
   const { user } = useAuthContext();
@@ -88,6 +92,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
   };
 
   const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
+    setLoadSate(true);
     try {
       const formData = new FormData();
 
@@ -140,6 +145,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef }: Props) => {
         duration: 3000,
       });
     }
+    setLoadSate(false);
   };
 
   useEffect(() => {

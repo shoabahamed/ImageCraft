@@ -13,6 +13,7 @@ import torch
 from model_config import CFG
 from utils.preprocessing import  get_similar_image_transform
 import datetime
+import time
 
 load_dotenv()
 
@@ -30,29 +31,26 @@ def save_project():
     try:
         # print(f"Request content length: {request.content_length} bytes")
         # print(f"Request headers: {request.headers}")
-        # print('hello')
-        raw_data = request.get_data()
-        # print(f"🔍 Content-Type: {request.content_type}")
+        # time.sleep(30)
+        # raw_data = request.get_data()
         # print(raw_data)
-        # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} bytes")
-        # # print(request.form["test"])
-        # print(f"Received form keys: {list(request.form.keys())}")
-        # print(f"Received file keys: {list(request.files.keys())}")
+        # print(f"🔍 Content-Type: {request.content_type}")
+        # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} mega bytes")
 
         user_id = str(g._id)  # Extracted by the middleware
-  
-        # print(request.form.get("username"))
+        print(request.files)
+
         usename = request.form.get("username")
     
         canvas_id = request.form.get('canvasId')
       
         is_public = request.form.get("isPublic")
         
-        canvas_data = request.form.get('canvasData')  # JSON string
+        canvas_data = request.form.get('canvasData')
         
         canvas_logs = request.form.get('canvasLogs')
         
-        original_image_file = request.files.get('originalImage')  # Get the original image file from the form
+        original_image_file = request.files.get('originalImage') 
         canvas_image_file = request.files.get('canvasImage')
         project_name = request.form.get("projectName")
         
@@ -62,36 +60,32 @@ def save_project():
         image_scale = request.form.get('imageScale')
         rendered_image_shape = request.form.get("renderedImageShape")
 
-        # print(rendered_image_shape)
         # Parse the JSON strings into Python dictionaries (optional)
         original_image_shape = eval(original_image_shape)
         final_image_shape = eval(final_image_shape)
         image_scale = eval(image_scale)
         rendered_image_shape = eval(rendered_image_shape)
-        # print(rendered_image_shape)
+
         # whether loaded from saved
         loaded_from_saved = request.form.get("loadedFromSaved")
 
-        
-        
         if not canvas_data or not original_image_file and not canvas_image_file:
             return jsonify({"success": False, "message": "Missing canvas data or image file"}), 400
-
+  
         try:
             canvas_data = json.loads(canvas_data)  # Convert the string to a JSON object
             canvas_logs = json.loads(canvas_logs)
         except json.JSONDecodeError:
             return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
         
-      
+        print("after converting string to json")
         
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png") 
         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
         
-   
-        
+
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
             if obj.get("type").lower() == "image":
@@ -100,9 +94,9 @@ def save_project():
      
         # Check if a project with the given project_id already exists
         existing_project = projects_collection.find_one({"project_id": canvas_id, "user_id": user_id})
+
         if existing_project:
             # Update the existing project
-            print("into existing one")
             canvas_image_file.save(canvas_image_path)
 
             projects_collection.update_one(
@@ -119,10 +113,9 @@ def save_project():
             status_code = 200
             
         else:
-            print('sdjf')
             original_image_file.save(original_image_path)
             canvas_image_file.save(canvas_image_path)
-            print('sdjf')
+          
             # Create a new project
             new_project = {
                 "user_id": user_id,

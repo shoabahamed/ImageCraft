@@ -266,6 +266,8 @@ const Test = () => {
                 selectable: false,
                 hoverCursor: "default",
               });
+              imageObject.clipPath = null;
+              console.log(imageObject.clipPath);
 
               // initCanvas.getObjects().forEach((obj) => {
               //   if (obj !== imageObject) {
@@ -536,6 +538,7 @@ const Test = () => {
                     canvas={mainCanvasRef.current!}
                     imageRef={currentImageRef!}
                     imageUrl={imageUrl}
+                    setLoadSate={setSpinnerLoading}
                   />
                 </div>
               </div>

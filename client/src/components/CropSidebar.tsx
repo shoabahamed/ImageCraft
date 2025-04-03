@@ -104,15 +104,11 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
   useEffect(() => {
     const handleObjectCleared = () => {
-      if (image.clipPath) {
-        image.clipPath = null; // Remove the clipping path
-      }
-
-      if (image.clipPath) {
-        image.clipPath = null; // Remove the clipping path
-      }
-
+      // if (image.clipPath) {
+      //   image.clipPath = null; // Remove the clipping path
+      // }
       setSelectedObject(null);
+      console.log(image.clipPath);
     };
 
     const handleObjectCreated = () => {
@@ -240,43 +236,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
     };
   }, [canvas]);
 
-  // Add crop handler to precisely surround the canvas
-  // const addCropHandler = () => {
-  //   if (selectedObject) {
-  //     image.clipPath = null; // Remove the clipping path
-  //     canvas.remove(selectedObject);
-  //   }
-
-  //   // Get actual canvas dimensions
-  //   const canvasWidth = canvas.getWidth();
-  //   const canvasHeight = canvas.getHeight();
-
-  //   // Create a rectangle exactly surrounding the canvas
-  //   const cropRect = new Rect({
-  //     top: 0, // Start at the top-left corner
-  //     left: 0,
-  //     width: canvasWidth, // Match canvas width
-  //     height: canvasHeight, // Match canvas height
-  //     fill: "000",
-  //     opacity: 0.5,
-  //     stroke: "#00ff00",
-  //     strokeWidth: 5, // Border thickness
-  //     selectable: true, // Allow selection
-  //     lockMovementX: true, // Lock horizontal movement
-  //     lockMovementY: true, // Lock vertical movement
-  //     lockRotation: true, // Prevent rotation
-  //     hasControls: true, // Allow resizing/scaling
-  //     lockScalingFlip: true, // Prevent scaling to flip
-  //   });
-
-  //   cropRect.set({ cropRect: true });
-
-  //   // Add the crop rectangle to the canvas
-  //   canvas.add(cropRect);
-  //   canvas.setActiveObject(cropRect);
-  //   canvas.renderAll();
-  // };
-
   // Function to add shapes to the canvas
   const addShape = (shapeType: string) => {
     if (selectedObject) {
@@ -303,27 +262,11 @@ const CropSidebar = ({ canvas, image }: Props) => {
       message: "created and selected shape " + shape.type + " for clipping",
       objType: shape.type,
     });
-
-    addLog({
-      section: "crop&cut",
-      tab: "cut",
-      event: "creation",
-      message: "created and selected shape " + shape.type + " for clipping",
-      objType: shape.type,
-    });
   };
 
   // Function to apply clipping
   const handleShapeClip = () => {
     if (selectedObject) {
-      addLog({
-        section: "crop&cut",
-        tab: "cut",
-        event: "update",
-        message: `applied ${selectedObject.type} to cut the image`,
-        objType: selectedObject.type,
-      });
-
       addLog({
         section: "crop&cut",
         tab: "cut",
@@ -341,14 +284,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
   // Reset clipping
   const resetClip = () => {
     if (image.clipPath && selectedObject) {
-      addLog({
-        section: "crop&cut",
-        tab: "cut",
-        event: "reset",
-        message: `removed ${selectedObject.type} cut from image`,
-        objType: selectedObject.type,
-      });
-
       addLog({
         section: "crop&cut",
         tab: "cut",

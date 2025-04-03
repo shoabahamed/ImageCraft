@@ -22,7 +22,11 @@ def apply_style_transfer():
   try:
     if 'originalImage' not in request.files or 'styleImage' not in request.files:
         return jsonify({"success": False, "message": "Both originalImage and styleImage must be provided"}), 400
-
+    
+    raw_data = request.get_data()
+    print(f"🔍 Content-Type: {request.content_type}")
+    print(f"Raw request size: {len(raw_data) / (1024 * 1024)} bytes")
+    print(request.files)
     # Get the files
     original_image_file = request.files['originalImage']
     style_image_file = request.files['styleImage']

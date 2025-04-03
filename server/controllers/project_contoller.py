@@ -358,6 +358,8 @@ def update_project_bookmark():
         project_id = data.get("project_id")
         bookmark = data.get("bookmark") 
 
+
+
        
         # Validate input
         if not project_id or bookmark is None:

@@ -23,8 +23,6 @@ def use_auth_middleware():
 # Define routes
 @project_routes.route("/api/save_project", methods=["OPTIONS", "POST"])
 def save_project_route():
-    print('sdkfj')
-    print("dfad")
     if request.method == "OPTIONS":
         # Handle preflight request
         response = jsonify({})

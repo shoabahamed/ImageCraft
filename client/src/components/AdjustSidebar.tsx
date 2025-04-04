@@ -6,11 +6,13 @@ import {
 } from "@/components/ui/card";
 
 import CustomSlider from "@/components/custom-slider";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Canvas, FabricImage, filters } from "fabric";
 import { Button } from "./ui/button";
 import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
+import { Exposure } from "@/utils/ExposureFilter";
+import { RBrightness } from "@/utils/RedBrightnessFilter";
 
 type AdjustSidebarProps = {
   canvas: Canvas;
@@ -49,6 +51,7 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
     (state) => state.setPredefinedFilter
   );
 
+  const [redBrightnessValue, setRedBrightnessValue] = useState(0.0);
   // Function to apply filters to the image
   const applyFilters = () => {
     // @ts-ignore
@@ -76,6 +79,13 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
           break;
       }
     }
+
+    //test filters start
+    if (redBrightnessValue !== 0) {
+      currentFilters.push(new RBrightness({ RBrightness: redBrightnessValue }));
+    }
+
+    // test filters end
 
     // Add dynamic filters
     if (brightnessValue !== 0) {
@@ -160,9 +170,9 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   };
 
   useEffect(() => {
-    console.log("brighness updateed ", brightnessValue);
     applyFilters();
   }, [
+    redBrightnessValue,
     brightnessValue,
     contrastValue,
     saturationValue,
@@ -305,6 +315,21 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
             <CardDescription className="text-center">Colors</CardDescription>
           </CardHeader>
           <CardContent className="w-full">
+            {/* test filters start */}
+            <CustomSlider
+              sliderName={"Red"}
+              min={-1}
+              max={1}
+              sliderValue={redBrightnessValue}
+              defaultValue={redBrightnessValue}
+              step={0.01}
+              setSliderValue={setRedBrightnessValue}
+              section={"adjust"}
+              tab={"color"}
+            />
+
+            {/* test filters ende */}
+
             <div className="flex flex-col gap-4 w-full">
               <CustomSlider
                 sliderName={"Brightness"}

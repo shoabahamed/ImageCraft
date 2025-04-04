@@ -22,6 +22,9 @@ import AddShape from "@/components/AddShape";
 import AITools2 from "@/components/AITools2";
 import Navbar from "@/components/Navbar";
 
+// TODO: set the image size at max to be some value possibly 2048X2048
+// TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
+
 const override: CSSProperties = {
   borderWidth: "5px",
 };

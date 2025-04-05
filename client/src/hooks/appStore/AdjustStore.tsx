@@ -10,6 +10,7 @@ type AdjustStore = {
   blurValue: number;
   noiseValue: number;
   pixelateValue: number;
+  redBrightnessValue: number;
   predefinedFilter: string | null;
   setBrightnessValue: (value: number) => void;
   setContrastValue: (value: number) => void;
@@ -20,7 +21,9 @@ type AdjustStore = {
   setBlurValue: (value: number) => void;
   setNoiseValue: (value: number) => void;
   setPixelateValue: (value: number) => void;
+  setRedBrightnessValue: (value: number) => void;
   setPredefinedFilter: (value: string | null) => void;
+  resetFilters: () => void;
 };
 
 export const useAdjustStore = create<AdjustStore>((set) => ({
@@ -33,6 +36,7 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   blurValue: 0,
   noiseValue: 0,
   pixelateValue: 0,
+  redBrightnessValue: 0,
   predefinedFilter: null,
 
   setBrightnessValue: (value) => set({ brightnessValue: value }),
@@ -44,5 +48,20 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   setBlurValue: (value) => set({ blurValue: value }),
   setNoiseValue: (value) => set({ noiseValue: value }),
   setPixelateValue: (value) => set({ pixelateValue: value }),
+  setRedBrightnessValue: (value) => set({ redBrightnessValue: value }),
   setPredefinedFilter: (value) => set({ predefinedFilter: value }),
+  resetFilters: () =>
+    set({
+      brightnessValue: 0,
+      redBrightnessValue: 0,
+      contrastValue: 0,
+      saturationValue: 0,
+      vibranceValue: 0,
+      opacityValue: 1,
+      hueValue: 0,
+      blurValue: 0,
+      noiseValue: 0,
+      pixelateValue: 0,
+      predefinedFilter: null,
+    }),
 }));

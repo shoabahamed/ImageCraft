@@ -21,6 +21,10 @@ import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import AddShape from "@/components/AddShape";
 import AITools2 from "@/components/AITools2";
 import Navbar from "@/components/Navbar";
+import {
+  applyFiltersFromDatabase,
+  subscribeToAdjustStore,
+} from "@/hooks/appStore/applyFilterSubscriber";
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -40,6 +44,10 @@ const Test = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
   const currentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
+  const [databaseFilters, setDatabaseFilters] = useState<object[] | null>(null);
+  const backupCurrentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
+  const unsubscribeRef = useRef<() => void>();
+
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const imageUrlFromState = useLocation().state?.imageUrl;
@@ -140,6 +148,30 @@ const Test = () => {
     // setMapState({ ...mapState, scale: 0.9 });
   };
 
+  // const backupImage = async () => {
+  //   if (currentImageRef.current) {
+  //     backupCurrentImageRef.current = await currentImageRef.current.clone();
+  //     console.log("cloning successfull");
+  //   }
+  // };
+
+  // const backupImage = async () => {
+  //   if (!currentImageRef.current) return;
+
+  //   try {
+  //     // Serialize the image
+  //     const serialized = currentImageRef.current.toObject();
+
+  //     // Create a true deep clone
+  //     backupCurrentImageRef.current = await fabric.util.enlivenObjects([
+  //       serialized,
+  //     ]);
+
+  //     console.log("Cloning successful");
+  //   } catch (error) {
+  //     console.error("Cloning failed:", error);
+  //   }
+  // };
   useEffect(() => {
     if (canvasRef.current) {
       const container = document.getElementById("CanvasContainer");
@@ -269,22 +301,26 @@ const Test = () => {
                 selectable: false,
                 hoverCursor: "default",
               });
-              // imageObject.clipPath = null;
-              // console.log(imageObject.clipPath);
+              //@ts-ignore
+              unsubscribeRef.current = subscribeToAdjustStore(
+                initCanvas,
+                imageObject
+              );
 
-              // initCanvas.getObjects().forEach((obj) => {
-              //   if (obj !== imageObject) {
-              //     obj.scaleX = 1;
-              //     obj.scaleY = 1;
-              //     obj.setCoords(); // Update coordinates
-              //   }
-              // });
+              // applyFiltersFromDatabase(
+              //   initCanvas,
+              //   imageObject,
+              //   canvasJSON.objects[0].filters,
+              //   canvasJSON.objects[0].opacity
+              // );
+              setDatabaseFilters(canvasJSON.objects[0].filters);
             }
 
             initCanvas.renderAll();
             // @ts-ignore
             currentImageRef.current = imageObject; // Store the Fabric.js image object reference
             mainCanvasRef.current = initCanvas; // Store the Fabric.js canvas reference
+
             initCanvas.renderAll();
 
             canvasIdRef.current = localStorage.getItem("canvasId")!;
@@ -313,7 +349,7 @@ const Test = () => {
           console.error("Failed to load canvas data:", error);
         }
       } else {
-        fabric.FabricImage.fromURL(imageUrl).then((img) => {
+        fabric.FabricImage.fromURL(imageUrl).then(async (img) => {
           const imageWidth = img.width ?? 1;
           const imageHeight = img.height ?? 1;
 
@@ -354,9 +390,13 @@ const Test = () => {
           initCanvas.add(img);
           initCanvas.renderAll();
           currentImageRef.current = img; // Set the ref directly
-          mainCanvasRef.current = initCanvas;
 
+          mainCanvasRef.current = initCanvas;
+          // await backupImage();
           // setSidebarName("Arrange");
+
+          //@ts-ignore
+          unsubscribeRef.current = subscribeToAdjustStore(initCanvas, img);
 
           const mapX = containerWidth / 2 - finalWidth / 2;
           const mapY = containerHeight / 2 - finalHeight / 2;
@@ -367,20 +407,11 @@ const Test = () => {
 
       return () => {
         initCanvas.dispose();
-        if (resizeObserverRef.current) {
-          resizeObserverRef.current.disconnect();
-        }
+        if (unsubscribeRef.current) unsubscribeRef.current();
+        if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
       };
     }
   }, []);
-
-  // useEffect(() => {
-  //   if (mainCanvasRef.current) {
-  //     if (sidebarName !== "PenTool") {
-  //       mainCanvasRef.current.isDrawingMode = false;
-  //     }
-  //   }
-  // }, [sidebarName]);
 
   return (
     <div className="h-screen max-w-screen flex flex-col">
@@ -515,6 +546,8 @@ const Test = () => {
                   <AdjustSidebar
                     canvas={mainCanvasRef.current!}
                     image={currentImageRef.current!}
+                    databaseFilters={databaseFilters}
+                    setDatabaseFilters={setDatabaseFilters}
                   />
                 </div>
               </div>
@@ -586,6 +619,7 @@ const Test = () => {
             <Footer
               canvas={mainCanvasRef.current!}
               image={currentImageRef.current!}
+              backupImage={backupCurrentImageRef.current}
               canvasId={canvasIdRef.current}
               imageUrl={imageUrl}
               mapState={mapState}

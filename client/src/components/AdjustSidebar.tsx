@@ -17,10 +17,21 @@ import { RBrightness } from "@/utils/RedBrightnessFilter";
 type AdjustSidebarProps = {
   canvas: Canvas;
   image: FabricImage;
+  databaseFilters: object[] | null;
+  setDatabaseFilters: (value: object[] | null) => void;
 };
 
-const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
+const AdjustSidebar = ({
+  canvas,
+  image,
+  databaseFilters,
+  setDatabaseFilters,
+}: AdjustSidebarProps) => {
   const { addLog } = useLogContext(); // Use log context
+
+  const redBrightnessValue = useAdjustStore(
+    (state) => state.redBrightnessValue
+  );
 
   const brightnessValue = useAdjustStore((state) => state.brightnessValue);
   const contrastValue = useAdjustStore((state) => state.contrastValue);
@@ -41,6 +52,9 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
   const setSaturationValue = useAdjustStore(
     (state) => state.setSaturationValue
   );
+  const setRedBrightnessValue = useAdjustStore(
+    (state) => state.setRedBrightnessValue
+  );
   const setVibranceValue = useAdjustStore((state) => state.setVibranceValue);
   const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
   const setHueValue = useAdjustStore((state) => state.setHueValue);
@@ -51,93 +65,84 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
     (state) => state.setPredefinedFilter
   );
 
-  const [redBrightnessValue, setRedBrightnessValue] = useState(0.0);
   // Function to apply filters to the image
-  const applyFilters = () => {
-    // @ts-ignore
-    const currentFilters: filters.BaseFilter[] = [];
+  // const applyFilters = () => {
+  //   // @ts-ignore
+  //   const currentFilters: filters.BaseFilter[] = [];
 
-    // Add predefined filter first if any
-    if (predefinedFilter) {
-      switch (predefinedFilter) {
-        case "grayscale":
-          currentFilters.push(new filters.Grayscale());
-          break;
-        case "sepia":
-          currentFilters.push(new filters.Sepia());
-          break;
-        case "vintage":
-          currentFilters.push(new filters.Vintage());
-          break;
-        case "kodachrome":
-          currentFilters.push(new filters.Kodachrome());
-          break;
-        case "technicolor":
-          currentFilters.push(new filters.Technicolor());
-          break;
-        default:
-          break;
-      }
-    }
+  //   // Add predefined filter first if any
+  //   if (predefinedFilter) {
+  //     switch (predefinedFilter) {
+  //       case "grayscale":
+  //         currentFilters.push(new filters.Grayscale());
+  //         break;
+  //       case "sepia":
+  //         currentFilters.push(new filters.Sepia());
+  //         break;
+  //       case "vintage":
+  //         currentFilters.push(new filters.Vintage());
+  //         break;
+  //       case "kodachrome":
+  //         currentFilters.push(new filters.Kodachrome());
+  //         break;
+  //       case "technicolor":
+  //         currentFilters.push(new filters.Technicolor());
+  //         break;
+  //       default:
+  //         break;
+  //     }
+  //   }
 
-    //test filters start
-    if (redBrightnessValue !== 0) {
-      currentFilters.push(new RBrightness({ RBrightness: redBrightnessValue }));
-    }
+  //   //test filters start
+  //   if (redBrightnessValue !== 0) {
+  //     currentFilters.push(new RBrightness({ RBrightness: redBrightnessValue }));
+  //   }
 
-    // test filters end
+  //   // test filters end
 
-    // Add dynamic filters
-    if (brightnessValue !== 0) {
-      currentFilters.push(
-        new filters.Brightness({ brightness: brightnessValue })
-      );
-    }
+  //   // Add dynamic filters
+  //   if (brightnessValue !== 0) {
+  //     currentFilters.push(
+  //       new filters.Brightness({ brightness: brightnessValue })
+  //     );
+  //   }
 
-    if (contrastValue !== 0) {
-      currentFilters.push(new filters.Contrast({ contrast: contrastValue }));
-    }
+  //   if (contrastValue !== 0) {
+  //     currentFilters.push(new filters.Contrast({ contrast: contrastValue }));
+  //   }
 
-    if (saturationValue !== 0) {
-      currentFilters.push(
-        new filters.Saturation({ saturation: saturationValue })
-      );
-    }
+  //   if (saturationValue !== 0) {
+  //     currentFilters.push(
+  //       new filters.Saturation({ saturation: saturationValue })
+  //     );
+  //   }
 
-    if (vibranceValue !== 0) {
-      currentFilters.push(new filters.Vibrance({ vibrance: vibranceValue }));
-    }
+  //   if (vibranceValue !== 0) {
+  //     currentFilters.push(new filters.Vibrance({ vibrance: vibranceValue }));
+  //   }
 
-    if (blurValue !== 0) {
-      currentFilters.push(new filters.Blur({ blur: blurValue }));
-    }
+  //   if (blurValue !== 0) {
+  //     currentFilters.push(new filters.Blur({ blur: blurValue }));
+  //   }
 
-    if (hueValue !== 0) {
-      currentFilters.push(new filters.HueRotation({ rotation: hueValue }));
-    }
+  //   if (hueValue !== 0) {
+  //     currentFilters.push(new filters.HueRotation({ rotation: hueValue }));
+  //   }
 
-    if (noiseValue !== 0) {
-      currentFilters.push(new filters.Noise({ noise: noiseValue }));
-    }
+  //   if (noiseValue !== 0) {
+  //     currentFilters.push(new filters.Noise({ noise: noiseValue }));
+  //   }
 
-    if (pixelateValue !== 0) {
-      currentFilters.push(new filters.Pixelate({ blocksize: pixelateValue }));
-    }
+  //   if (pixelateValue !== 0) {
+  //     currentFilters.push(new filters.Pixelate({ blocksize: pixelateValue }));
+  //   }
 
-    image.filters = currentFilters;
-    image.applyFilters();
-    canvas.renderAll();
-  };
+  //   image.filters = currentFilters;
+  //   image.applyFilters();
+  //   canvas.renderAll();
+  // };
 
   const applyPredefinedFilter = (filterType: string) => {
-    if (predefinedFilter) {
-      addLog({
-        section: "adjust",
-        tab: "filter",
-        event: "deletion",
-        message: `removed filter ${predefinedFilter} `,
-      });
-    }
     if (predefinedFilter) {
       addLog({
         section: "adjust",
@@ -157,37 +162,85 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
         value: predefinedFilter,
       });
 
-      addLog({
-        section: "adjust",
-        tab: "filter",
-        event: "update",
-        message: `applied filter ${filterType} `,
-        value: predefinedFilter,
-      });
-
       setPredefinedFilter(filterType);
     }
   };
 
   useEffect(() => {
-    applyFilters();
-  }, [
-    redBrightnessValue,
-    brightnessValue,
-    contrastValue,
-    saturationValue,
-    vibranceValue,
-    blurValue,
-    hueValue,
-    noiseValue,
-    pixelateValue,
-    predefinedFilter,
-  ]);
+    if (databaseFilters) {
+      databaseFilters.map((filter) => {
+        switch (filter.type) {
+          case filters.Grayscale.type:
+            setPredefinedFilter("grayscale");
+            break;
+          case filters.Sepia.type:
+            setPredefinedFilter("sepia");
+            break;
+          case filters.Vintage.type:
+            setPredefinedFilter("vintage");
+            break;
+          case filters.Kodachrome.type:
+            setPredefinedFilter("kodachrome");
+            break;
+          case filters.Technicolor.type:
+            setPredefinedFilter("technicolor");
+            break;
 
-  useEffect(() => {
-    image.set("opacity", opacityValue);
-    canvas.renderAll();
-  }, [opacityValue]);
+          case RBrightness.type:
+            setRedBrightnessValue(filter.RBrightness);
+            break;
+          case filters.Brightness.type:
+            setBrightnessValue(filter.brightness);
+            break;
+          case filters.Contrast.type:
+            setContrastValue(filter.contrast);
+            break;
+          case filters.Saturation.type:
+            setSaturationValue(filter.saturation);
+            break;
+          case filters.Vibrance.type:
+            setVibranceValue(filter.vibrance);
+            break;
+          case filters.Blur.type:
+            setBlurValue(filter.blur);
+            break;
+          case filters.HueRotation.type:
+            setHueValue(filter.hueValue);
+            break;
+          case filters.Noise.type:
+            setNoiseValue(filter.noise);
+            break;
+          case filters.Pixelate.type:
+            setPixelateValue(filter.blocksize);
+            break;
+        }
+      });
+    }
+
+    return () => {
+      setDatabaseFilters(null);
+    };
+  }, []);
+
+  // useEffect(() => {
+  //   applyFilters();
+  // }, [
+  //   redBrightnessValue,
+  //   brightnessValue,
+  //   contrastValue,
+  //   saturationValue,
+  //   vibranceValue,
+  //   blurValue,
+  //   hueValue,
+  //   noiseValue,
+  //   pixelateValue,
+  //   predefinedFilter,
+  // ]);
+
+  // useEffect(() => {
+  //   image.set("opacity", opacityValue);
+  //   canvas.renderAll();
+  // }, [opacityValue]);
 
   const handleColorReset = () => {
     addLog({
@@ -219,13 +272,6 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
       message: `reseted all image detail properties `,
     });
 
-    addLog({
-      section: "adjust",
-      tab: "detail",
-      event: "reset",
-      message: `reseted all image detail properties `,
-    });
-
     setOpacityValue(1);
     setPixelateValue(0);
     setNoiseValue(0);
@@ -239,12 +285,7 @@ const AdjustSidebar = ({ canvas, image }: AdjustSidebarProps) => {
       event: "deletion",
       message: `removed all filters`,
     });
-    addLog({
-      section: "adjust",
-      tab: "filter",
-      event: "deletion",
-      message: `removed all filters`,
-    });
+
     setPredefinedFilter("");
   };
 

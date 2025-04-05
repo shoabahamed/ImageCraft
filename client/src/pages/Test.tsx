@@ -345,6 +345,8 @@ const Test = () => {
               canvasIdRef.current = idFromState;
             }
           });
+          localStorage.removeItem("CanvasId");
+          localStorage.removeItem("project_data");
         } catch (error) {
           console.error("Failed to load canvas data:", error);
         }

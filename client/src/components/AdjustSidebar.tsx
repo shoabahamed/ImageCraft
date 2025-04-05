@@ -205,7 +205,7 @@ const AdjustSidebar = ({
             setBlurValue(filter.blur);
             break;
           case filters.HueRotation.type:
-            setHueValue(filter.hueValue);
+            setHueValue(filter.rotation);
             break;
           case filters.Noise.type:
             setNoiseValue(filter.noise);

@@ -36,9 +36,7 @@ def save_project():
         # print(raw_data)
         # print(f"🔍 Content-Type: {request.content_type}")
         # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} mega bytes")
-
         user_id = str(g._id)  # Extracted by the middleware
-        print("sdfsjf")
         print(request.files)     
         
         usename = request.form.get("username")

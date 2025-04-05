@@ -11,7 +11,10 @@ load_dotenv()
 
 
 app = Flask(__name__)
+app.config['DEBUG'] = True
+
 app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # ✅ Allow 50MB file uploads
+
 
 app.secret_key = os.getenv("APP_SECRET")
 app.config['ORG_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'

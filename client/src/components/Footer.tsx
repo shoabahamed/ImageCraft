@@ -226,11 +226,12 @@ const Footer = ({
       formData.append("isPublic", "false");
       formData.append("canvasData", JSON.stringify(canvasJSON));
       formData.append("canvasLogs", JSON.stringify(logs));
-      formData.append("mainImageSrc", mainImageSrc);
+      // formData.append("mainImageSrc", mainImageSrc);
       formData.append(
         "originalImageShape",
         JSON.stringify({ width: image.width, height: image.height })
       );
+
       formData.append(
         "finalImageShape",
         JSON.stringify({
@@ -255,6 +256,7 @@ const Footer = ({
       formData.append("canvasImage", canvasImageFile);
       formData.append("projectName", projectName);
       formData.append("loadedFromSaved", loadedFromSaved ? "true" : "false");
+      console.log([...formData]); // This will log the FormData entries as an array
 
       // Post JSON data to the backend with JWT in headers
       const response = await apiClient.post(

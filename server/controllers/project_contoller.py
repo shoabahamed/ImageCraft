@@ -38,10 +38,10 @@ def save_project():
         # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} mega bytes")
 
         user_id = str(g._id)  # Extracted by the middleware
-        print(request.files)
-
+        print("sdfsjf")
+        print(request.files)     
+        
         usename = request.form.get("username")
-    
         canvas_id = request.form.get('canvasId')
       
         is_public = request.form.get("isPublic")

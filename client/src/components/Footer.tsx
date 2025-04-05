@@ -1,6 +1,6 @@
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { ZoomIn, ZoomOut, Pencil, Upload } from "lucide-react";
+import { ZoomIn, ZoomOut, Pencil, Upload, RotateCcw } from "lucide-react";
 import IconComponent from "./icon-component";
 
 import { Canvas, FabricImage } from "fabric";
@@ -29,6 +29,7 @@ import {
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router-dom";
+import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 
 // TODO: saving canvas when style transfer has been done
 // TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
@@ -41,6 +42,7 @@ type mapStateType = {
 type Props = {
   canvas: Canvas;
   image: FabricImage;
+  backupImage: FabricImage;
   canvasId: string;
   imageUrl: string;
   mapState: mapStateType;
@@ -51,6 +53,7 @@ type Props = {
 const Footer = ({
   canvas,
   image,
+  backupImage,
   canvasId,
   imageUrl,
   mapState,
@@ -74,6 +77,7 @@ const Footer = ({
   const setShowUpdateButton = useCommonProps(
     (state) => state.setShowUpdateButton
   );
+  const resetFilters = useAdjustStore((state) => state.resetFilters);
 
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [dataURL, setDataURL] = useState(null);
@@ -204,7 +208,10 @@ const Footer = ({
       }
 
       // json data
-      const canvasJSON = canvas.toJSON();
+      const canvasJSON = canvas.toObject(["name"]);
+      const mainImageSrc = canvasJSON.objects[0].src;
+      // const backgroundImageSrc = canvasJSON.backgroundImage.src;
+      // canvasJSON.backgroundImage.src = "temp";
       canvasJSON.objects[0].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
 
       // Convert canvas image (Data URL) to a Blob and then to a File
@@ -219,7 +226,7 @@ const Footer = ({
       formData.append("isPublic", "false");
       formData.append("canvasData", JSON.stringify(canvasJSON));
       formData.append("canvasLogs", JSON.stringify(logs));
-
+      formData.append("mainImageSrc", mainImageSrc);
       formData.append(
         "originalImageShape",
         JSON.stringify({ width: image.width, height: image.height })
@@ -553,6 +560,18 @@ const Footer = ({
       </div>
 
       <div className="flex items-center">
+        <IconComponent
+          icon={<RotateCcw />}
+          iconName={"Restore"}
+          handleClick={() => {
+            // canvas.remove(...canvas.getObjects());
+            // console.log(image.toObject());
+            // canvas.add(backupImage);
+            resetFilters();
+            canvas.renderAll();
+            // canvas.add()
+          }}
+        />
         <IconComponent
           icon={<ZoomIn />}
           iconName={"ZoomIn"}

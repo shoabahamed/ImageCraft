@@ -311,7 +311,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
     canvas.renderAll();
   };
 
-  const handleBackGroundImageChange = (
+  const handleBackGroundImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -322,25 +322,29 @@ const CropSidebar = ({ canvas, image }: Props) => {
         return;
       }
 
-      const backgroundImageUrl = URL.createObjectURL(file);
+      // Convert the file to Base64
+      const base64Image = await convertFileToBase64(file);
 
+      // Create an Image object
       const backgroundImage = new Image();
-      backgroundImage.src = backgroundImageUrl;
+      backgroundImage.src = base64Image;
 
       backgroundImage.onload = () => {
         const fabricBackgroundImage = new FabricImage(backgroundImage);
 
+        // Scale the background image to fit the canvas dimensions
         const scaleX = image.getScaledWidth() / fabricBackgroundImage.width;
-
         const scaleY = image.getScaledHeight() / fabricBackgroundImage.height;
 
         fabricBackgroundImage.scaleX = scaleX;
         fabricBackgroundImage.scaleY = scaleY;
 
+        // Set the background image (now using Base64)
         canvas.backgroundImage = fabricBackgroundImage;
         canvas.renderAll();
 
         setBackgroundImage(fabricBackgroundImage);
+        console.log(canvas.toObject(["name"]));
 
         addLog({
           section: "crop&cut",
@@ -352,6 +356,16 @@ const CropSidebar = ({ canvas, image }: Props) => {
     }
   };
 
+  // Helper function to convert File to Base64
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const removeBackGroundImage = () => {
     addLog({
       section: "crop&cut",
@@ -360,7 +374,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
       message: `background removed from canvas`,
     });
 
-    if (backgroundImage) {
+    if (canvas.backgroundImage) {
       canvas.backgroundImage = null;
       canvas.renderAll();
       setBackgroundImage(null);

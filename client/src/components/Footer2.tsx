@@ -50,7 +50,7 @@ type Props = {
   setLoadState: (val: boolean) => void;
 };
 
-const Footer = ({
+const Footer2 = ({
   canvas,
   image,
   backupImage,
@@ -60,8 +60,7 @@ const Footer = ({
   setMapState,
   setLoadState,
 }: Props) => {
-  const { selectedObject, currentImageDim, loadedFromSaved } =
-    useCanvasObjects();
+  const { selectedObject, loadedFromSaved } = useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
@@ -106,7 +105,7 @@ const Footer = ({
 
   const handleImageUpload = (imageUrl: string) => {
     setShowLoadingDialog(false);
-    navigate("/mainpage", { state: { imageUrl } });
+    navigate("/temp", { state: { imageUrl } });
     window.location.reload();
   };
 
@@ -324,94 +323,109 @@ const Footer = ({
       event: "download",
       message: `Downloading project`,
     });
-
-    if (!canvas || !image) return;
-
+    console.log("sjdf");
+    if (!canvas || !image) {
+      console.log("image/canvas not found");
+      return;
+    }
     let dataURL: string;
 
+    let backgroundImage: null | FabricImage = null;
+    if (canvas.backgroundImage) {
+      // @ts-ignore
+      backgroundImage = canvas.backgroundImage;
+    }
+
+    console.log("sjdf");
+
+    // // required image width
+    // const { imageWidth: requiredImageWidth, imageHeight: requiredImageHeight } =
+    //   currentImageDim;
+
+    // Save viewport and zoom
     const originalViewportTransform = canvas.viewportTransform;
     const originalZoom = canvas.getZoom();
 
+    console.log("sjdf");
     // Reset to neutral
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.setZoom(1);
+
+    console.log("sjdf");
     canvas.renderAll();
 
     // Find the object named "Frame" or starting with "Frame"
-    let bounds = image.getBoundingRect();
+
+    console.log("sjdf");
     const frameObject = canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.name?.startsWith("Frame"));
-
     if (frameObject && downloadFrame) {
-      bounds = frameObject.getBoundingRect();
-    }
+      const clipBoundingBox = frameObject.getBoundingRect();
 
-    // Generate the data URL for the download
-    dataURL = canvas.toDataURL({
-      format: "png",
-      left: bounds.left,
-      top: bounds.top,
-      width: bounds.width,
-      height: bounds.height,
-    });
+      // Create a temporary canvas element using fabric's rendering
+      const tempCanvas = canvas.toCanvasElement();
 
-    if (superResValue !== "none") {
-      try {
-        setLoadState(true);
-        const response = await apiClient.post(
-          "/image_proc/super_res",
-          { image: dataURL, resolution: superResValue },
+      const tempContext = tempCanvas.getContext("2d");
+      if (!tempContext) return;
 
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${user?.token}`,
-            },
-          }
-        );
-        setLoadState(false);
-        if (response.status === 200) {
-          const base64Image = `data:image/png;base64,${response.data.image}`;
-          const link = document.createElement("a");
-          link.href = base64Image;
-          link.download =
-            frameObject && downloadFrame
-              ? "clipped-image.png"
-              : "canvas-image.png";
-          link.click();
+      // Create a new canvas for the clipped region
+      const outputCanvas = document.createElement("canvas");
+      const outputContext = outputCanvas.getContext("2d");
 
-          toast({
-            description: "Successfull",
-            className: "bg-green-500 text-gray-900",
-            duration: 3000,
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            description: "Error Encountered inference",
-            className: "bg-green-500 text-gray-900",
-            duration: 3000,
-          });
-        }
-      } catch (error) {
-        console.error("Error sending image to backend:", error);
-      }
+      if (!outputContext) return;
+
+      // Set dimensions of the output canvas to match the clipBoundingBox
+      outputCanvas.width = clipBoundingBox.width;
+      outputCanvas.height = clipBoundingBox.height;
+
+      // Draw the clipped region onto the output canvas
+      outputContext.drawImage(
+        tempCanvas, // Source canvas
+        clipBoundingBox.left, // Source x
+        clipBoundingBox.top, // Source y
+        clipBoundingBox.width, // Source width
+        clipBoundingBox.height, // Source height
+        0, // Destination x
+        0, // Destination y
+        clipBoundingBox.width, // Destination width
+        clipBoundingBox.height // Destination height
+      );
+
+      // Generate a data URL for the clipped image
+      dataURL = outputCanvas.toDataURL();
+
+      // Clean up output canvas
+      outputCanvas.remove();
+
+      // canvas.backgroundColor = "fff"
     } else {
-      // Trigger download (optional, if you still want to download the image)
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download =
-        frameObject && downloadFrame ? "clipped-image.png" : "canvas-image.png";
-      link.click();
+      console.log("downloading full image");
+      const bounds = image.getBoundingRect();
+      console.log(bounds);
+
+      // Generate the data URL for the download
+
+      dataURL = canvas.toDataURL({
+        format: "png",
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
+      });
     }
+
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download =
+      frameObject && downloadFrame ? "clipped-image.png" : "canvas-image.png";
+    link.click();
 
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
     canvas.renderAll();
 
-    canvas.renderAll();
     canvas.renderAll();
   };
 
@@ -662,4 +676,4 @@ const Footer = ({
   );
 };
 
-export default Footer;
+export default Footer2;

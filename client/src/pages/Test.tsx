@@ -69,59 +69,6 @@ const Test = () => {
 
   const [spinnerLoading, setSpinnerLoading] = useState(false);
 
-  // const handleContainerResize = () => {
-  //   const container = document.getElementById("CanvasContainer");
-  //   if (!container || !mainCanvasRef.current || !currentImageRef.current)
-  //     return;
-
-  //   const { width: containerWidth, height: containerHeight } =
-  //     container.getBoundingClientRect();
-
-  //   const originalCanvasWidth = mainCanvasRef.current.width;
-  //   const originalCanvasHeight = mainCanvasRef.current.height;
-  //   const imageWidth = currentImageRef.current.width ?? 1;
-  //   const imageHeight = currentImageRef.current.height ?? 1;
-
-  //   // Determine if the image needs scaling
-  //   const needsScaling =
-  //     imageWidth > containerWidth || imageHeight > containerHeight;
-
-  //   if (needsScaling) {
-  //     const scaleX = containerWidth / imageWidth;
-  //     const scaleY = containerHeight / imageHeight;
-  //     const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
-
-  //     currentImageRef.current.scale(scale); // Scale the image
-  //   }
-
-  //   const finalWidth = needsScaling
-  //     ? currentImageRef.current.getScaledWidth()
-  //     : imageWidth;
-  //   const finalHeight = needsScaling
-  //     ? currentImageRef.current.getScaledHeight()
-  //     : imageHeight;
-
-  //   mainCanvasRef.current.setDimensions({
-  //     width: finalWidth,
-  //     height: finalHeight,
-  //   });
-
-  //   const objScaleX = finalWidth / originalCanvasWidth;
-  //   const objScaleY = finalHeight / originalCanvasHeight;
-  //   // Apply scaling factors to all other objects
-  //   mainCanvasRef.current.getObjects().forEach((obj) => {
-  //     if (obj !== currentImageRef.current) {
-  //       obj.scaleX *= objScaleX;
-  //       obj.scaleY *= objScaleY;
-  //       obj.left *= objScaleX;
-  //       obj.top *= objScaleY;
-  //       obj.setCoords();
-  //     }
-  //   });
-
-  //   mainCanvasRef.current.renderAll();
-  // };
-
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
     if (!container || !mainCanvasRef.current || !currentImageRef.current)
@@ -130,48 +77,33 @@ const Test = () => {
     const { width: containerWidth, height: containerHeight } =
       container.getBoundingClientRect();
 
-    // setCurrentContDim({
-    //   contWidth: containerWidth,
-    //   contHeight: containerHeight,
-    // });
-    const mapX =
-      containerWidth / 2 - currentImageRef.current.getScaledWidth() / 2;
-    const mapY =
-      containerHeight / 2 - currentImageRef.current.getScaledWidth() / 2;
-
-    setMapState({
-      ...mapState,
-      scale: 0.9,
-      translation: { x: mapX, y: mapY },
+    mainCanvasRef.current.setDimensions({
+      width: containerWidth,
+      height: containerHeight,
     });
 
-    // setMapState({ ...mapState, scale: 0.9 });
+    // Get current image size (NOT scaled size, actual size)
+    const img = currentImageRef.current;
+    const imageWidth = img.width ?? 1;
+    const imageHeight = img.height ?? 1;
+
+    // Recalculate zoom to fit
+    const scaleX = containerWidth / imageWidth;
+    const scaleY = containerHeight / imageHeight;
+    const zoom = Math.min(scaleX, scaleY);
+
+    mainCanvasRef.current.setZoom(zoom);
+
+    // Re-center the image using viewport transform
+    const vp = mainCanvasRef.current.viewportTransform!;
+    vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+    vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+    mainCanvasRef.current.setViewportTransform(vp);
+
+    mainCanvasRef.current.renderAll();
+    mainCanvasRef.current.renderAll();
   };
 
-  // const backupImage = async () => {
-  //   if (currentImageRef.current) {
-  //     backupCurrentImageRef.current = await currentImageRef.current.clone();
-  //     console.log("cloning successfull");
-  //   }
-  // };
-
-  // const backupImage = async () => {
-  //   if (!currentImageRef.current) return;
-
-  //   try {
-  //     // Serialize the image
-  //     const serialized = currentImageRef.current.toObject();
-
-  //     // Create a true deep clone
-  //     backupCurrentImageRef.current = await fabric.util.enlivenObjects([
-  //       serialized,
-  //     ]);
-
-  //     console.log("Cloning successful");
-  //   } catch (error) {
-  //     console.error("Cloning failed:", error);
-  //   }
-  // };
   useEffect(() => {
     if (canvasRef.current) {
       const container = document.getElementById("CanvasContainer");
@@ -185,11 +117,6 @@ const Test = () => {
 
       const { width: containerWidth, height: containerHeight } =
         container.getBoundingClientRect();
-
-      setCurrentContDim({
-        contHeight: containerHeight,
-        contWidth: containerWidth,
-      });
 
       const initCanvas = new fabric.Canvas(canvasRef.current, {
         width: containerWidth,
@@ -360,34 +287,33 @@ const Test = () => {
             imageHeight: imageHeight,
           });
 
-          const needsScaling =
-            imageWidth > containerWidth || imageHeight > containerHeight;
-
-          if (needsScaling) {
-            const scaleX = containerWidth / imageWidth;
-            const scaleY = containerHeight / imageHeight;
-            const scale = Math.min(scaleX, scaleY);
-
-            img.scale(scale); // Scale the image
-          }
-
-          const finalWidth = needsScaling ? img.getScaledWidth() : imageWidth;
-          const finalHeight = needsScaling
-            ? img.getScaledHeight()
-            : imageHeight;
-
           initCanvas.setDimensions({
-            width: finalWidth,
-            height: finalHeight,
+            width: containerWidth,
+            height: containerHeight,
           });
+
+          // Calculate zoom to fit image in canvas while maintaining aspect ratio
+          const scaleX = containerWidth / imageWidth;
+          const scaleY = containerHeight / imageHeight;
+          const zoom = Math.min(scaleX, scaleY);
+
+          // Apply zoom to canvas
+          initCanvas.setZoom(zoom);
+
+          // Calculate the viewport transform to center the image
+          const vp = initCanvas.viewportTransform!;
+          vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+          vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+          initCanvas.setViewportTransform(vp);
+
           img.set({
-            left: 0,
-            top: 0,
+            left: imageWidth / 2,
+            top: imageHeight / 2,
             selectable: false,
             hoverCursor: "default",
+            originX: "center",
+            originY: "center",
           });
-
-          // img.angle = 89;
 
           initCanvas.add(img);
           initCanvas.renderAll();
@@ -399,18 +325,35 @@ const Test = () => {
 
           //@ts-ignore
           unsubscribeRef.current = subscribeToAdjustStore(initCanvas, img);
-
-          const mapX = containerWidth / 2 - finalWidth / 2;
-          const mapY = containerHeight / 2 - finalHeight / 2;
-
-          setMapState({ ...mapState, translation: { x: mapX, y: mapY } });
         });
       }
+
+      initCanvas.on("mouse:wheel", function (opt) {
+        const delta = opt.e.deltaY;
+        let zoom = initCanvas.getZoom();
+        zoom *= 0.999 ** delta;
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.01) zoom = 0.01;
+        initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+        opt.e.preventDefault();
+        opt.e.stopPropagation();
+      });
 
       return () => {
         initCanvas.dispose();
         if (unsubscribeRef.current) unsubscribeRef.current();
         if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
+
+        initCanvas.off("mouse:wheel", function (opt) {
+          const delta = opt.e.deltaY;
+          let zoom = initCanvas.getZoom();
+          zoom *= 0.999 ** delta;
+          if (zoom > 20) zoom = 20;
+          if (zoom < 0.01) zoom = 0.01;
+          initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+          opt.e.preventDefault();
+          opt.e.stopPropagation();
+        });
       };
     }
   }, []);
@@ -470,12 +413,7 @@ const Test = () => {
               sidebarName={sidebarName}
               setSidebarName={setSidebarName}
             />
-            {/* <IconComponent
-            icon={<PenTool />}
-            iconName="PenTool"
-            sidebarName={sidebarName}
-            setSidebarName={setSidebarName}
-          /> */}
+
             <IconComponent
               icon={<Type />}
               iconName="Text"
@@ -592,29 +530,8 @@ const Test = () => {
               className="w-[90%] h-[90%] flex justify-center items-center"
               id="CanvasContainer"
             >
-              <MapInteractionCSS
-                value={mapState}
-                // @ts-ignore
-                onChange={(newMapState) => setMapState(newMapState)}
-                disablePan={true}
-              >
-                <canvas id="canvas" className="z-1" ref={canvasRef}></canvas>
-              </MapInteractionCSS>
+              <canvas id="canvas" className="z-1" ref={canvasRef}></canvas>
             </div>
-
-            {/* <TransformWrapper
-            panning={{ disabled: false }}
-            pinch={{ disabled: true }}
-          >
-            <div
-              className="w-[90%] h-[90%] flex justify-center items-center"
-              id="CanvasContainer"
-            >
-              <TransformComponent>
-                <canvas id="canvas" className="z-1" ref={canvasRef}></canvas>
-              </TransformComponent>
-            </div>
-          </TransformWrapper> */}
           </div>
           {/* Footer */}
           <div className="flex-none w-full">
@@ -629,7 +546,6 @@ const Test = () => {
               setLoadState={setSpinnerLoading}
             />
           </div>
-          {/* <div className="flex-none">skdjfksd</div> */}
         </div>
       </div>
     </div>

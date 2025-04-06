@@ -13,6 +13,7 @@ import { LogProvider } from "./context/LogContext";
 import LogsPage from "./pages/LogsPage";
 import LogDashboard from "./pages/LogDashboard";
 import AdminPanel2 from "./pages/Admin2";
+import Temp from "./pages/Temp";
 
 export default function App() {
   const { user, loading } = useAuthContext();
@@ -73,6 +74,17 @@ export default function App() {
             <Route
               path="/log_dashboard/:projectId"
               element={<LogDashboard />}
+            />
+
+            <Route
+              path="/temp"
+              element={
+                <LogProvider>
+                  <CanvasObjectsProvider>
+                    <Temp />
+                  </CanvasObjectsProvider>
+                </LogProvider>
+              }
             />
           </Routes>
 

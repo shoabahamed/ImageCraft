@@ -16,6 +16,7 @@ type ToasterToast = ToastProps & {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  onDismiss?: () => void
 }
 
 const actionTypes = {
@@ -96,6 +97,8 @@ export const reducer = (state: State, action: Action): State => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
+        const toast = state.toasts.find(t => t.id === toastId)
+        toast?.onDismiss?.() // ← trigger onDismiss callback
         addToRemoveQueue(toastId)
       } else {
         state.toasts.forEach((toast) => {

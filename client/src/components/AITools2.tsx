@@ -13,6 +13,8 @@ import { Canvas, FabricImage } from "fabric";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useLogContext } from "@/hooks/useLogContext";
+import CustomSlider from "./custom-slider";
+import { ToastAction } from "./ui/toast";
 
 // TODO: saving image when style transfer have been done
 // TODO: ability to restore original image after style transfer
@@ -39,6 +41,15 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const [backendImage, setBackendImage] = useState<null | string>(null);
   const [showImageAddButton, setShowImageAddButton] = useState(false);
   const [styleImages, setStyleImages] = useState<StyleTemplate[] | []>([]);
+  const [stylizeRatio, setStylizeRatio] = useState(0.5);
+
+  const removeTempStylizeImage = () => {
+    // @ts-ignore
+    const tempImg: FabricImage = canvas
+      .getObjects()
+      .find((obj) => obj.name && obj.name === "style_temp_img");
+    if (tempImg) canvas.remove(tempImg);
+  };
 
   useEffect(() => {
     const get_style_images = async () => {
@@ -93,6 +104,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 
   const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
     setLoadSate(true);
+    removeTempStylizeImage();
     try {
       const formData = new FormData();
 
@@ -106,6 +118,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       }
 
       formData.append("originalImage", originalImageFile);
+      formData.append("alpha", stylizeRatio.toString());
 
       const response = await apiClient.post(
         "/image_proc/style_transfer",
@@ -118,16 +131,40 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       );
 
       if (response.status === 200) {
-        setUploadedImage("");
+        // setUploadedImage("");
         const base64Image = `data:image/png;base64,${response.data.image}`;
         // const base64Image =response.data.image
         setBackendImage(base64Image);
         setShowImageAddButton(true);
-        toast({
-          description: "Style Transfer Successfull",
-          className: "bg-green-500 text-gray-900",
-          duration: 3000,
-        });
+
+        if (uploadedImage) {
+          toast({
+            className: "bg-green-500 text-gray-900",
+            title: "Style Transfer Successfull",
+            duration: 3000,
+          });
+        } else {
+          showStylizeImagePreview(base64Image);
+          toast({
+            className: "bg-green-500 text-gray-900",
+            title: "Style Transfer Successfull",
+            description:
+              "Do you want to replace the original image with the new one?",
+            action: (
+              <ToastAction altText="Switch">
+                <div className="flex gap-2">
+                  <button onClick={() => replaceImage(base64Image)}>
+                    Switch
+                  </button>
+                </div>
+              </ToastAction>
+            ),
+            duration: 10000000000000,
+            onDismiss: () => {
+              removeTempStylizeImage();
+            },
+          });
+        }
       } else {
         toast({
           variant: "destructive",
@@ -140,7 +177,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       console.error("Error saving canvas:", error);
       toast({
         variant: "destructive",
-        description: "Unexpected Error",
+        description: "Unexpected Error " + error,
         className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
@@ -148,20 +185,52 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
     setLoadSate(false);
   };
 
-  useEffect(() => {
-    if (backendImage) {
-      replaceImage();
-    }
-  }, [backendImage]);
+  // useEffect(() => {
+  //   if (backendImage) {
+  //     replaceImage();
+  //   }
+  // }, [backendImage]);
 
-  const replaceImage = () => {
-    if (!canvas || !imageRef.current || !backendImage) return;
+  const showStylizeImagePreview = (base64Image: string) => {
+    if (!canvas || !imageRef.current) return;
 
     const scaleX = imageRef.current.scaleX;
     const scaleY = imageRef.current.scaleY;
 
     const newImage = new Image();
-    newImage.src = backendImage;
+    newImage.src = base64Image;
+
+    newImage.onload = () => {
+      const fabricImage = new FabricImage(newImage);
+
+      fabricImage.scaleX = scaleX;
+      fabricImage.scaleY = scaleY;
+
+      fabricImage.left = 0;
+      fabricImage.top = 0;
+      // fabricImage.selectable = false;
+      fabricImage.hoverCursor = "default";
+
+      // canvas.getObjects().forEach((obj) => {
+      //   canvas.remove(obj);
+      // });
+      fabricImage.set("name", "style_temp_img");
+
+      canvas.add(fabricImage);
+
+      canvas.renderAll();
+    };
+  };
+  const replaceImage = (base64Image: string) => {
+    if (!canvas || !imageRef.current) return;
+
+    removeTempStylizeImage();
+
+    const scaleX = imageRef.current.scaleX;
+    const scaleY = imageRef.current.scaleY;
+
+    const newImage = new Image();
+    newImage.src = base64Image;
 
     newImage.onload = () => {
       const fabricImage = new FabricImage(newImage);
@@ -174,13 +243,13 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       fabricImage.selectable = false;
       fabricImage.hoverCursor = "default";
 
-      canvas.getObjects().forEach((obj) => {
-        canvas.remove(obj);
-      });
+      // canvas.getObjects().forEach((obj) => {
+      //   canvas.remove(obj);
+      // });
 
-      if (canvas.backgroundImage) {
-        canvas.backgroundImage = null;
-      }
+      // if (canvas.backgroundImage) {
+      //   canvas.backgroundImage = null;
+      // }
 
       canvas.add(fabricImage);
       // @ts-ignore
@@ -193,11 +262,6 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       //   propType: "all",
       //   message: "reseted canvas and changed image to stylized image",
       // });
-      toast({
-        description: "Image change Successfull",
-        className: "bg-green-500 text-gray-900",
-        duration: 3000,
-      });
     };
   };
 
@@ -283,7 +347,20 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="w-[85%] mt-2">
+      <div className="flex flex-col justify-center items-center w-[85%]">
+        <div className="mb-3 w-full">
+          <CustomSlider
+            sliderName={"Alpha"}
+            min={0}
+            max={1}
+            sliderValue={stylizeRatio}
+            defaultValue={stylizeRatio}
+            step={0.01}
+            setSliderValue={setStylizeRatio}
+            section={"ai"}
+            tab={"image"}
+          />
+        </div>
         <div className="grid grid-cols-1 gap-4 w-full">
           {styleImages.map((style, index) => (
             <div

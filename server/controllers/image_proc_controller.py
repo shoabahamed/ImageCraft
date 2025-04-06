@@ -23,15 +23,19 @@ def apply_style_transfer():
     if 'originalImage' not in request.files or 'styleImage' not in request.files:
         return jsonify({"success": False, "message": "Both originalImage and styleImage must be provided"}), 400
     
-    raw_data = request.get_data()
-    print(f"🔍 Content-Type: {request.content_type}")
-    print(f"Raw request size: {len(raw_data) / (1024 * 1024)} bytes")
-    print(request.files)
+    # raw_data = request.get_data()
+    # print(f"🔍 Content-Type: {request.content_type}")
+    # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} bytes")
+    # print(request.files)
     # Get the files
     original_image_file = request.files['originalImage']
     style_image_file = request.files['styleImage']
+    print(request.files)
+    print(request.form.get("alpha"))
+    alpha_value = float(request.form.get("alpha"))
     
-    
+
+
 
     # loading model
     vgg_encoder = VGG_ENCODER(CFG.style_transfer_encoder_path).to(CFG.device)
@@ -55,12 +59,12 @@ def apply_style_transfer():
     style_image = style_image_transform(style_image).unsqueeze(0).to(CFG.device)
     
     with torch.no_grad():
-        stylized_img = style_transfer_model.stylize_image(original_image, style_image, alpha=1.0).to('cpu')[0]
+        stylized_img = style_transfer_model.stylize_image(original_image, style_image, alpha=alpha_value).to('cpu')[0]
 
     stylized_img = T.ToPILImage()(stylized_img)
     stylized_img = stylized_img.resize((org_width, org_height))
 
-    del style_transfer_model
+    del style_transfer_model, original_image, style_image
     torch.cuda.empty_cache()
     gc.collect()
 

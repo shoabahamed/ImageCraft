@@ -29,8 +29,6 @@ interface Project {
   canvas_image_url: string;
   original_image_shape: { width: number; height: number };
   final_image_shape: { width: number; height: number };
-  rendered_image_shape: { width: number; height: number };
-  image_scale: { scaleX: number; scaleY: number };
   project_name: string;
   created_at: Date;
   updated_at: Date;
@@ -205,8 +203,6 @@ const Projects: React.FC = () => {
     project_data: Object,
     project_logs: string,
     final_image_shape: object,
-    rendered_image_shape: object,
-    image_scale: object,
     project_name: string
   ) => {
     localStorage.setItem("CanvasId", project_id);
@@ -218,11 +214,6 @@ const Projects: React.FC = () => {
       "final_image_shape",
       JSON.stringify(final_image_shape)
     );
-    localStorage.setItem(
-      "rendered_image_shape",
-      JSON.stringify(rendered_image_shape)
-    );
-    localStorage.setItem("image_scale", JSON.stringify(image_scale));
     navigate("/mainpage");
   };
 
@@ -274,8 +265,6 @@ const Projects: React.FC = () => {
                     project.project_data,
                     project.project_logs,
                     project.final_image_shape,
-                    project.rendered_image_shape,
-                    project.image_scale,
                     project.project_name || "Untitled"
                   )
                 }

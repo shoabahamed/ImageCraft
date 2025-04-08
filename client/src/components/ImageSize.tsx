@@ -19,7 +19,7 @@ type ImageSizeProps = {
 };
 
 const ImageSize = ({ canvas, image }: ImageSizeProps) => {
-  const { currentImageDim, setCurrentImageDim } = useCanvasObjects();
+  const { finalImageDimensions, setFinalImageDimensions } = useCanvasObjects();
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
   const { addLog } = useLogContext();
 
@@ -27,11 +27,19 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     const newWidth = parseInt(e.target.value);
     const oldHeight = image.height;
     const oldWidth = image.width;
+
+    const ratio = oldWidth / oldHeight;
+    const newHeight = Math.floor(newWidth / ratio);
+
+    let scaleY = newHeight / oldHeight;
+    const scaleX = newWidth / oldWidth;
+
     if (newWidth > 0) {
       if (maintainAspectRatio) {
-        const ratio = oldWidth / oldHeight;
-        const newHeight = Math.floor(newWidth / ratio);
-        setCurrentImageDim({ imageHeight: newHeight, imageWidth: newWidth });
+        setFinalImageDimensions({
+          imageHeight: newHeight,
+          imageWidth: newWidth,
+        });
         addLog({
           section: "arrange",
           tab: "image size",
@@ -41,7 +49,10 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           objType: "image",
         });
       } else {
-        setCurrentImageDim({ ...currentImageDim, imageWidth: newWidth });
+        setFinalImageDimensions({
+          ...finalImageDimensions,
+          imageWidth: newWidth,
+        });
         addLog({
           section: "arrange",
           tab: "image size",
@@ -50,18 +61,31 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           param: "image size",
           objType: "image",
         });
+        scaleY = image.scaleY;
       }
     }
+
+    image.scaleX = scaleX;
+    image.scaleY = scaleY;
+    canvas.renderAll();
   };
   const handleHeightChange = (e) => {
     const newHeight = parseInt(e.target.value);
     const oldHeight = image.height;
     const oldWidth = image.width;
+
+    const ratio = oldWidth / oldHeight;
+    const newWidth = Math.floor(newHeight * ratio);
+
+    const scaleY = newHeight / oldHeight;
+    let scaleX = newWidth / oldWidth;
+
     if (newHeight > 0) {
       if (maintainAspectRatio) {
-        const ratio = oldWidth / oldHeight;
-        const newWidth = Math.floor(newHeight * ratio);
-        setCurrentImageDim({ imageHeight: newHeight, imageWidth: newWidth });
+        setFinalImageDimensions({
+          imageHeight: newHeight,
+          imageWidth: newWidth,
+        });
         addLog({
           section: "arrange",
           tab: "image size",
@@ -79,13 +103,24 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           param: "image size",
           objType: "image",
         });
-        setCurrentImageDim({ ...currentImageDim, imageHeight: newHeight });
+        setFinalImageDimensions({
+          ...finalImageDimensions,
+          imageHeight: newHeight,
+        });
+        scaleX = image.scaleX;
       }
     }
+
+    image.scaleX = scaleX;
+    image.scaleY = scaleY;
+    canvas.renderAll();
   };
 
   const handleImageResizeReset = () => {
-    setCurrentImageDim({ imageHeight: image.width, imageWidth: image.width });
+    setFinalImageDimensions({
+      imageHeight: image.height,
+      imageWidth: image.width,
+    });
     addLog({
       section: "arrange",
       tab: "image size",
@@ -94,6 +129,10 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       param: "image size",
       objType: "image",
     });
+
+    image.scaleX = 1;
+    image.scaleY = 1;
+    canvas.renderAll();
   };
 
   return (
@@ -110,7 +149,7 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
                 id="height"
                 type="number"
                 name="height"
-                value={currentImageDim.imageHeight}
+                value={finalImageDimensions.imageHeight}
                 onChange={handleHeightChange}
               />
             </div>
@@ -120,7 +159,7 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
                 id="width"
                 type="number"
                 name="width"
-                value={currentImageDim.imageWidth}
+                value={finalImageDimensions.imageWidth}
                 onChange={handleWidthChange}
               />
             </div>

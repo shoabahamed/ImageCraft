@@ -266,34 +266,45 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
   // Function to apply clipping
   const handleShapeClip = () => {
-    if (selectedObject) {
+    const frameObject = canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+
+    if (frameObject) {
       addLog({
         section: "crop&cut",
         tab: "cut",
         event: "update",
-        message: `applied ${selectedObject.type} to cut the image`,
-        objType: selectedObject.type,
+        message: `applied ${frameObject.type} to cut the image`,
+        objType: frameObject.type,
       });
 
-      selectedObject.absolutePositioned = true; // Required for proper clipping
-      image.clipPath = selectedObject;
+      canvas.setActiveObject(frameObject);
+      setSelectedObject(frameObject);
+      frameObject.absolutePositioned = true; // Required for proper clipping
+      image.clipPath = frameObject;
+
       canvas.renderAll();
     }
   };
 
   // Reset clipping
   const resetClip = () => {
-    if (image.clipPath && selectedObject) {
+    if (image.clipPath) {
+      const frameObject = canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.name?.startsWith("Frame"));
+
       addLog({
         section: "crop&cut",
         tab: "cut",
         event: "reset",
-        message: `removed ${selectedObject.type} cut from image`,
-        objType: selectedObject.type,
+        message: `removed ${frameObject.type} cut from image`,
+        objType: frameObject.type,
       });
 
       image.clipPath = null; // Remove the clipping path
-      canvas.remove(selectedObject);
+      canvas.remove(frameObject);
       canvas.renderAll();
     }
   };
@@ -458,7 +469,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
           </CardContent>
         </Card>
       </div>
-      <div className="w-[90%]">
+      {/* <div className="w-[90%]">
         <Card>
           <CardHeader>
             <CardDescription className="text-center">
@@ -510,7 +521,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       <div className="w-[90%]">
         <Card>

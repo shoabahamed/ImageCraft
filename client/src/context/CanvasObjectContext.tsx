@@ -2,25 +2,27 @@ import { createContext, useState, ReactNode } from "react";
 
 // Define the type of the canvas object
 type CanvasObject = any;
-interface ImageDimensions {
+interface originalImageDimensionsType {
   imageWidth: number;
   imageHeight: number;
 }
-interface ContainerDimensions {
-  contWidth: number;
-  contHeight: number;
+interface finalImageDimensionsType {
+  imageWidth: number;
+  imageHeight: number;
 }
 
 // Define the context type
 interface CanvasObjectsContextType {
   selectedObject: CanvasObject | null;
   setSelectedObject: (obj: CanvasObject | null) => void;
-  currentImageDim: ImageDimensions;
-  setCurrentImageDim: (obj: ImageDimensions) => void;
-  currentContDim: ContainerDimensions;
-  setCurrentContDim: (obj: ContainerDimensions) => void;
+  originalImageDimensions: originalImageDimensionsType;
+  setOriginalImageDimensions: (obj: originalImageDimensionsType) => void;
+  finalImageDimensions: finalImageDimensionsType;
+  setFinalImageDimensions: (obj: finalImageDimensionsType) => void;
   loadedFromSaved: boolean;
   setLoadedFromSaved: (value: boolean) => void;
+  zoomValue: number;
+  setZoomValue: (value: number) => void;
 }
 
 // Create the context with a default value
@@ -37,26 +39,33 @@ export const CanvasObjectsProvider = ({
   const [selectedObject, setSelectedObject] = useState<CanvasObject | null>(
     null
   );
-  const [currentImageDim, setCurrentImageDim] = useState({
-    imageWidth: 0,
-    imageHeight: 0,
-  });
-  const [currentContDim, setCurrentContDim] = useState({
-    contWidth: 0,
-    contHeight: 0,
-  });
+  const [originalImageDimensions, setOriginalImageDimensions] =
+    useState<originalImageDimensionsType>({
+      imageWidth: 0,
+      imageHeight: 0,
+    });
+  const [finalImageDimensions, setFinalImageDimensions] =
+    useState<finalImageDimensionsType>({
+      imageWidth: 0,
+      imageHeight: 0,
+    });
   const [loadedFromSaved, setLoadedFromSaved] = useState(false);
+
+  const [zoomValue, setZoomValue] = useState(1);
+
   return (
     <CanvasObjectsContext.Provider
       value={{
         selectedObject,
         setSelectedObject,
-        currentContDim,
-        setCurrentContDim,
-        currentImageDim,
-        setCurrentImageDim,
+        originalImageDimensions,
+        finalImageDimensions,
+        setFinalImageDimensions,
+        setOriginalImageDimensions,
         loadedFromSaved,
         setLoadedFromSaved,
+        zoomValue,
+        setZoomValue,
       }}
     >
       {children}

@@ -45,8 +45,6 @@ type Props = {
   backupImage: FabricImage;
   canvasId: string;
   imageUrl: string;
-  mapState: mapStateType;
-  setMapState: (obj: mapStateType) => void;
   setLoadState: (val: boolean) => void;
 };
 
@@ -56,12 +54,15 @@ const Footer = ({
   backupImage,
   canvasId,
   imageUrl,
-  mapState,
-  setMapState,
   setLoadState,
 }: Props) => {
-  const { selectedObject, currentImageDim, loadedFromSaved } =
-    useCanvasObjects();
+  const {
+    selectedObject,
+    originalImageDimensions,
+    zoomValue,
+    finalImageDimensions,
+    loadedFromSaved,
+  } = useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
@@ -138,80 +139,36 @@ const Footer = ({
     try {
       if (!canvas || !image) return;
 
-      let backgroundImage: null | FabricImage = null;
-      if (canvas.backgroundImage) {
-        // @ts-ignore
-        backgroundImage = canvas.backgroundImage;
-      }
+      const { imageHeight: finalImageHeight, imageWidth: finalImageWidth } =
+        finalImageDimensions;
 
-      // current canvas and image dimentions (they are both always same)
-      const originalImageWidth = image.width!;
-      const originalImageHeight = image.height!;
+      const originalViewportTransform = canvas.viewportTransform;
+      const originalZoom = canvas.getZoom();
 
-      // required image width
-      const {
-        imageWidth: requiredImageWidth,
-        imageHeight: requiredImageHeight,
-      } = currentImageDim;
+      // Reset to neutral
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      canvas.setZoom(1);
+      canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.setCoords());
+      canvas.renderAll();
 
-      const renderedImageWidth = image.scaleX! * originalImageWidth;
-      const renderedImageHeight = image.scaleY! * originalImageHeight;
+      const bounds = getRotatedBoundingBox(image);
 
-      // Calculate scaling factors
-      const scaleX = requiredImageWidth / renderedImageWidth;
-      const scaleY = requiredImageHeight / renderedImageHeight;
+      console.log(bounds);
+      // TODO: since scale has changed I also need to scale other objects too. For some weird reason though everything is working just fine
 
-      // Scale the canvas to the original image size
-      canvas.setDimensions({
-        width: requiredImageWidth,
-        height: requiredImageHeight,
+      const canvasDataUrl = canvas.toDataURL({
+        format: "png",
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
       });
-
-      // Apply scaling factors to all other objects
-      canvas.getObjects().forEach((obj) => {
-        obj.scaleX *= scaleX;
-        obj.scaleY *= scaleY;
-        obj.left *= scaleX;
-        obj.top *= scaleY;
-        obj.setCoords();
-      });
-
-      // scale background image if exist
-      if (backgroundImage) {
-        backgroundImage.scaleX *= scaleX;
-        backgroundImage.scaleY *= scaleY;
-      }
-
-      // Get the image representation of the canvas
-      const canvasDataUrl = canvas.toDataURL(); // Canvas as data URL
-
-      // Restore the canvas and image to their previous dimensions
-
-      canvas.setDimensions({
-        width: renderedImageWidth,
-        height: renderedImageHeight,
-      });
-
-      // Restore the scale and position of all other objects
-      canvas.getObjects().forEach((obj) => {
-        obj.scaleX /= scaleX;
-        obj.scaleY /= scaleY;
-        obj.left /= scaleX;
-        obj.top /= scaleY;
-        obj.setCoords();
-      });
-
-      // scale background image if exist
-      if (backgroundImage) {
-        backgroundImage.scaleX /= scaleX;
-        backgroundImage.scaleY /= scaleY;
-      }
 
       // json data
       const canvasJSON = canvas.toObject(["name"]);
       const mainImageSrc = canvasJSON.objects[0].src;
-      // const backgroundImageSrc = canvasJSON.backgroundImage.src;
-      // canvasJSON.backgroundImage.src = "temp";
       canvasJSON.objects[0].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
 
       // Convert canvas image (Data URL) to a Blob and then to a File
@@ -235,28 +192,25 @@ const Footer = ({
       formData.append(
         "finalImageShape",
         JSON.stringify({
-          width: requiredImageWidth,
-          height: requiredImageHeight,
+          width: finalImageWidth,
+          height: finalImageHeight,
         })
       );
-      formData.append(
-        "renderedImageShape",
-        JSON.stringify({
-          width: renderedImageWidth,
-          height: renderedImageHeight,
-        })
-      );
-      formData.append(
-        "imageScale",
-        JSON.stringify({ scaleX: image.scaleX, scaleY: image.scaleY })
-      );
+
       // @ts-ignore
       formData.append("originalImage", originalImageFile);
       // @ts-ignore
       formData.append("canvasImage", canvasImageFile);
       formData.append("projectName", projectName);
       formData.append("loadedFromSaved", loadedFromSaved ? "true" : "false");
-      console.log([...formData]); // This will log the FormData entries as an array
+
+      // Restore zoom & transform
+      canvas.setViewportTransform(originalViewportTransform);
+      canvas.setZoom(originalZoom);
+      canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.setCoords());
+      canvas.renderAll();
 
       // Post JSON data to the backend with JWT in headers
       const response = await apiClient.post(
@@ -269,12 +223,6 @@ const Footer = ({
           },
         }
       );
-
-      // localStorage.setItem("canvasId", canvasId);
-      // localStorage.setItem(
-      //   "project_data",
-      //   JSON.stringify(response.data.data.project_data)
-      // );
 
       setLoadState(false);
 
@@ -317,6 +265,25 @@ const Footer = ({
     }
   };
 
+  function getRotatedBoundingBox(obj: fabric.Object) {
+    const coords = obj.getCoords(); // returns array of 4 points: TL, TR, BR, BL
+
+    const xValues = coords.map((p) => p.x);
+    const yValues = coords.map((p) => p.y);
+
+    const left = Math.min(...xValues);
+    const top = Math.min(...yValues);
+    const right = Math.max(...xValues);
+    const bottom = Math.max(...yValues);
+
+    return {
+      left,
+      top,
+      width: right - left,
+      height: bottom - top,
+    };
+  }
+
   const downloadCanvas = async () => {
     addLog({
       section: "canvas",
@@ -327,27 +294,33 @@ const Footer = ({
 
     if (!canvas || !image) return;
 
-    let dataURL: string;
-
+    let dataURL: string = "";
     const originalViewportTransform = canvas.viewportTransform;
     const originalZoom = canvas.getZoom();
 
     // Reset to neutral
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.setZoom(1);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
     canvas.renderAll();
 
-    // Find the object named "Frame" or starting with "Frame"
-    let bounds = image.getBoundingRect();
     const frameObject = canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.name?.startsWith("Frame"));
 
+    // Find the object named "Frame" or starting with "Frame"
+    let bounds = getRotatedBoundingBox(image);
+
     if (frameObject && downloadFrame) {
-      bounds = frameObject.getBoundingRect();
+      console.log("sdjf");
+      bounds = getRotatedBoundingBox(frameObject);
     }
 
-    // Generate the data URL for the download
+    console.log(bounds);
+    // TODO: since scale has changed I also need to scale other objects too
+
     dataURL = canvas.toDataURL({
       format: "png",
       left: bounds.left,
@@ -409,9 +382,9 @@ const Footer = ({
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
-    canvas.renderAll();
-
-    canvas.renderAll();
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
     canvas.renderAll();
   };
 
@@ -498,7 +471,7 @@ const Footer = ({
             handleZoomIn();
           }}
         />
-        <div>{Math.floor(mapState.scale * 100)}%</div>
+        <div>{Math.floor(zoomValue * 100)}%</div>
         {/* <IconComponent icon={<Undo />} iconName={"Undo"} /> */}
         {/* <IconComponent icon={<Redo />} iconName={"Redo"} />  */}
         <IconComponent

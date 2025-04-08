@@ -1,15 +1,19 @@
 import { create } from "zustand";
 
 type ArrangeStroe = {
-  rotateX: boolean;
-  rotateY: boolean;
-  setRotateX: (value: boolean) => void;
-  setRotateY: (value: boolean) => void;
+  flipX: boolean;
+  flipY: boolean;
+  imageRotation: number;
+  setFlipX: (value: boolean) => void;
+  setFlipY: (value: boolean) => void;
+  setImageRotation: (value: number) => void;
 };
 
 export const useArrangeStore = create<ArrangeStroe>((set) => ({
-  rotateX: false,
-  rotateY: false,
-  setRotateX: (value) => set({ rotateX: value }),
-  setRotateY: (value) => set({ rotateY: value }),
+  flipX: false,
+  flipY: false,
+  imageRotation: 0,
+  setFlipX: (value) => set({ flipX: value }),
+  setFlipY: (value) => set({ flipY: value }),
+  setImageRotation: (value) => set({ imageRotation: value }),
 }));

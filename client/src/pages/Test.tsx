@@ -13,7 +13,6 @@ import CropSidebar from "@/components/CropSidebar";
 
 import Footer from "@/components/Footer";
 
-import { MapInteractionCSS } from "react-map-interaction";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
 import ClipLoader from "react-spinners/ClipLoader";
@@ -25,6 +24,7 @@ import {
   applyFiltersFromDatabase,
   subscribeToAdjustStore,
 } from "@/hooks/appStore/applyFilterSubscriber";
+import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -59,13 +59,15 @@ const Test = () => {
 
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
 
-  const { setCurrentImageDim, setCurrentContDim, setLoadedFromSaved } =
-    useCanvasObjects();
+  const {
+    setOriginalImageDimensions,
+    setFinalImageDimensions,
+    setLoadedFromSaved,
+    zoomValue,
+    setZoomValue,
+  } = useCanvasObjects();
 
-  const [mapState, setMapState] = useState({
-    scale: 1,
-    translation: { x: 100, y: 0 },
-  });
+  const setImageRotation = useArrangeStore((state) => state.setImageRotation);
 
   const [spinnerLoading, setSpinnerLoading] = useState(false);
 
@@ -93,6 +95,7 @@ const Test = () => {
     const zoom = Math.min(scaleX, scaleY);
 
     mainCanvasRef.current.setZoom(zoom);
+    setZoomValue(zoom);
 
     // Re-center the image using viewport transform
     const vp = mainCanvasRef.current.viewportTransform!;
@@ -100,7 +103,6 @@ const Test = () => {
     vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
     mainCanvasRef.current.setViewportTransform(vp);
 
-    mainCanvasRef.current.renderAll();
     mainCanvasRef.current.renderAll();
   };
 
@@ -126,15 +128,12 @@ const Test = () => {
       initCanvas.backgroundColor = "#fff";
 
       const savedData = localStorage.getItem("project_data");
+      console.log(JSON.stringify(savedData));
 
       if (savedData) {
+        console.log("before loading");
         const finalImageShape: { width: number; height: number } = JSON.parse(
           localStorage.getItem("final_image_shape")!
-        );
-        const renderedImageShape: { width: number; height: number } =
-          JSON.parse(localStorage.getItem("rendered_image_shape")!);
-        const imageScale: { scaleX: number; scaleY: number } = JSON.parse(
-          localStorage.getItem("image_scale")!
         );
 
         const projectName = localStorage.getItem("project_name");
@@ -173,60 +172,59 @@ const Test = () => {
             // Wait until all objects are fully added
             await ensureSingleCallback(initCanvas);
 
-            // Retrieve the image object if it exists
             const imageObject = initCanvas
               .getObjects()
-              .find((obj: fabric.Object) => obj.type === "image");
+              .find((obj: fabric.Object) => obj.type.toLowerCase() === "image");
+
+            const frameObject = initCanvas
+              .getObjects() // @ts-ignore
+              .find((obj) => obj.name?.startsWith("Frame"));
 
             if (imageObject) {
-              imageObject.selectable = false; // Example: Make the image non-selectable
-              imageObject.hoverCursor = "default"; // Example: Change cursor on hover
+              console.log(imageObject);
+
               // @ts-ignore
               imageObject.crossOrigin = "anonymous";
 
-              // ------------------------ old code ---------------------
-              // const imageWidth = imageObject.width ?? 1;
-              // const imageHeight = imageObject.height ?? 1;
-
-              // const needsScaling =
-              //   imageWidth > containerWidth || imageHeight > containerHeight;
-
-              // if (needsScaling) {
-              //   const scaleX = containerWidth / imageWidth;
-              //   const scaleY = containerHeight / imageHeight;
-              //   const scale = Math.min(scaleX, scaleY);
-
-              //   imageObject.scale(scale); // Scale the image
-              // }
-
-              // const finalWidth = needsScaling
-              //   ? imageObject.getScaledWidth()
-              //   : imageWidth;
-              // const finalHeight = needsScaling
-              //   ? imageObject.getScaledHeight()
-              //   : imageHeight;
-
-              // initCanvas.setDimensions({
-              //   width: finalWidth,
-              //   height: finalHeight,
-              // });
-
-              // ---------------old code end new code start ---------------------
-              initCanvas.setDimensions({
-                width: renderedImageShape.width,
-                height: renderedImageShape.height,
+              setOriginalImageDimensions({
+                imageWidth: imageObject.width,
+                imageHeight: imageObject.height,
               });
 
-              imageObject.scale(Math.min(imageScale.scaleX, imageScale.scaleY));
-              console.log(
-                imageObject.getScaledWidth(),
-                imageObject.getScaledHeight()
-              );
+              setFinalImageDimensions({
+                imageWidth: finalImageShape.width,
+                imageHeight: finalImageShape.height,
+              });
+
+              initCanvas.setDimensions({
+                width: containerWidth,
+                height: containerHeight,
+              });
+
+              setImageRotation(imageObject.angle);
+
+              // Calculate zoom to fit image in canvas while maintaining aspect ratio
+              const scaleX = containerWidth / imageObject.width;
+              const scaleY = containerHeight / imageObject.height;
+              const zoom = Math.min(scaleX, scaleY);
+
+              // Apply zoom to canvas
+              initCanvas.setZoom(zoom);
+              setZoomValue(zoom);
+
+              // Calculate the viewport transform to center the image
+              const vp = initCanvas.viewportTransform!;
+              vp[4] = (containerWidth - imageObject.width * zoom) / 2; // translateX
+              vp[5] = (containerHeight - imageObject.height * zoom) / 2; // translateY
+              initCanvas.setViewportTransform(vp);
+
               imageObject.set({
-                left: 0,
-                top: 0,
+                left: imageObject.width / 2,
+                top: imageObject.height / 2,
                 selectable: false,
                 hoverCursor: "default",
+                originX: "center",
+                originY: "center",
               });
               //@ts-ignore
               unsubscribeRef.current = subscribeToAdjustStore(
@@ -234,46 +232,38 @@ const Test = () => {
                 imageObject
               );
 
-              // applyFiltersFromDatabase(
-              //   initCanvas,
-              //   imageObject,
-              //   canvasJSON.objects[0].filters,
-              //   canvasJSON.objects[0].opacity
-              // );
               setDatabaseFilters(canvasJSON.objects[0].filters);
             }
 
-            initCanvas.renderAll();
+            if (frameObject) {
+              imageObject.clipPath = null;
+              frameObject.absolutePositioned = true;
+              // selectedObject.absolutePositioned = true;
+              imageObject.clipPath = frameObject;
+            }
+
             // @ts-ignore
             currentImageRef.current = imageObject; // Store the Fabric.js image object reference
             mainCanvasRef.current = initCanvas; // Store the Fabric.js canvas reference
 
             initCanvas.renderAll();
+            console.log("sdjf");
 
             canvasIdRef.current = localStorage.getItem("canvasId")!;
             localStorage.removeItem("project_data");
             localStorage.removeItem("CanvasId");
 
-            setCurrentImageDim({
-              imageWidth: finalImageShape.width,
-              imageHeight: finalImageShape.height,
-            });
-
             setProjectName(projectName);
             setShowUpdateButton(true);
 
             setLoadedFromSaved(true);
-            const mapX = containerWidth / 2 - renderedImageShape.width / 2;
-            const mapY = containerHeight / 2 - renderedImageShape.height / 2;
-
-            setMapState({ ...mapState, translation: { x: mapX, y: mapY } });
 
             if (idFromState) {
               canvasIdRef.current = idFromState;
             }
           });
-          localStorage.removeItem("CanvasId");
-          localStorage.removeItem("project_data");
+          // localStorage.removeItem("CanvasId");
+          // localStorage.removeItem("project_data");
         } catch (error) {
           console.error("Failed to load canvas data:", error);
         }
@@ -282,7 +272,12 @@ const Test = () => {
           const imageWidth = img.width ?? 1;
           const imageHeight = img.height ?? 1;
 
-          setCurrentImageDim({
+          setOriginalImageDimensions({
+            imageWidth: imageWidth,
+            imageHeight: imageHeight,
+          });
+
+          setFinalImageDimensions({
             imageWidth: imageWidth,
             imageHeight: imageHeight,
           });
@@ -299,6 +294,7 @@ const Test = () => {
 
           // Apply zoom to canvas
           initCanvas.setZoom(zoom);
+          setZoomValue(zoom);
 
           // Calculate the viewport transform to center the image
           const vp = initCanvas.viewportTransform!;
@@ -335,6 +331,7 @@ const Test = () => {
         if (zoom > 20) zoom = 20;
         if (zoom < 0.01) zoom = 0.01;
         initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+        setZoomValue(zoom);
         opt.e.preventDefault();
         opt.e.stopPropagation();
       });
@@ -351,6 +348,7 @@ const Test = () => {
           if (zoom > 20) zoom = 20;
           if (zoom < 0.01) zoom = 0.01;
           initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+          setZoomValue(zoom);
           opt.e.preventDefault();
           opt.e.stopPropagation();
         });
@@ -541,8 +539,6 @@ const Test = () => {
               backupImage={backupCurrentImageRef.current}
               canvasId={canvasIdRef.current}
               imageUrl={imageUrl}
-              mapState={mapState}
-              setMapState={setMapState}
               setLoadState={setSpinnerLoading}
             />
           </div>

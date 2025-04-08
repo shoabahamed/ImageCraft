@@ -12,13 +12,11 @@ import {
   UnfoldHorizontal,
 } from "lucide-react";
 import { Canvas, FabricImage } from "fabric";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLogContext } from "@/hooks/useLogContext";
 import ImageSize from "./ImageSize";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { Slider } from "./ui/slider";
 
 type ArrangeProps = {
   canvas: Canvas;
@@ -27,32 +25,58 @@ type ArrangeProps = {
 
 const Arrange = ({ canvas, image }: ArrangeProps) => {
   const { addLog } = useLogContext();
-  const rotateX = useArrangeStore((state) => state.rotateX);
-  const rotateY = useArrangeStore((state) => state.rotateY);
-  const setRotateX = useArrangeStore((state) => state.setRotateX);
-  const setRotateY = useArrangeStore((state) => state.setRotateY);
+  const flipX = useArrangeStore((state) => state.flipX);
+  const flipY = useArrangeStore((state) => state.flipY);
+  const imageRotation = useArrangeStore((state) => state.imageRotation);
+  const setFlipX = useArrangeStore((state) => state.setFlipX);
+  const setFlipY = useArrangeStore((state) => state.setFlipY);
+  const setImageRotation = useArrangeStore((state) => state.setImageRotation);
 
   useEffect(() => {
     image.set({
-      flipX: rotateX,
-      flipY: rotateY,
+      flipX: flipX,
+      flipY: flipY,
     });
 
     canvas.renderAll();
-  }, [rotateX, rotateY]);
+  }, [flipX, flipY]);
+
+  const handleImageRotation = (e) => {
+    const rotationValue = parseInt(e[0]);
+
+    addLog({
+      section: "arrange",
+      tab: "rotation",
+      event: "update",
+      message: `rotation value changed from  ${imageRotation} to ${e[0]}`,
+      value: `${e[0]}`,
+    });
+
+    setImageRotation(rotationValue);
+    image.angle = rotationValue;
+    canvas.renderAll();
+
+    addLog({
+      section: "arrange",
+      tab: "flip",
+      event: "update",
+      message: `rotation value changed from  to ${e[0]}`,
+      value: `${e[0]}`,
+    });
+  };
 
   const handleOrientationReset = () => {
     addLog({
       section: "arrange",
-      tab: "rotation",
+      tab: "flip",
       event: "reset",
-      message: `image rotation set default`,
+      message: `image flip set to default`,
       param: "rotation",
       objType: "image",
     });
 
-    setRotateX(false);
-    setRotateY(false);
+    setFlipX(false);
+    setFlipY(false);
   };
 
   return (
@@ -60,35 +84,35 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       <div className="w-[90%]">
         <Card>
           <CardHeader>
-            <CardDescription>Roate&Flip</CardDescription>
+            <CardDescription>Flip</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-4">
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <IconComponent
                   icon={<UndoDot />}
-                  iconName="Rotate Left"
+                  iconName="Flip Left"
                   handleClick={() => {
-                    if (rotateX) {
+                    if (flipX) {
                       addLog({
                         section: "arrange",
-                        tab: "rotation",
+                        tab: "flip",
                         event: "update",
-                        message: "image Rotated 180 degress right",
+                        message: "image Flipped to right",
                         param: "rotation",
                         objType: "image",
                       });
                     } else {
                       addLog({
                         section: "arrange",
-                        tab: "rotation",
+                        tab: "flip",
                         event: "update",
-                        message: "image Rotated 180 degress left",
+                        message: "image Flipped to degress left",
                         param: "rotation",
                         objType: "image",
                       });
                     }
-                    setRotateX(!rotateX);
+                    setFlipX(!flipX);
                   }}
                 />
 
@@ -96,26 +120,26 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                   icon={<RedoDot />}
                   iconName="Roate Right"
                   handleClick={() => {
-                    if (rotateX) {
+                    if (flipX) {
                       addLog({
                         section: "arrange",
-                        tab: "rotation",
+                        tab: "flip",
                         event: "update",
-                        message: "image Rotated 180 degress left",
+                        message: "image Flipped to left",
                         param: "rotation",
                         objType: "image",
                       });
                     } else {
                       addLog({
                         section: "arrange",
-                        tab: "rotation",
+                        tab: "flip",
                         event: "update",
-                        message: "image Rotated 180 degress right",
+                        message: "image Flipped to right",
                         param: "rotation",
                         objType: "image",
                       });
                     }
-                    setRotateX(!rotateX);
+                    setFlipX(!flipX);
                   }}
                 />
 
@@ -123,12 +147,12 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                   icon={<UnfoldVertical />}
                   iconName="Vertial Flip"
                   handleClick={() => {
-                    if (rotateY) {
+                    if (flipY) {
                       addLog({
                         section: "arrange",
-                        tab: "rotation",
+                        tab: "flip",
                         event: "update",
-                        message: "image Rotated 180 degress down",
+                        message: "image Flipped to down",
                         param: "rotation",
                         objType: "image",
                       });
@@ -137,12 +161,12 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                         section: "arrange",
                         tab: "rotation",
                         event: "update",
-                        message: "image Rotated 180 degress up",
+                        message: "image Flipped to up",
                         param: "rotation",
                         objType: "image",
                       });
                     }
-                    setRotateY(!rotateY);
+                    setFlipY(!flipY);
                   }}
                 />
 
@@ -150,29 +174,44 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                   icon={<UnfoldHorizontal />}
                   iconName="Vertical  Flip"
                   handleClick={() => {
-                    if (rotateY) {
+                    if (flipY) {
                       addLog({
                         section: "arrange",
                         tab: "rotation",
                         event: "update",
-                        message: "image Rotated 180 degress up",
+                        message: "image Flipped to up",
                         param: "rotation",
                         objType: "image",
                       });
                     } else {
                       addLog({
                         section: "arrange",
-                        tab: "rotation",
+                        tab: "flip",
                         event: "update",
-                        message: "image Rotated 180 degress down",
+                        message: "image Flipped to down",
                         param: "rotation",
                         objType: "image",
                       });
                     }
-                    setRotateY(!rotateY);
+                    setFlipY(!flipY);
                   }}
                 />
               </div>
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center text-slate-400 text-sm">
+                  <p>Rotation</p>
+                  <p>{imageRotation}</p>
+                </div>
+
+                <Slider
+                  defaultValue={[imageRotation]}
+                  min={0}
+                  max={360}
+                  step={1}
+                  onValueChange={handleImageRotation}
+                />
+              </div>
+
               <button
                 className="custom-button"
                 onClick={handleOrientationReset}
@@ -183,10 +222,10 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
           </CardContent>
         </Card>
       </div>
+
       <div className="w-[90%]">
         <ImageSize canvas={canvas} image={image} />
       </div>
-
     </div>
   );
 };

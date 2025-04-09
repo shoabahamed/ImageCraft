@@ -42,7 +42,22 @@ const AdjustSidebar = ({
   const blurValue = useAdjustStore((state) => state.blurValue);
   const noiseValue = useAdjustStore((state) => state.noiseValue);
   const pixelateValue = useAdjustStore((state) => state.pixelateValue);
-  const predefinedFilter = useAdjustStore((state) => state.predefinedFilter);
+  const enableGrayScale = useAdjustStore((state) => state.enableGrayScale);
+  const enableVintage = useAdjustStore((state) => state.enableVintage);
+  const enableSepia = useAdjustStore((state) => state.enableSepia);
+  const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
+  const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
+  const setEnableGrayScale = useAdjustStore(
+    (state) => state.setEnableGrayScale
+  );
+  const setEnableVintage = useAdjustStore((state) => state.setEnableVintage);
+  const setEnableSepia = useAdjustStore((state) => state.setEnableSepia);
+  const setEnableTechnicolor = useAdjustStore(
+    (state) => state.setEnableTechnicolor
+  );
+  const setEnableKodachrome = useAdjustStore(
+    (state) => state.setEnableKodachrome
+  );
 
   // Set functions for each value
   const setBrightnessValue = useAdjustStore(
@@ -61,9 +76,6 @@ const AdjustSidebar = ({
   const setBlurValue = useAdjustStore((state) => state.setBlurValue);
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
-  const setPredefinedFilter = useAdjustStore(
-    (state) => state.setPredefinedFilter
-  );
 
   // Function to apply filters to the image
   // const applyFilters = () => {
@@ -142,48 +154,48 @@ const AdjustSidebar = ({
   //   canvas.renderAll();
   // };
 
-  const applyPredefinedFilter = (filterType: string) => {
-    if (predefinedFilter) {
-      addLog({
-        section: "adjust",
-        tab: "filter",
-        event: "deletion",
-        message: `removed filter ${predefinedFilter} `,
-      });
-    }
-    if (predefinedFilter && filterType === predefinedFilter) {
-      setPredefinedFilter("");
-    } else {
-      addLog({
-        section: "adjust",
-        tab: "filter",
-        event: "update",
-        message: `applied filter ${filterType} `,
-        value: predefinedFilter,
-      });
+  // const applyPredefinedFilter = (filterType: string) => {
+  //   if (predefinedFilter) {
+  //     addLog({
+  //       section: "adjust",
+  //       tab: "filter",
+  //       event: "deletion",
+  //       message: `removed filter ${predefinedFilter} `,
+  //     });
+  //   }
+  //   if (predefinedFilter && filterType === predefinedFilter) {
+  //     setPredefinedFilter("");
+  //   } else {
+  //     addLog({
+  //       section: "adjust",
+  //       tab: "filter",
+  //       event: "update",
+  //       message: `applied filter ${filterType} `,
+  //       value: predefinedFilter,
+  //     });
 
-      setPredefinedFilter(filterType);
-    }
-  };
+  //     setPredefinedFilter(filterType);
+  //   }
+  // };
 
   useEffect(() => {
     if (databaseFilters) {
       databaseFilters.map((filter) => {
         switch (filter.type) {
           case filters.Grayscale.type:
-            setPredefinedFilter("grayscale");
+            setEnableGrayScale(true);
             break;
           case filters.Sepia.type:
-            setPredefinedFilter("sepia");
+            setEnableSepia(true);
             break;
           case filters.Vintage.type:
-            setPredefinedFilter("vintage");
+            setEnableVintage(true);
             break;
           case filters.Kodachrome.type:
-            setPredefinedFilter("kodachrome");
+            setEnableKodachrome(true);
             break;
           case filters.Technicolor.type:
-            setPredefinedFilter("technicolor");
+            setEnableTechnicolor(true);
             break;
 
           case RBrightness.type:
@@ -257,6 +269,7 @@ const AdjustSidebar = ({
       message: `reseted all image color properties `,
     });
 
+    setRedBrightnessValue(0);
     setBrightnessValue(0);
     setVibranceValue(0);
     setContrastValue(0);
@@ -286,7 +299,11 @@ const AdjustSidebar = ({
       message: `removed all filters`,
     });
 
-    setPredefinedFilter("");
+    setEnableGrayScale(false);
+    setEnableSepia(false);
+    setEnableVintage(false);
+    setEnableKodachrome(false);
+    setEnableTechnicolor(false);
   };
 
   return (
@@ -300,47 +317,37 @@ const AdjustSidebar = ({
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 lg:grid-cols-2 gap-4">
             <Button
-              variant={`${
-                predefinedFilter === "grayscale" ? "default" : "outline"
-              }`}
+              variant={`${enableGrayScale ? "default" : "outline"}`}
               className={`w-full text-xs`}
-              onClick={() => applyPredefinedFilter("grayscale")}
+              onClick={() => setEnableGrayScale(!enableGrayScale)}
             >
               Grayscale
             </Button>
             <Button
-              variant={`${
-                predefinedFilter === "sepia" ? "default" : "outline"
-              }`}
+              variant={`${enableSepia ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => applyPredefinedFilter("sepia")}
+              onClick={() => setEnableSepia(!enableSepia)}
             >
               Sepia
             </Button>
             <Button
-              variant={`${
-                predefinedFilter === "vintage" ? "default" : "outline"
-              }`}
+              variant={`${enableVintage ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => applyPredefinedFilter("vintage")}
+              onClick={() => setEnableVintage(!enableVintage)}
             >
               Vintage
             </Button>
             <Button
-              variant={`${
-                predefinedFilter === "kodachrome" ? "default" : "outline"
-              }`}
+              variant={`${enableKodachrome ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => applyPredefinedFilter("kodachrome")}
+              onClick={() => setEnableKodachrome(!enableKodachrome)}
             >
               Kodachrome
             </Button>
             <Button
-              variant={`${
-                predefinedFilter === "technicolor" ? "default" : "outline"
-              }`}
+              variant={`${enableTechnicolor ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => applyPredefinedFilter("technicolor")}
+              onClick={() => setEnableTechnicolor(!enableTechnicolor)}
             >
               Technicolor
             </Button>

@@ -74,8 +74,83 @@ function getRotatedBoundingBox(obj: fabric.Object) {
   };
 }
 
+const getCanvasDataUrl = (  canvas: fabric.Canvas,
+  image: fabric.FabricImage, downloadFrame:boolean=false, changeAngle:boolean=false) => {
 
-export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64}
+
+    const currentAngle = image.angle
+    if(changeAngle) {image.angle = 0}
+    
+
+    let dataURL: string = "";
+    const originalViewportTransform = canvas.viewportTransform;
+    const originalZoom = canvas.getZoom();
+    
+
+
+    // Reset to neutral
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    canvas.setZoom(1);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+
+
+    const frameObject = canvas
+    .getObjects() // @ts-ignore
+    .find((obj) => obj.name?.startsWith("Frame"));
+
+    if(changeAngle && frameObject){
+      image.clipPath = null
+    }
+
+    // Find the object named "Frame" or starting with "Frame"
+    let bounds = getRotatedBoundingBox(image);
+
+    if (frameObject && downloadFrame) {
+      bounds = getRotatedBoundingBox(frameObject);
+    }
+
+    console.log(bounds);
+    // TODO: since scale has changed I also need to scale other objects too
+
+    dataURL = canvas.toDataURL({
+      format: "png",
+      left: bounds.left,
+      top: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+    });
+
+
+
+    // Restore zoom & transform
+    canvas.setViewportTransform(originalViewportTransform);
+    canvas.setZoom(originalZoom);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+    
+
+    if(changeAngle) {
+      image.angle = currentAngle
+      if(frameObject){
+        frameObject.absolutePositioned = true;
+        image.clipPath = frameObject
+      }
+      
+    }
+
+    canvas.renderAll();
+   
+
+    return dataURL
+      
+  }
+
+
+export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl}
 
 
 

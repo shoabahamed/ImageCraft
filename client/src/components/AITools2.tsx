@@ -17,12 +17,16 @@ import CustomSlider from "./custom-slider";
 import { ToastAction } from "./ui/toast";
 import {
   base64ToFile,
+  getCanvasDataUrl,
+  getRotatedBoundingBox,
   isBase64,
   urlToBase64,
   urlToFile,
 } from "@/utils/commonFunctions";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 
 // TODO: ability to restore original image after style transfer
 // TODO: everything works right now but for some reason filters are not updated from the get go when switching images if the the canvas was loaded from database
@@ -52,6 +56,9 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const [stylizeRatio, setStylizeRatio] = useState(0.5);
   const currentFilters = useCommonProps((state) => state.currentFilters);
   const resetFilters = useAdjustStore((state) => state.resetFilters);
+  const { setFinalImageDimensions } = useCanvasObjects();
+  const setFlipX = useArrangeStore((state) => state.setFlipX);
+  const setFlipY = useArrangeStore((state) => state.setFlipY);
 
   const removeTempStylizeImage = () => {
     // @ts-ignore
@@ -99,20 +106,23 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   };
 
   const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
-    console.log("sjdf");
     setLoadSate(true);
     removeTempStylizeImage();
     try {
       const formData = new FormData();
-      const canvasJSON = canvas.toObject(["name"]);
 
-      let originalImageBase64 = canvasJSON.objects[0].src;
+      const canvasImageBase64 = getCanvasDataUrl(
+        canvas,
+        imageRef.current,
+        false,
+        true
+      );
 
-      if (!isBase64(originalImageBase64)) {
-        originalImageBase64 = await urlToBase64(originalImageBase64);
-      }
+      // if (!isBase64(originalImageBase64)) {
+      //   originalImageBase64 = await urlToBase64(originalImageBase64);
+      // }
 
-      const originalImageFile = base64ToFile(originalImageBase64, "image");
+      const originalImageFile = base64ToFile(canvasImageBase64, "image");
 
       if (predefinedImageUrl.length > 0) {
         const styleImageFile = await urlToFile(predefinedImageUrl);
@@ -195,35 +205,20 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const showStylizeImagePreview = (base64Image: string) => {
     if (!canvas || !imageRef.current) return;
 
-    const scaleX = imageRef.current.scaleX;
-    const scaleY = imageRef.current.scaleY;
-
     const newImage = new Image();
     newImage.src = base64Image;
 
     newImage.onload = () => {
       const fabricImage = new FabricImage(newImage);
 
-      fabricImage.scaleX = scaleX;
-      fabricImage.scaleY = scaleY;
       fabricImage.set({
         originX: "center",
         originY: "center",
         top: imageRef.current.height / 2,
         left: imageRef.current.width / 2,
         angle: imageRef.current.angle,
-        scaleX: scaleX,
-        scaleY: scaleY,
-        flipX: imageRef.current.flipX,
-        flipY: imageRef.current.flipY,
       });
 
-      console.log("current filters", currentFilters);
-      if (currentFilters) {
-        fabricImage.filters = currentFilters;
-      }
-
-      fabricImage.applyFilters();
       fabricImage.set("name", "style_temp_img");
 
       canvas.add(fabricImage);
@@ -239,13 +234,37 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
     FabricImage.fromURL(base64Image).then((img) => {
       if (!img || !imageRef.current) return;
       // Replace the image content
+
+      console.log("djf");
       imageRef.current.setElement(img.getElement());
-      // If using filters, reapply them
-      imageRef.current.applyFilters();
+
+      imageRef.current.scaleX = 1;
+      imageRef.current.scaleY = 1;
+
+      imageRef.current.flipX = false;
+      imageRef.current.flipY = false;
+      console.log("dj");
+      setFlipX(false);
+      setFlipY(false);
+      setFinalImageDimensions({
+        imageWidth: img.width,
+        imageHeight: img.height,
+      });
+      console.log("dj");
+      resetFilters();
+
       // Refresh canvas
       imageRef.current.setCoords();
+
       canvas.requestRenderAll();
     });
+
+    canvas.getObjects().forEach(function (obj) {
+      if (obj.type.toLowerCase() !== "image") {
+        canvas.remove(obj);
+      }
+    });
+    canvas.requestRenderAll();
   };
 
   return (

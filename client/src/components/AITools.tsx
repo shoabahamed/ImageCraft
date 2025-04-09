@@ -1,4 +1,4 @@
-// import React, { useState } from "react";
+// import React, { useState, useEffect } from "react";
 // import apiClient from "@/utils/appClient";
 // import {
 //   Dialog,
@@ -13,25 +13,73 @@
 // import { useToast } from "@/hooks/use-toast";
 // import { useAuthContext } from "@/hooks/useAuthContext";
 // import { useLogContext } from "@/hooks/useLogContext";
+// import CustomSlider from "./custom-slider";
+// import { ToastAction } from "./ui/toast";
+// import {
+//   base64ToFile,
+//   isBase64,
+//   urlToBase64,
+//   urlToFile,
+// } from "@/utils/commonFunctions";
+// import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
+// import { useCommonProps } from "@/hooks/appStore/CommonProps";
+
+// // TODO: ability to restore original image after style transfer
+// // TODO: everything works right now but for some reason filters are not updated from the get go when switching images if the the canvas was loaded from database
 
 // type Props = {
 //   canvas: Canvas;
 //   imageRef: React.RefObject<FabricImage>;
 //   imageUrl: string;
+//   setLoadSate: (value: boolean) => void;
 // };
 
-// const AITools = ({ canvas, imageUrl, imageRef }: Props) => {
+// type StyleTemplate = {
+//   image_id: string;
+//   image_url: string;
+//   image_name: string;
+// };
+
+// const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 //   const { addLog } = useLogContext();
 //   const { toast } = useToast();
 //   const { user } = useAuthContext();
 //   const [openStylizeImage, setOpenStylizeImage] = useState(false);
-//   const [uploadedImage, setUploadedImage] = useState<null | string>(
-//     "./picasso.jpg"
-//   );
+//   const [uploadedImage, setUploadedImage] = useState<null | string>();
 //   const [backendImage, setBackendImage] = useState<null | string>(null);
 //   const [showImageAddButton, setShowImageAddButton] = useState(false);
+//   const [styleImages, setStyleImages] = useState<StyleTemplate[] | []>([]);
+//   const [stylizeRatio, setStylizeRatio] = useState(0.5);
+//   const currentFilters = useCommonProps((state) => state.currentFilters);
+//   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
-//   // text processing end
+//   const removeTempStylizeImage = () => {
+//     // @ts-ignore
+//     const tempImg: FabricImage = canvas
+//       .getObjects()
+//       .find((obj) => obj.name && obj.name === "style_temp_img");
+//     if (tempImg) canvas.remove(tempImg);
+//   };
+
+//   useEffect(() => {
+//     const get_style_images = async () => {
+//       try {
+//         const response = await apiClient.get("/all_style_img", {
+//           headers: {
+//             "Content-Type": "application/json",
+//             Authorization: `Bearer ${user?.token}`,
+//           },
+//         });
+//         const images = response.data.data;
+//         setStyleImages(images);
+//       } catch (error) {
+//         console.error("Failed to fetch reports:", error);
+//         toast({ description: "Failed to load reports", duration: 3000 });
+//       }
+//     };
+
+//     get_style_images();
+//   }, []);
 
 //   const handleImageUpload = (event) => {
 //     const file = event.target.files[0];
@@ -43,36 +91,41 @@
 //         //   propType: "image",
 //         //   message: "uploaded style image",
 //         // });
-
+//         // @ts-ignore
 //         setUploadedImage(reader.result);
 //       };
 //       reader.readAsDataURL(file);
 //     }
 //   };
 
-//   // Function to get the FabricImage URL
-//   // const getFabricImageURL = (fabricImage: FabricImage) => {
-//   //   const imgElement = fabricImage.getElement();
-//   //   return imgElement ? imgElement.src : "";
-//   // };
-
-//   const convertToFile = async (url: string) => {
-//     const response = await fetch(url);
-//     const blob = await response.blob();
-//     const file = new File([blob], "image.png", { type: "image/png" });
-
-//     return file;
-//   };
-
-//   const handleStyleTransfer = async () => {
-//     if (!uploadedImage) return;
+//   const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
+//     console.log("sjdf");
+//     setLoadSate(true);
+//     removeTempStylizeImage();
 //     try {
-//       const originalImageFile = await convertToFile(imageUrl);
-//       const styleImageFile = await convertToFile(uploadedImage);
-
 //       const formData = new FormData();
+//       const canvasJSON = canvas.toObject(["name"]);
+
+//       let originalImageBase64 = canvasJSON.objects[0].src;
+
+//       if (!isBase64(originalImageBase64)) {
+//         originalImageBase64 = await urlToBase64(originalImageBase64);
+//       }
+
+//       const originalImageFile = base64ToFile(originalImageBase64, "image");
+
+//       if (predefinedImageUrl.length > 0) {
+//         const styleImageFile = await urlToFile(predefinedImageUrl);
+//         formData.append("styleImage", styleImageFile);
+//       } else {
+//         const styleImageFile = await urlToFile(uploadedImage);
+//         formData.append("styleImage", styleImageFile);
+//       }
+
 //       formData.append("originalImage", originalImageFile);
-//       formData.append("styleImage", styleImageFile);
+//       formData.append("alpha", stylizeRatio.toString());
+
+//       console.log([...formData]);
 
 //       const response = await apiClient.post(
 //         "/image_proc/style_transfer",
@@ -85,15 +138,40 @@
 //       );
 
 //       if (response.status === 200) {
+//         // setUploadedImage("");
 //         const base64Image = `data:image/png;base64,${response.data.image}`;
 //         // const base64Image =response.data.image
 //         setBackendImage(base64Image);
 //         setShowImageAddButton(true);
-//         toast({
-//           description: "Style Transfer Successfull",
-//           className: "bg-green-500 text-gray-900",
-//           duration: 3000,
-//         });
+
+//         if (uploadedImage) {
+//           toast({
+//             className: "bg-green-500 text-gray-900",
+//             title: "Style Transfer Successfull",
+//             duration: 3000,
+//           });
+//         } else {
+//           showStylizeImagePreview(base64Image);
+//           toast({
+//             className: "bg-green-500 text-gray-900",
+//             title: "Style Transfer Successfull",
+//             description:
+//               "Do you want to replace the original image with the new one?",
+//             action: (
+//               <ToastAction altText="Switch">
+//                 <div className="flex gap-2">
+//                   <button onClick={() => replaceImage(base64Image)}>
+//                     Switch
+//                   </button>
+//                 </div>
+//               </ToastAction>
+//             ),
+//             duration: 10000000000000,
+//             onDismiss: () => {
+//               removeTempStylizeImage();
+//             },
+//           });
+//         }
 //       } else {
 //         toast({
 //           variant: "destructive",
@@ -106,58 +184,68 @@
 //       console.error("Error saving canvas:", error);
 //       toast({
 //         variant: "destructive",
-//         description: "Unexpected Error",
+//         description: "Unexpected Error " + error,
 //         className: "bg-green-500 text-gray-900",
 //         duration: 3000,
 //       });
 //     }
+//     setLoadSate(false);
 //   };
 
-//   const replaceImage = () => {
-//     if (!canvas || !imageRef.current || !backendImage) return;
+//   const showStylizeImagePreview = (base64Image: string) => {
+//     if (!canvas || !imageRef.current) return;
 
 //     const scaleX = imageRef.current.scaleX;
 //     const scaleY = imageRef.current.scaleY;
 
 //     const newImage = new Image();
-//     newImage.src = backendImage;
+//     newImage.src = base64Image;
 
 //     newImage.onload = () => {
 //       const fabricImage = new FabricImage(newImage);
 
 //       fabricImage.scaleX = scaleX;
 //       fabricImage.scaleY = scaleY;
-
-//       fabricImage.left = 0;
-//       fabricImage.top = 0;
-//       fabricImage.selectable = false;
-//       fabricImage.hoverCursor = "default";
-
-//       canvas.getObjects().forEach((obj) => {
-//         canvas.remove(obj);
+//       fabricImage.set({
+//         originX: "center",
+//         originY: "center",
+//         top: imageRef.current.height / 2,
+//         left: imageRef.current.width / 2,
+//         angle: imageRef.current.angle,
+//         scaleX: scaleX,
+//         scaleY: scaleY,
+//         flipX: imageRef.current.flipX,
+//         flipY: imageRef.current.flipY,
 //       });
 
-//       if (canvas.backgroundImage) {
-//         canvas.backgroundImage = null;
+//       console.log("current filters", currentFilters);
+//       if (currentFilters) {
+//         fabricImage.filters = currentFilters;
 //       }
 
+//       fabricImage.applyFilters();
+//       fabricImage.set("name", "style_temp_img");
+
 //       canvas.add(fabricImage);
-//       // @ts-ignore
-//       imageRef.current = fabricImage;
 
 //       canvas.renderAll();
-
-//       // addLog({
-//       //   objType: "canvas",
-//       //   propType: "all",
-//       //   message: "reseted canvas and changed image to stylized image",
-//       // });
-//       toast({
-//         description: "Image change Successfull",
-//         className: "bg-green-500 text-gray-900",
-//         duration: 3000,
-//       });
 //     };
+//   };
+//   const replaceImage = (base64Image: string) => {
+//     if (!canvas || !imageRef.current) return;
+
+//     removeTempStylizeImage();
+
+//     FabricImage.fromURL(base64Image).then((img) => {
+//       if (!img || !imageRef.current) return;
+//       // Replace the image content
+//       imageRef.current.setElement(img.getElement());
+//       // If using filters, reapply them
+//       imageRef.current.applyFilters();
+//       // Refresh canvas
+//       imageRef.current.setCoords();
+//       canvas.requestRenderAll();
+//     });
 //   };
 
 //   return (
@@ -228,15 +316,16 @@
 //             </div>
 //             <DialogFooter className="mt-8">
 //               {showImageAddButton && (
-//                 <Button className="custom-button" onClick={replaceImage}>
+//                 <Button
+//                   className="custom-button"
+//                   onClick={() => replaceImage(backendImage)}
+//                 >
 //                   Replace Image
 //                 </Button>
 //               )}
 //               <Button
 //                 className="custom-button"
-//                 onClick={() => {
-//                   handleStyleTransfer();
-//                 }}
+//                 onClick={() => handleStyleTransfer()}
 //               >
 //                 Process Images
 //               </Button>
@@ -244,8 +333,41 @@
 //           </DialogContent>
 //         </Dialog>
 //       </div>
+//       <div className="flex flex-col justify-center items-center w-[85%]">
+//         <div className="mb-3 w-full">
+//           <CustomSlider
+//             sliderName={"Alpha"}
+//             min={0}
+//             max={1}
+//             sliderValue={stylizeRatio}
+//             defaultValue={stylizeRatio}
+//             step={0.01}
+//             setSliderValue={setStylizeRatio}
+//             section={"ai"}
+//             tab={"image"}
+//           />
+//         </div>
+//         <div className="grid grid-cols-1 gap-4 w-full">
+//           {styleImages.map((style, index) => (
+//             <div
+//               key={index}
+//               className="relative rounded-lg overflow-hidden shadow-md cursor-pointer"
+//               onClick={() => handleStyleTransfer(style.image_url)}
+//             >
+//               <img
+//                 src={style.image_url}
+//                 alt={style.image_name}
+//                 className="w-full h-32 object-cover"
+//               />
+//               <div className="absolute bottom-0 bg-black bg-opacity-60 text-white text-center w-full py-1 text-sm">
+//                 {style.image_name}
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+//       </div>
 //     </div>
 //   );
 // };
 
-// export default AITools;
+// export default AITools2;

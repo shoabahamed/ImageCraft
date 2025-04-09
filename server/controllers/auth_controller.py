@@ -7,7 +7,7 @@ from config.db_config import get_db
 
 import os
 import pathlib
-
+from utils.common import get_user_paths, create_user_paths
 import requests
 from flask import session, abort, redirect, request
 from google.oauth2 import id_token
@@ -21,6 +21,7 @@ db = get_db()
 users_collection = db["Users"]
 
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
+
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 flow = Flow.from_client_secrets_file(
@@ -57,7 +58,7 @@ def callback():
         email = id_info["email"]
         user = users_collection.find_one({"email": email})
         if not user:
-            print("sdkfjdsj")
+            print("creating new user using google account")
             username = id_info['name']
             valid_email = email
             role = "user"
@@ -67,6 +68,9 @@ def callback():
             # Generate JWT token
             token = create_token(str(user.inserted_id))
             print(token)
+            USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
+            create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
+        
         else:
             # Existing user: Generate token using the user's ObjectId
             token = create_token(str(user["_id"]))
@@ -114,6 +118,13 @@ def signup():
         token = create_token(str(user.inserted_id))
         response = {"email": valid_email, "token": token, "role": role, "username": username}
 
+        # create a specific directory for the user using user id
+
+        USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
+        create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
+        
+ 
+     
         return jsonify({"success": True, "message": "User added successfully", "data": response}), 201
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

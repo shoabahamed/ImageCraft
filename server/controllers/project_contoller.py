@@ -13,7 +13,7 @@ import torch
 from model_config import CFG
 from utils.preprocessing import  get_similar_image_transform
 import datetime
-import time
+from utils.common import get_user_paths
 
 load_dotenv()
 
@@ -73,6 +73,7 @@ def save_project():
         
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png") 
+        _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
         inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
@@ -82,7 +83,7 @@ def save_project():
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
             if obj.get("type").lower() == "image":
-                obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/inter/" + image_filename
+                obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id +  "/inter/" + image_filename
 
      
         # Check if a project with the given project_id already exists
@@ -120,8 +121,8 @@ def save_project():
                 "project_data": canvas_data,
                 "project_logs": canvas_logs,
                 "granted_logs": [user_id],
-                "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename,
-                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/canvas/"  + image_filename,
+                "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/original/" + image_filename,
+                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/canvas/" + image_filename,
                 "total_rating": 5,
                 "rating_count": 1,
                 "total_views": 1,
@@ -149,155 +150,6 @@ def save_project():
 
 
 
-# def save_project():
-#     try:
-#         # print(f"Request content length: {request.content_length} bytes")
-#         # print(f"Request headers: {request.headers}")
-#         # time.sleep(30)
-#         # raw_data = request.get_data()
-#         # print(raw_data)
-#         # print(f"🔍 Content-Type: {request.content_type}")
-#         # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} mega bytes")
-#         user_id = str(g._id)  # Extracted by the middleware
-#         print(request.files)     
-        
-#         usename = request.form.get("username")
-#         canvas_id = request.form.get('canvasId')
-      
-#         is_public = request.form.get("isPublic")
-        
-#         canvas_data = request.form.get('canvasData')
-        
-#         canvas_logs = request.form.get('canvasLogs')
-        
-#         original_image_file = request.files.get('originalImage') 
-#         canvas_image_file = request.files.get('canvasImage')
-#         project_name = request.form.get("projectName")
-        
-#         # Retrieve JSON-like data from form fields
-#         original_image_shape = request.form.get('originalImageShape')
-#         final_image_shape = request.form.get('finalImageShape')
-#         image_scale = request.form.get('imageScale')
-#         rendered_image_shape = request.form.get("renderedImageShape")
-
-#         # Parse the JSON strings into Python dictionaries (optional)
-#         original_image_shape = eval(original_image_shape)
-#         final_image_shape = eval(final_image_shape)
-#         image_scale = eval(image_scale)
-#         rendered_image_shape = eval(rendered_image_shape)
-
-#         # whether loaded from saved
-#         loaded_from_saved = request.form.get("loadedFromSaved")
-
-#         if not canvas_data or not original_image_file and not canvas_image_file:
-#             return jsonify({"success": False, "message": "Missing canvas data or image file"}), 400
-  
-#         try:
-#             canvas_data = json.loads(canvas_data)  # Convert the string to a JSON object
-#             canvas_logs = json.loads(canvas_logs)
-#         except json.JSONDecodeError:
-#             return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
-        
-#         print("after converting string to json")
-        
-#         # Secure the filename and save it
-#         image_filename = secure_filename(f"{canvas_id}.png") 
-#         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
-#         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
-        
-
-#         #  Update the image URL in canvas JSON
-#         for obj in canvas_data.get("objects", []):
-#             if obj.get("type").lower() == "image":
-#                 obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename
-
-     
-#         # Check if a project with the given project_id already exists
-#         existing_project = projects_collection.find_one({"project_id": canvas_id, "user_id": user_id})
-
-#         if existing_project:
-#             # Update the existing project
-#             canvas_image_file.save(canvas_image_path)
-
-#             projects_collection.update_one(
-#                 {"project_id": canvas_id, "user_id": user_id}, 
-#                 {"$set": {
-#                     "project_data": canvas_data,
-#                     "project_logs": canvas_logs, 
-#                     "final_image_shape": final_image_shape, 
-#                     "project_name": project_name,
-#                     "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
-#                 }}
-#             )
-#             response_message = "Project updated successfully"
-#             status_code = 200
-            
-#         else:
-#             original_image_file.save(original_image_path)
-#             canvas_image_file.save(canvas_image_path)
-          
-#             # Create a new project
-#             new_project = {
-#                 "user_id": user_id,
-#                 "username": usename,
-#                 "project_id": canvas_id,
-#                 "is_public": is_public,
-#                 "project_data": canvas_data,
-#                 "project_logs": canvas_logs,
-#                 "granted_logs": [user_id],
-#                 "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename,
-#                 "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/canvas/"  + image_filename,
-#                 "total_rating": 5,
-#                 "rating_count": 1,
-#                 "total_views": 1,
-#                 "total_bookmark": 0,
-#                 "original_image_shape": original_image_shape,
-#                 "final_image_shape": final_image_shape,
-#                 "rendered_image_shape": rendered_image_shape,
-#                 "image_scale" : image_scale,
-#                 "project_name": project_name,
-#                 "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
-#                 "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
-                
-#             }
-           
-
-
-           
-#             # Open the original image
-#             # img = Image.open(original_image_file).convert('RGB')
-#             # img_transfrom = get_similar_image_transform(img_size=(224, 224))
-            
-#             # # load model
-#             # m = models.vgg16(weights=None)
-#             # m.load_state_dict(torch.load(CFG.similarity_model_path, map_location=CFG.device, weights_only=True))
-#             # sim_model = torch.nn.Sequential(*[m.features, m.avgpool, m.classifier[0]])
-        
-            
-#             # # getting embedding
-#             # with torch.no_grad():
-#             #     img_emb = get_embedding(sim_model, img_transfrom(img)).to('cpu').detach().numpy()
-
-
-#             # project_emb = {
-#             #     "project_id": canvas_id,
-#             #     "is_public": is_public,
-#             #     "embedding": img_emb.tolist()
-#             # }
-
-#             # embedding_collection.insert_one(project_emb)
-#             projects_collection.insert_one(new_project)
-#             response_message = "Project created successfully"
-#             status_code = 201
-
-
-#         # Prepare the response
-#         response = {"user_id": user_id, "project_id": canvas_id, "project_data": canvas_data}
-#         return jsonify({"success": True, "message": response_message, "data": response}), status_code
-
-#     except Exception as e:
-
-#         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
 def get_projects():
   try:
@@ -403,21 +255,26 @@ def delete_project(project_id):
         # Validate the report_id
         if not  project_id:
             return jsonify({"success": False, "message": "Invalid report ID"}), 400
+        
+        user_id = str(g._id)  # Extracted by the middleware
 
         # Delete the project from the collection
         result = projects_collection.delete_one({"project_id": project_id})
         # delete embedding of the project from collection
-        result_emb = embedding_collection.delete_one({"project_id": project_id}) 
+        # result_emb = embedding_collection.delete_one({"project_id": project_id}) 
 
         
         if result.deleted_count == 0:
             return jsonify({"success": False, "message": "Project not found"}), 404
         
         image_filename = secure_filename(f"{project_id}.png") 
+        
+        _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+        inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
 
-        for path in [original_image_path, canvas_image_path]:
+        for path in [original_image_path, canvas_image_path, inter_image_path]:
             if os.path.exists(path):
                 os.remove(path)
 

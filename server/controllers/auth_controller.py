@@ -67,9 +67,14 @@ def callback():
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id))
-            print(token)
+            
+            
             USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
+            print(USER_PATH)
             create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
+            
+            
+        
         
         else:
             # Existing user: Generate token using the user's ObjectId

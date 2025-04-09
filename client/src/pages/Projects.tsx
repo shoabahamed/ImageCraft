@@ -203,7 +203,8 @@ const Projects: React.FC = () => {
     project_data: Object,
     project_logs: string,
     final_image_shape: object,
-    project_name: string
+    project_name: string,
+    imageUrl: string
   ) => {
     localStorage.setItem("CanvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
@@ -214,7 +215,7 @@ const Projects: React.FC = () => {
       "final_image_shape",
       JSON.stringify(final_image_shape)
     );
-    navigate("/mainpage");
+    navigate("/mainpage", { state: { imageUrl } });
   };
 
   return (
@@ -265,7 +266,8 @@ const Projects: React.FC = () => {
                     project.project_data,
                     project.project_logs,
                     project.final_image_shape,
-                    project.project_name || "Untitled"
+                    project.project_name || "Untitled",
+                    project.original_image_url
                   )
                 }
               >

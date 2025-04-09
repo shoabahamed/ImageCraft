@@ -7,6 +7,8 @@ type CommonProps = {
   setProjectName: (value: string) => void;
   showUpdateButton: boolean;
   setShowUpdateButton: (value: boolean) => void;
+  currentFilters: object[] | null;
+  setCurrentFilters: (value: object[]) => void;
 };
 
 export const useCommonProps = create<CommonProps>((set) => ({
@@ -16,4 +18,6 @@ export const useCommonProps = create<CommonProps>((set) => ({
   setProjectName: (value) => set({ projectName: value }),
   showUpdateButton: false,
   setShowUpdateButton: (value) => set({ showUpdateButton: value }),
+  currentFilters: null,
+  setCurrentFilters: (value) => set({ currentFilters: value }),
 }));

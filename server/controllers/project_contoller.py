@@ -23,6 +23,7 @@ projects_collection = db["Projects"]
 users_collection = db["Users"]
 embedding_collection = db['Embedding']
 ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
+INTER_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/inter'
 CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
 
 
@@ -39,10 +40,12 @@ def save_project():
         
         canvas_data = request.form.get('canvasData')
         
+        
         canvas_logs = request.form.get('canvasLogs')
         
         original_image_file = request.files.get('originalImage') 
         canvas_image_file = request.files.get('canvasImage')
+        inter_image_file = request.files.get("interImage")
         project_name = request.form.get("projectName")
         
         # Retrieve JSON-like data from form fields
@@ -56,7 +59,7 @@ def save_project():
 
         # whether loaded from saved
         loaded_from_saved = request.form.get("loadedFromSaved")
-
+        
         if not canvas_data or not original_image_file and not canvas_image_file:
             return jsonify({"success": False, "message": "Missing canvas data or image file"}), 400
   
@@ -71,13 +74,15 @@ def save_project():
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png") 
         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+        inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
         
 
         #  Update the image URL in canvas JSON
         for obj in canvas_data.get("objects", []):
             if obj.get("type").lower() == "image":
-                obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/original/" + image_filename
+                obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/inter/" + image_filename
 
      
         # Check if a project with the given project_id already exists
@@ -85,6 +90,7 @@ def save_project():
 
         if existing_project:
             # Update the existing project
+            inter_image_file.save(inter_image_path)
             canvas_image_file.save(canvas_image_path)
 
             projects_collection.update_one(
@@ -102,6 +108,7 @@ def save_project():
             
         else:
             original_image_file.save(original_image_path)
+            inter_image_file.save(inter_image_path)
             canvas_image_file.save(canvas_image_path)
           
             # Create a new project

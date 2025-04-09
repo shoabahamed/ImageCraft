@@ -26,6 +26,7 @@ import {
 } from "@/hooks/appStore/applyFilterSubscriber";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 import { set } from "react-hook-form";
+import { getRotatedBoundingBox } from "@/utils/commonFunctions";
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -42,6 +43,8 @@ const Test = () => {
   const setShowUpdateButton = useCommonProps(
     (state) => state.setShowUpdateButton
   );
+  const currentFilters = useCommonProps((state) => state.currentFilters);
+  const currentFiltersRef = useRef(currentFilters);
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
 
@@ -68,6 +71,8 @@ const Test = () => {
     setFinalImageDimensions,
     setLoadedFromSaved,
     setZoomValue,
+    finalImageDimensions,
+    zoomValue,
   } = useCanvasObjects();
 
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
@@ -105,6 +110,8 @@ const Test = () => {
     vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
     vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
     mainCanvasRef.current.setViewportTransform(vp);
+
+    console.log(getRotatedBoundingBox(currentImageRef.current));
 
     mainCanvasRef.current.renderAll();
   };
@@ -234,6 +241,7 @@ const Test = () => {
               unsubscribeRef.current = subscribeToAdjustStore(
                 initCanvas,
                 imageObject,
+                currentFiltersRef,
                 setCurrentFilters
               );
 
@@ -332,6 +340,7 @@ const Test = () => {
           unsubscribeRef.current = subscribeToAdjustStore(
             initCanvas,
             img,
+            currentFiltersRef,
             setCurrentFilters
           );
         });
@@ -368,6 +377,10 @@ const Test = () => {
       };
     }
   }, []);
+
+  useEffect(() => {
+    currentFiltersRef.current = currentFilters;
+  }, [currentFilters]);
 
   return (
     <div className="h-screen max-w-screen flex flex-col">
@@ -545,7 +558,12 @@ const Test = () => {
             </div>
           </div>
           {/* Footer */}
-          <div className="flex-none w-full">
+          <div className="relative flex-none w-full">
+            <div className="absolute -top-5 left-0 bg-gray-800 text-white text-xs px-6 py-0.5 shadow z-50 pointer-events-none">
+              {finalImageDimensions.imageWidth}X
+              {finalImageDimensions.imageHeight}@{Math.round(zoomValue * 100)}%
+            </div>
+
             <Footer
               canvas={mainCanvasRef.current!}
               image={currentImageRef.current!}

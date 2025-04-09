@@ -2,7 +2,7 @@ import { Canvas, FabricImage, filters } from "fabric";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
 import { useAdjustStore } from "./AdjustStore";
 
-export const subscribeToAdjustStore = (canvas: Canvas, image: FabricImage, setCurrentFilters: (value: object[]) => void) => {
+export const subscribeToAdjustStore = (canvas: Canvas, image: FabricImage, currentFiltersRef: React.RefObject<object[]>, setCurrentFilters: (value: object[]) => void) => {
   return useAdjustStore.subscribe(
     (state) => {
       const {
@@ -16,48 +16,57 @@ export const subscribeToAdjustStore = (canvas: Canvas, image: FabricImage, setCu
         blurValue,
         noiseValue,
         pixelateValue,
-        predefinedFilter,
+        enableGrayScale,
+        enableSepia,
+        enableVintage,
+        enableKodachrome,
+        enableTechnicolor,
       } = state;
 
-
-      const tempFilters: filters.BaseFilter[] = [];
-
-      if (predefinedFilter) {
-        switch (predefinedFilter) {
-          case "grayscale": tempFilters.push(new filters.Grayscale()); break;
-          case "sepia": tempFilters.push(new filters.Sepia()); break;
-          case "vintage": tempFilters.push(new filters.Vintage()); break;
-          case "kodachrome": tempFilters.push(new filters.Kodachrome()); break;
-          case "technicolor": tempFilters.push(new filters.Technicolor()); break;
+      let filtersList = [...(currentFiltersRef.current || [])];
+      console.log("old", filtersList)
+      const updateOrInsert = (type: string, instance: any, shouldApply: boolean) => {
+        const index = filtersList.findIndex((f) => f.type === type);
+        if (shouldApply) {
+          if (index !== -1) {
+            // Update existing
+            filtersList[index] = instance;
+          } else {
+            // Add new
+            filtersList.push(instance);
+          }
+        } else if (index !== -1) {
+          // Remove disabled
+          filtersList.splice(index, 1);
         }
-      }
+      };
 
-      if (redBrightnessValue !== 0)
-        tempFilters.push(new RBrightness({ RBrightness: redBrightnessValue }));
-      if (brightnessValue !== 0)
-        tempFilters.push(new filters.Brightness({ brightness: brightnessValue }));
-      if (contrastValue !== 0)
-        tempFilters.push(new filters.Contrast({ contrast: contrastValue }));
-      if (saturationValue !== 0)
-        tempFilters.push(new filters.Saturation({ saturation: saturationValue }));
-      if (vibranceValue !== 0)
-        tempFilters.push(new filters.Vibrance({ vibrance: vibranceValue }));
-      if (blurValue !== 0)
-        tempFilters.push(new filters.Blur({ blur: blurValue }));
-      if (hueValue !== 0)
-        tempFilters.push(new filters.HueRotation({ rotation: hueValue }));
-      if (noiseValue !== 0)
-        tempFilters.push(new filters.Noise({ noise: noiseValue }));
-      if (pixelateValue !== 0)
-        tempFilters.push(new filters.Pixelate({ blocksize: pixelateValue }));
+      console.log('sdjf')
+      updateOrInsert("Grayscale", new filters.Grayscale(), enableGrayScale);
+      updateOrInsert("Sepia", new filters.Sepia(), enableSepia);
+      updateOrInsert("Vintage", new filters.Vintage(), enableVintage);
+      updateOrInsert("Kodachrome", new filters.Kodachrome(), enableKodachrome);
+      updateOrInsert("Technicolor", new filters.Technicolor(), enableTechnicolor);
+      updateOrInsert("RBrightness", new RBrightness({ RBrightness: redBrightnessValue }), redBrightnessValue !== 0);
+      updateOrInsert("Brightness", new filters.Brightness({ brightness: brightnessValue }), brightnessValue !== 0);
+      updateOrInsert("Contrast", new filters.Contrast({ contrast: contrastValue }), contrastValue !== 0);
+      updateOrInsert("Saturation", new filters.Saturation({ saturation: saturationValue }), saturationValue !== 0);
+      updateOrInsert("Vibrance", new filters.Vibrance({ vibrance: vibranceValue }), vibranceValue !== 0);
+      updateOrInsert("Blur", new filters.Blur({ blur: blurValue }), blurValue !== 0);
+      updateOrInsert("HueRotation", new filters.HueRotation({ rotation: hueValue }), hueValue !== 0);
+      updateOrInsert("Noise", new filters.Noise({ noise: noiseValue }), noiseValue !== 0);
+      updateOrInsert("Pixelate", new filters.Pixelate({ blocksize: pixelateValue }), pixelateValue !== 0);
 
-      if (opacityValue !== 1)
-        image.set("opacity", opacityValue);
-      
-      setCurrentFilters(tempFilters)
-      image.filters = tempFilters;
+     
+      image.set("opacity", opacityValue);
+    
+      console.log("new", filtersList)
+      image.filters = filtersList;
       image.applyFilters();
       canvas.renderAll();
+      
+
+      setCurrentFilters(filtersList);
     },
     (state) => [
       state.predefinedFilter,

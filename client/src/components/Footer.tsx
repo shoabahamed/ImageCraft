@@ -30,7 +30,11 @@ import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router-dom";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
-import { base64ToFile, getRotatedBoundingBox } from "@/utils/commonFunctions";
+import {
+  base64ToFile,
+  getCanvasDataUrl,
+  getRotatedBoundingBox,
+} from "@/utils/commonFunctions";
 
 // TODO: saving canvas when style transfer has been done
 // TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
@@ -278,40 +282,7 @@ const Footer = ({
 
     if (!canvas || !image) return;
 
-    let dataURL: string = "";
-    const originalViewportTransform = canvas.viewportTransform;
-    const originalZoom = canvas.getZoom();
-
-    // Reset to neutral
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    canvas.setZoom(1);
-    canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.setCoords());
-    // canvas.renderAll(); # not sure if it is necessary or not
-
-    const frameObject = canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.name?.startsWith("Frame"));
-
-    // Find the object named "Frame" or starting with "Frame"
-    let bounds = getRotatedBoundingBox(image);
-
-    if (frameObject && downloadFrame) {
-      console.log("sdjf");
-      bounds = getRotatedBoundingBox(frameObject);
-    }
-
-    console.log(bounds);
-    // TODO: since scale has changed I also need to scale other objects too
-
-    dataURL = canvas.toDataURL({
-      format: "png",
-      left: bounds.left,
-      top: bounds.top,
-      width: bounds.width,
-      height: bounds.height,
-    });
+    const dataURL = getCanvasDataUrl(canvas, image, downloadFrame);
 
     if (superResValue !== "none") {
       try {
@@ -358,18 +329,9 @@ const Footer = ({
       // Trigger download (optional, if you still want to download the image)
       const link = document.createElement("a");
       link.href = dataURL;
-      link.download =
-        frameObject && downloadFrame ? "clipped-image.png" : "canvas-image.png";
+      link.download = "canvas-image.png";
       link.click();
     }
-
-    // Restore zoom & transform
-    canvas.setViewportTransform(originalViewportTransform);
-    canvas.setZoom(originalZoom);
-    canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.setCoords());
-    canvas.renderAll();
   };
 
   const deleteObject = () => {
@@ -486,11 +448,11 @@ const Footer = ({
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Download Image</DialogTitle>
+              <DialogTitle>Download</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col justify-start space-y-8">
               <div className="flex justify-between items-center mt-4">
-                <Label htmlFor="frame-download">Frame Only</Label>
+                <Label htmlFor="frame-download">Crop Only</Label>
                 <Switch
                   id="frame-download"
                   checked={downloadFrame}
@@ -498,7 +460,7 @@ const Footer = ({
                 />
               </div>
 
-              <div className="flex justify-between items-center mt-4">
+              {/* <div className="flex justify-between items-center mt-4">
                 <Label className="flex-1">Resolution</Label>
                 <div>
                   <Select
@@ -521,12 +483,12 @@ const Footer = ({
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <DialogFooter className="mt-6">
               <button className="custom-button" onClick={downloadCanvas}>
-                DownloadImage
+                Download
               </button>
             </DialogFooter>
           </DialogContent>

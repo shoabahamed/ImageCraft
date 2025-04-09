@@ -4,7 +4,6 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
@@ -12,6 +11,16 @@ import { Canvas, FabricImage } from "fabric";
 import { Switch } from "./ui/switch";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Label } from "./ui/label";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 type ImageSizeProps = {
   canvas: Canvas;
@@ -19,9 +28,11 @@ type ImageSizeProps = {
 };
 
 const ImageSize = ({ canvas, image }: ImageSizeProps) => {
+  const { user } = useAuthContext();
   const { finalImageDimensions, setFinalImageDimensions } = useCanvasObjects();
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
   const { addLog } = useLogContext();
+  const [superResValue, setSuperResValue] = useState("none");
 
   const handleWidthChange = (e) => {
     const newWidth = parseInt(e.target.value);
@@ -135,6 +146,29 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     canvas.renderAll();
   };
 
+  const handleImageResizeX = (inc: number) => {
+    const newWidth = finalImageDimensions.imageWidth * inc;
+    const newHeight = finalImageDimensions.imageHeight * inc;
+
+    image.scaleX *= inc;
+    image.scaleY *= inc;
+    canvas.renderAll();
+
+    setFinalImageDimensions({
+      imageWidth: newWidth,
+      imageHeight: newHeight,
+    });
+
+    addLog({
+      section: "arrange",
+      tab: "image size",
+      event: "scale up",
+      message: `Image scaled ${inc}x`,
+      param: `${inc}x scale`,
+      objType: "image",
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -172,6 +206,29 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
               />
             </div>
           </div>
+
+          <div className="flex justify-between gap-4">
+            <Button
+              className="flex-1"
+              variant="outline"
+              onClick={() => {
+                handleImageResizeX(2);
+              }}
+            >
+              +2x
+            </Button>
+
+            <Button
+              className="flex-1"
+              variant="outline"
+              onClick={() => {
+                handleImageResizeX(4);
+              }}
+            >
+              +4x
+            </Button>
+          </div>
+
           <button className="custom-button" onClick={handleImageResizeReset}>
             Reset
           </button>

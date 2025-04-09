@@ -18,6 +18,7 @@ app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # ✅ Allow 50MB file uplo
 
 app.secret_key = os.getenv("APP_SECRET")
 app.config['ORG_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
+app.config['INTER_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/inter'
 app.config['CANVAS_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
 app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
 
@@ -31,6 +32,10 @@ def get_original_image(filename):
 @app.route('/server/static/canvas/<string:filename>')
 def get_canvas_image(filename):
     return send_from_directory(app.config['CANVAS_IMG_FOLDER'], filename, as_attachment=False)
+
+@app.route('/server/static/inter/<string:filename>')
+def get_inter_image(filename):
+    return send_from_directory(app.config['INTER_IMG_FOLDER'], filename, as_attachment=False)
 
 
 @app.route('/server/static/style/<string:filename>')

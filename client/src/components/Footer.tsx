@@ -30,6 +30,7 @@ import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import { useDropzone } from "react-dropzone";
 import { useNavigate } from "react-router-dom";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
+import { base64ToFile, getRotatedBoundingBox } from "@/utils/commonFunctions";
 
 // TODO: saving canvas when style transfer has been done
 // TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
@@ -58,8 +59,8 @@ const Footer = ({
 }: Props) => {
   const {
     selectedObject,
-    originalImageDimensions,
     zoomValue,
+    setZoomValue,
     finalImageDimensions,
     loadedFromSaved,
   } = useCanvasObjects();
@@ -69,6 +70,7 @@ const Footer = ({
   const navigate = useNavigate();
 
   const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
+
   const [downloadFrame, setDownLoadFrame] = useState(false);
   const [superResValue, setSuperResValue] = useState("none");
 
@@ -151,11 +153,10 @@ const Footer = ({
       canvas
         .getObjects() // @ts-ignore
         .find((obj) => obj.setCoords());
-      canvas.renderAll();
+      // canvas.renderAll(); # not sure if it is necessary or not
 
       const bounds = getRotatedBoundingBox(image);
 
-      console.log(bounds);
       // TODO: since scale has changed I also need to scale other objects too. For some weird reason though everything is working just fine
 
       const canvasDataUrl = canvas.toDataURL({
@@ -175,6 +176,7 @@ const Footer = ({
       const canvasImageFile = await convertBlobToFile(canvasDataUrl);
       // Convert the image URL (blob URL) to a File object
       const originalImageFile = await convertBlobToFile(imageUrl);
+      const interImage = base64ToFile(mainImageSrc, "inter_image");
 
       // Create FormData object and append the image and other canvas data
       const formData = new FormData();
@@ -201,6 +203,7 @@ const Footer = ({
       formData.append("originalImage", originalImageFile);
       // @ts-ignore
       formData.append("canvasImage", canvasImageFile);
+      formData.append("interImage", interImage);
       formData.append("projectName", projectName);
       formData.append("loadedFromSaved", loadedFromSaved ? "true" : "false");
 
@@ -265,25 +268,6 @@ const Footer = ({
     }
   };
 
-  function getRotatedBoundingBox(obj: fabric.Object) {
-    const coords = obj.getCoords(); // returns array of 4 points: TL, TR, BR, BL
-
-    const xValues = coords.map((p) => p.x);
-    const yValues = coords.map((p) => p.y);
-
-    const left = Math.min(...xValues);
-    const top = Math.min(...yValues);
-    const right = Math.max(...xValues);
-    const bottom = Math.max(...yValues);
-
-    return {
-      left,
-      top,
-      width: right - left,
-      height: bottom - top,
-    };
-  }
-
   const downloadCanvas = async () => {
     addLog({
       section: "canvas",
@@ -304,7 +288,7 @@ const Footer = ({
     canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
-    canvas.renderAll();
+    // canvas.renderAll(); # not sure if it is necessary or not
 
     const frameObject = canvas
       .getObjects() // @ts-ignore
@@ -417,21 +401,25 @@ const Footer = ({
   };
 
   const handleZoomIn = () => {
-    const newScale = mapState.scale + 0.05;
-    if (newScale <= 3) {
-      setMapState({ ...mapState, scale: newScale });
-    } else {
-      setMapState({ ...mapState });
-    }
+    const zoomScale = 0.05;
+    let newZoomValue = zoomValue + zoomScale;
+
+    if (newZoomValue > 20) newZoomValue = 20;
+    if (newZoomValue < 0.01) newZoomValue = 0.01;
+
+    setZoomValue(newZoomValue);
+    canvas.setZoom(newZoomValue);
   };
 
   const handleZoomOut = () => {
-    const newScale = mapState.scale - 0.05;
-    if (newScale >= 0.05) {
-      setMapState({ ...mapState, scale: newScale });
-    } else {
-      setMapState({ ...mapState });
-    }
+    const zoomScale = 0.05;
+    let newZoomValue = zoomValue - zoomScale;
+
+    if (newZoomValue > 20) newZoomValue = 20;
+    if (newZoomValue < 0.01) newZoomValue = 0.01;
+
+    setZoomValue(newZoomValue);
+    canvas.setZoom(newZoomValue);
   };
 
   return (

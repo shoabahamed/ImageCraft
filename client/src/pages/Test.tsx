@@ -25,6 +25,7 @@ import {
   subscribeToAdjustStore,
 } from "@/hooks/appStore/applyFilterSubscriber";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
+import { set } from "react-hook-form";
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -35,11 +36,14 @@ const override: CSSProperties = {
 
 const Test = () => {
   const sidebarName = useCommonProps((state) => state.sidebarName);
+  const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
   const setSidebarName = useCommonProps((state) => state.setSidebarName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
   const setShowUpdateButton = useCommonProps(
     (state) => state.setShowUpdateButton
   );
+  const setFlipX = useArrangeStore((state) => state.setFlipX);
+  const setFlipY = useArrangeStore((state) => state.setFlipY);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -63,7 +67,6 @@ const Test = () => {
     setOriginalImageDimensions,
     setFinalImageDimensions,
     setLoadedFromSaved,
-    zoomValue,
     setZoomValue,
   } = useCanvasObjects();
 
@@ -226,10 +229,12 @@ const Test = () => {
                 originX: "center",
                 originY: "center",
               });
+
               //@ts-ignore
               unsubscribeRef.current = subscribeToAdjustStore(
                 initCanvas,
-                imageObject
+                imageObject,
+                setCurrentFilters
               );
 
               setDatabaseFilters(canvasJSON.objects[0].filters);
@@ -245,6 +250,8 @@ const Test = () => {
             // @ts-ignore
             currentImageRef.current = imageObject; // Store the Fabric.js image object reference
             mainCanvasRef.current = initCanvas; // Store the Fabric.js canvas reference
+            setFlipX(imageObject.flipX);
+            setFlipY(imageObject.flipY);
 
             initCanvas.renderAll();
             console.log("sdjf");
@@ -314,13 +321,19 @@ const Test = () => {
           initCanvas.add(img);
           initCanvas.renderAll();
           currentImageRef.current = img; // Set the ref directly
+          setFlipX(img.flipX);
+          setFlipY(img.flipY);
 
           mainCanvasRef.current = initCanvas;
           // await backupImage();
-          // setSidebarName("Arrange");
+          setSidebarName("Arrange");
 
           //@ts-ignore
-          unsubscribeRef.current = subscribeToAdjustStore(initCanvas, img);
+          unsubscribeRef.current = subscribeToAdjustStore(
+            initCanvas,
+            img,
+            setCurrentFilters
+          );
         });
       }
 

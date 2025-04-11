@@ -13,6 +13,7 @@ interface User {
   token: string;
   role: string;
   username: string;
+  userId: string;
   // Add more fields as necessary based on your application
 }
 

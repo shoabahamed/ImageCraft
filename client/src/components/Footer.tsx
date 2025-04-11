@@ -34,6 +34,8 @@ import {
   base64ToFile,
   getCanvasDataUrl,
   getRotatedBoundingBox,
+  isBase64,
+  urlToBase64,
 } from "@/utils/commonFunctions";
 
 // TODO: saving canvas when style transfer has been done
@@ -173,13 +175,19 @@ const Footer = ({
 
       // json data
       const canvasJSON = canvas.toObject(["name"]);
-      const mainImageSrc = canvasJSON.objects[0].src;
+      let mainImageSrc = canvasJSON.objects[0].src;
       canvasJSON.objects[0].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
 
       // Convert canvas image (Data URL) to a Blob and then to a File
       const canvasImageFile = await convertBlobToFile(canvasDataUrl);
       // Convert the image URL (blob URL) to a File object
+
       const originalImageFile = await convertBlobToFile(imageUrl);
+      console.log(imageUrl);
+      if (!isBase64(mainImageSrc)) {
+        mainImageSrc = await urlToBase64(mainImageSrc);
+      }
+
       const interImage = base64ToFile(mainImageSrc, "inter_image");
 
       // Create FormData object and append the image and other canvas data

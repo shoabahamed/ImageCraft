@@ -18,6 +18,7 @@ app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # ✅ Allow 50MB file uplo
 
 app.secret_key = os.getenv("APP_SECRET")
 app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
+app.config['GENERAL_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/general'
 
 
 CORS(app, resources={r"/server/static/*": {"origins": "*"}})
@@ -47,6 +48,18 @@ def get_user_inter_image(user_id, filename):
 @app.route('/server/static/style/<string:filename>')
 def get_style_image(filename):
     return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
+
+@app.route('/api/server/static/general/<string:filename>')
+def get_general_image(filename):
+    return send_from_directory(app.config['GENERAL_IMG_FOLDER'], filename, as_attachment=False)
+
+
+@app.route('/server/static/<string:user_id>/<string:filename>')
+def get_profile_image(user_id, filename):
+    path = os.getenv("USER_COMMON_PATH") + user_id + "/" 
+    return send_from_directory(path,filename, as_attachment=False)
+
+
 
 
 

@@ -4,16 +4,16 @@ import Home from "./pages/Home";
 import { Toaster } from "./components/ui/toaster";
 import { useAuthContext } from "./hooks/useAuthContext";
 import Test from "./pages/Test";
-import Projects from "./pages/Projects";
-import Gallery from "./pages/Gallery";
 import ComparePage from "./pages/ComparePage";
-import UserDashboard from "./pages/UserProfile";
 import { CanvasObjectsProvider } from "./context/CanvasObjectContext";
 import { LogProvider } from "./context/LogContext";
 import LogsPage from "./pages/LogsPage";
 import LogDashboard from "./pages/LogDashboard";
 import AdminPanel2 from "./pages/Admin2";
 import Temp from "./pages/Temp";
+import UserProfilePage from "./pages/Profile";
+import Gallery from "./pages/Gallery";
+import AdminPanel from "./pages/Admin";
 
 export default function App() {
   const { user, loading } = useAuthContext();
@@ -24,7 +24,7 @@ export default function App() {
 
   return (
     <div>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -42,18 +42,14 @@ export default function App() {
               }
             />
 
-            <Route
-              path="/profile"
-              element={user ? <UserDashboard /> : <Home />}
-            />
-
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/temp" element={<Temp />} />
 
             <Route
               path="/admin"
               element={
-                // user && user.role === "admin" ? <AdminPanel /> : <Home />
-                user && user.role === "admin" ? <AdminPanel2 /> : <Home />
+                user && user.role === "admin" ? <AdminPanel /> : <Home />
+                // user && user.role === "admin" ? <AdminPanel2 /> : <Home />
               }
             />
 
@@ -69,19 +65,17 @@ export default function App() {
               element={user && user.role === "admin" ? <LogsPage /> : <Home />}
             />
 
-            <Route path="/projects" element={user ? <Projects /> : <Home />} />
-
             <Route
               path="/log_dashboard/:projectId"
               element={<LogDashboard />}
             />
 
             <Route
-              path="/temp"
+              path="/profile/:userId"
               element={
                 <LogProvider>
                   <CanvasObjectsProvider>
-                    <Temp />
+                    <UserProfilePage />
                   </CanvasObjectsProvider>
                 </LogProvider>
               }

@@ -186,18 +186,6 @@ const Projects: React.FC = () => {
     }
   };
 
-  const downloadImage = (url: string) => {
-    const newTab = window.open(url, "_blank");
-    if (newTab) {
-      newTab.focus();
-    } else {
-      toast({
-        description: "Failed to open the image in a new tab.",
-        duration: 3000,
-      });
-    }
-  };
-
   const goToMainPage = (
     project_id: string,
     project_data: Object,
@@ -216,6 +204,18 @@ const Projects: React.FC = () => {
       JSON.stringify(final_image_shape)
     );
     navigate("/mainpage", { state: { imageUrl } });
+  };
+
+  const downloadImage = (url: string) => {
+    const newTab = window.open(url, "_blank");
+    if (newTab) {
+      newTab.focus();
+    } else {
+      toast({
+        description: "Failed to open the image in a new tab.",
+        duration: 3000,
+      });
+    }
   };
 
   return (

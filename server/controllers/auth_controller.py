@@ -3,8 +3,9 @@ from email_validator import validate_email, EmailNotValidError
 import bcrypt
 from utils.token_utils import create_token
 from config.db_config import get_db
+import jwt
 
-
+from bson import ObjectId
 import os
 import pathlib
 from utils.common import get_user_paths, create_user_paths
@@ -57,23 +58,22 @@ def callback():
         # Extract user email
         email = id_info["email"]
         user = users_collection.find_one({"email": email})
+
         if not user:
             print("creating new user using google account")
             username = id_info['name']
             valid_email = email
             role = "user"
             hashed_password = "gmail_login"
-            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": []}
+            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": ""}
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id))
             
-            
+            user_id = str(user.inserted_id)
             USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
             print(USER_PATH)
             create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
-            
-            
         
         
         else:
@@ -82,12 +82,12 @@ def callback():
             email = user['email']
             role = user['role']
             username = user['username']
-            print(token)
+            user_id = str(user["_id"])
         
             
     
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}"
+        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}&userId={user_id}"
         return redirect(redirect_url)
 
     except Exception as e:
@@ -117,11 +117,11 @@ def signup():
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         # user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
-        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role, "bookmarked": []}
+        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role, "bookmarked": [], "image_url": ""}
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))
-        response = {"email": valid_email, "token": token, "role": role, "username": username}
+        response = {"email": valid_email, "token": token, "role": role, "username": username, "userId": str(user.inserted_id)}
 
         # create a specific directory for the user using user id
 
@@ -168,11 +168,13 @@ def login():
         token = create_token(str(user["_id"]))
         role = str(user['role'])
         username = str(user['username'])
+        user_id = str(user["_id"])
         response = {
             "email": valid_email,
             "token": token,
             "role": role,
-            'username': username
+            'username': username,
+            "userId": user_id
         }
 
         return jsonify({"success": True, "message": "Login successful", "data": response}), 200
@@ -180,3 +182,50 @@ def login():
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
 
+
+def get_user_info(user_id):
+    user = users_collection.find_one({"_id": ObjectId(user_id)}, {"username": 1, "email": 1, "image_url": 1, "_id": 0})
+
+    return jsonify({"success": True, "message": "Data Retrieveal successful", "data": user}), 200
+
+
+def update_profile_image(user_id):
+    try:
+        token = request.headers.get("Authorization")
+        if not token:
+            return jsonify({"success": False, "message": "Token is missing"}), 401
+
+        # Expecting 'Bearer <token>', split and decode
+        token_parts = token.split()
+        if len(token_parts) != 2 or token_parts[0].lower() != 'bearer':
+            return jsonify({"success": False, "message": "Invalid token format"}), 401
+
+        token_value = token_parts[1]
+        payload = jwt.decode(token_value, os.getenv("JWT_SECRET"), algorithms=["HS256"])
+        current_user_id = payload.get("_id")
+
+        if not current_user_id:
+            return jsonify({"success": False, "message": "Invalid token payload"}), 
+    
+        if current_user_id == user_id:
+            profile_image = request.files.get('profile_image') # retrieving image  
+            filename = "profile_image.png"
+
+            USER_PATH, _, _, _ = get_user_paths(os.getenv("USER_COMMON_PATH"), user_id) 
+            USER_PATH = USER_PATH + filename # the acutal path stored in the computer
+            image_save_path = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id  + "/" +filename # the path used by server to locate the image from database
+        
+            profile_image.save(USER_PATH)
+            
+            result = users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": {"image_url": image_save_path}})
+            
+            return jsonify({"success": True, "message": f"Image Updated successfully", "image_url": image_save_path}), 200
+        else:
+            return jsonify({"success": True, "message": f"You need to sign in first"}), 402
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    
+
+
+  

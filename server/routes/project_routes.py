@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.project_contoller import save_project, get_projects, get_all_projects, get_project_by_id, delete_project, update_project_visibility, update_project_bookmark, rate_project, update_project_view_count
+from controllers.project_contoller import save_project, get_projects, get_all_projects, get_project_by_id, delete_project, update_project_visibility, update_project_bookmark, rate_project, update_project_view_count, get_bookmark_projects
 from middleware.auth import auth_middleware
 
 project_routes = Blueprint("project_routes", __name__)
@@ -35,8 +35,8 @@ def save_project_route():
     return save_project()
 
 
-@project_routes.route("/api/get_projects", methods=["GET"])
-def get_projects_route():
+@project_routes.route("/api/get_projects/<user_id>", methods=["GET"])
+def get_projects_route(user_id):
     # Access `g.user_id` for user ID extracted from the token
     if request.method == "OPTIONS":
         # Handle preflight request
@@ -46,7 +46,21 @@ def get_projects_route():
         response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
         return response, 204
     
-    return get_projects()
+    return get_projects(user_id)
+
+
+@project_routes.route("/api/bookmark_projects/<user_id>", methods=["GET"])
+def get_bookmark_projects_route(user_id):
+    
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+    
+    return get_bookmark_projects(user_id)
 
 
 @project_routes.route("/api/get_all_projects", methods=["GET"])

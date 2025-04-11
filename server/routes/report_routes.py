@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message, get_project_log, add_style_img, get_all_style_img, delete_style_img
+from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message, get_project_log, add_style_img, get_all_style_img, delete_style_img, get_all_users, send_notice, get_user_notices, delete_user
 from middleware.auth import auth_middleware
 
 report_routes = Blueprint("report_routes", __name__)
@@ -48,8 +48,8 @@ def get_all_report_route():
     return get_all_reports()
 
 
-@report_routes.route("/api/get_user_reports", methods=["OPTIONS", "GET"])
-def get_user_report_route():
+@report_routes.route("/api/get_user_reports/<user_id>", methods=["OPTIONS", "GET"])
+def get_user_report_route(user_id):
     if request.method == "OPTIONS":
         # Handle preflight request
         response = jsonify({})
@@ -59,7 +59,7 @@ def get_user_report_route():
         return response, 204
 
     # For POST requests, proceed with save_report logic
-    return get_user_reports()
+    return get_user_reports(user_id)
 
 
 
@@ -190,6 +190,60 @@ def delete_style_image_route(image_id):
         response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
         return response, 204
     return delete_style_img(image_id)
+
+
+# handle users from admin
+@report_routes.route("/api/all_users", methods=["OPTIONS", "GET"])
+def get_all_users_route():
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+
+    # For POST requests, proceed with save_report logic
+    return get_all_users()
+
+
+@report_routes.route("/api/send_notice", methods=["OPTIONS", "POST"])
+def sende_notice_route():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+    
+    return send_notice()
+
+
+# route for retriving user specific notices
+@report_routes.route("/api/user_notices/<user_id>", methods=["OPTIONS", "GET"])
+def get_user_notice_route(user_id):
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+
+    # For POST requests, proceed with save_report logic
+    return get_user_notices(user_id)
+
+
+@report_routes.route("/api/delete_user/<user_id>", methods=["OPTIONS", "DELETE"])
+def delete_user_route(user_id):
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response, 204
+    return delete_user(user_id)
+
 
 
 

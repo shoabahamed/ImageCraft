@@ -5,16 +5,21 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import datetime
 import os 
+from utils.common import get_user_paths, create_user_paths
+import shutil
 
 load_dotenv()
 
 db = get_db()
 reports_collection = db["Reports"]
 projects_collection = db['Projects']
+users_collection = db["Users"]
+notice_collection = db['Notices']
 style_image_collection = db['StyleImage']
 STYLE_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
 
-
+# TODO: send notices to the user whole projects logs has been granted or delete or when an report has been deleted. Or what if admin has granted logs but now want to revoke it
+# TODO: also I may need to recover a resolve report
 def submit_report():
     try:
         data = request.get_json()
@@ -98,9 +103,8 @@ def get_all_reports():
                 "description": report["description"],
                 "status": report["status"],
                 "has_admin_response": report['has_admin_response'],
-                "created_at": report["created_at"].isoformat()
-                if isinstance(report["created_at"], datetime.datetime)
-                else None,
+                "created_at": report["created_at"],
+                "admin_response": report['admin_response']
             }
             for report in reports
         ]
@@ -218,32 +222,33 @@ def grant_logs():
 
 
 
-def get_user_reports():
-    user_id = str(g._id)  # Extract the user ID from the middleware context
+def get_user_reports(user_id):
+    current_user_id = str(g._id)  # Extract the user ID from the middleware context
     try:
-        # Fetch reports where reporter_user_id matches the current user ID
-        reports = list(reports_collection.find({"reporter_user_id": user_id}))
+        if current_user_id == user_id: 
+           # Fetch reports where reporter_cuser_id matches the current user ID
+            reports = list(reports_collection.find({"reporter_user_id": user_id}))
 
-        # Format the reports for the response
-        formatted_reports = [
-            {
-                "id": str(report["_id"]),
-                "reporter_user_id": report["reporter_user_id"],
-                "project_id": report["project_id"],
-                "project_user_id": report["project_user_id"],
-                "title": report["title"],
-                "description": report["description"],
-                "status": report["status"],
-                "has_admin_response": report['has_admin_response'],
-                "created_at": report["created_at"].isoformat()
-                if isinstance(report["created_at"], datetime.datetime)
-                else None,
-                "admin_response": report.get("admin_response", None),  # Include admin response
-            }
-            for report in reports
-        ]
+            # Format the reports for the response
+            formatted_reports = [
+                {
+                    "id": str(report["_id"]),
+                    "reporter_user_id": report["reporter_user_id"],
+                    "project_id": report["project_id"],
+                    "project_user_id": report["project_user_id"],
+                    "title": report["title"],
+                    "description": report["description"],
+                    "status": report["status"],
+                    "has_admin_response": report['has_admin_response'],
+                    "created_at": report["created_at"],
+                    "admin_response": report.get("admin_response", None),  # Include admin response
+                }
+                for report in reports
+            ]
 
-        return jsonify({"success": True, "data": formatted_reports}), 200
+            return jsonify({"success": True, "data": formatted_reports}), 200
+        else:
+            return jsonify({"success": True, "data": []}), 200
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
@@ -256,6 +261,7 @@ def delete_report_project():
     try:
         # Fetch the report
         report = reports_collection.find_one({"_id": ObjectId(report_id)})
+        
         
         if not report:
             return jsonify({"success": False, "message": "Report not found"}), 404
@@ -318,6 +324,7 @@ def send_message():
         
         if not project:
             return jsonify({"success": False, "message": "Project not found"}), 404
+        
         
 
         # Update the report's admin response and status
@@ -395,7 +402,8 @@ def add_style_img():
         new_style_image = {
             "image_id": image_id,
             "image_name": image_name,
-            "image_url":os.getenv("BACKEND_SERVER") + "/server/static/style/" + image_filename
+            "image_url":os.getenv("BACKEND_SERVER") + "/server/static/style/" + image_filename,
+            "created_at": datetime.datetime.utcnow()
         }
 
         style_image_collection.insert_one(new_style_image)
@@ -437,5 +445,108 @@ def delete_style_img(image_id):
         return jsonify({"message": "Style image deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 
 
+# handle users from admin
+def get_all_users():
+    try:
+        users = list(users_collection.find())
+        role = request.headers.get("Role")
+        if(role.lower() == 'admin'):
+            formatted_users = [
+                {
+                    "user_id": str(user["_id"]),
+                    "username": user['username'],
+                    "email": user['email'],
+                    "image_url": user['image_url']
+                }
+                for user in users
+            ]
+            return jsonify({"success": True, "data": formatted_users}), 200
+        else:
+            return jsonify({"success": True, "data": []}), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+
+def send_notice():
+    try:
+        data = request.get_json()
+
+        admin_id = data['adminId']
+        user_id = data['userId']
+        
+        title = data['title']
+        message = data['message']
+        role = request.headers.get("Role")
+        
+        
+        if role.lower() == 'admin':
+            # insert notice
+            notice_collection.insert_one({"admin_id": admin_id, "user_id":user_id, "title": title, "message": message,  "created_at": datetime.datetime.utcnow()})
+            return jsonify({"success": True, "message": "Message sent successfully"}), 200
+        else:
+            return jsonify({"success": False, "message": "Unauthorized access"}), 200
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    
+
+
+def get_user_notices(user_id):
+    current_user_id = str(g._id)  # Extract the user ID from the middleware context
+    try:
+        if current_user_id == user_id: 
+           # Fetch reports where reporter_cuser_id matches the current user ID
+            print(user_id)
+            notices = list(notice_collection.find({"user_id": user_id}))
+            
+            formatted_notices = [
+                {
+                    "user_id": str(notice["user_id"]),
+                    "title": notice['title'],
+                    "message": notice['message'],
+                    "created_at": notice['created_at']
+                }
+                for notice in notices
+            ]
+
+            return jsonify({"success": True, "data": formatted_notices}), 200
+        else:
+            return jsonify({"success": True, "data": []}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+    
+
+
+
+
+def delete_user(user_id):
+    role = request.headers.get("Role")
+    try:
+        if role.lower() == 'admin':
+            # delete user
+            users_collection.delete_one({"_id": ObjectId(user_id)})
+            # Delete all projects
+            projects_collection.delete_many({"user_id": user_id})
+            # delete all notices
+            notice_collection.delete_many({"user_id": user_id})
+            # delete all reports
+            reports_collection.delete_many({'reporter_user_id': user_id})
+
+
+            USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
+ 
+            shutil.rmtree(USER_PATH)
+
+            return jsonify({"success": True, "message": "User deleted successfully"}), 200
+        
+
+        else:
+            return jsonify({"success": False, "message": "User deletion failed you do not have enough credential"}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

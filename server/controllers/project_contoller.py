@@ -151,15 +151,16 @@ def save_project():
 
 
 
-def get_projects():
+def get_projects(user_id):
   try:
 
-    # data = request.get_json()
-    
-    user_id = str(g._id)  # Extracted by the middleware
+    current_user_id = g._id
 
-    # Query the database for projects, excluding the `_id` field
-    projects_cursor = projects_collection.find({"user_id": user_id})
+    if(current_user_id == user_id):
+        # Query the database for projects, excluding the `_id` field
+        projects_cursor = projects_collection.find({"user_id": user_id})
+    else:
+        projects_cursor = projects_collection.find({"user_id": user_id}, {'project_data':0, 'project_logs':0, 'granted_logs':0, 'original_image_shape':0, 'final_image_shape': 0})
     
     # Convert the cursor to a list of dictionaries
     projects = list(projects_cursor)
@@ -172,6 +173,55 @@ def get_projects():
     response = {"projects": projects}
     print(len(projects))
     return jsonify({"success": True, "message": "Projects retrieved successfully", "data": response}), 201
+  
+  except Exception as e:
+    return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+  
+
+def get_bookmark_projects(user_id):
+  try:
+ 
+    current_user_id = g._id
+    
+    if(current_user_id == user_id):
+        user_object_id = ObjectId(user_id)
+        
+        user = users_collection.find_one({"_id": user_object_id})
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        # Extract bookmarks from user data
+        # If bookmarks don't exist, return an empty list
+        bookmarks = user.get('bookmarked', [])
+        
+
+        if bookmarks:
+            # Convert project_ids in bookmarks to ObjectId
+            project_ids = [project_id for project_id in bookmarks]
+
+            # Find all bookmarked projects
+            projects_cursor = projects_collection.find({"project_id": {"$in": project_ids}}, {'project_data':0, 'project_logs':0, 'granted_logs':0, 'original_image_shape':0, 'final_image_shape': 0})
+                    
+
+            # Convert the cursor to a list of dictionaries
+            projects = list(projects_cursor)
+
+            # Convert the MongoDB ObjectId to string for JSON serialization
+            for project in projects:
+                project["_id"] = str(project["_id"])  # MongoDB ObjectId needs to be converted to string
+                project['bookmarked'] = True
+                project["total_rating"] = int(project['total_rating'])
+                project['rating_count'] = int(project['rating_count'])
+
+        else:
+            projects = []
+    else:
+        projects = []
+    
+    response = {"projects": projects}
+
+    return jsonify({"success": True, "message": "Bookmarked Projects retrieved successfully", "data": response}), 201
   
   except Exception as e:
     return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

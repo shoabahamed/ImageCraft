@@ -71,10 +71,11 @@ const Navbar = () => {
     const token = urlParams.get("token");
     const role = urlParams.get("role");
     const username = urlParams.get("username");
+    const userId = urlParams.get("userId");
 
     // If email and token are present, store them and clear the query string
     if (email && token && role && username) {
-      const userData = { email, token, role, username };
+      const userData = { email, token, role, username, userId };
       localStorage.setItem("user", JSON.stringify(userData));
       dispatch({ type: "LOGIN", payload: userData });
 
@@ -276,17 +277,11 @@ const Navbar = () => {
               >
                 Gallery
               </Link>
+
               <Link
-                to="/projects"
-                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
-      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
-              >
-                Projects
-              </Link>
-              <Link
-                to="/profile"
-                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
-      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
+                to={`/profile/${user.userId}`}
+                className="relative text-gray-500 font-medium transition-all duration-200 
+      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full hover:text-black"
               >
                 Profile
               </Link>

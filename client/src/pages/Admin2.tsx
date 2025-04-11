@@ -35,7 +35,7 @@ interface Report {
   description: string;
   has_admin_response: string;
   status: "pending" | "resolved";
-  created_at: string | null;
+  created_at: Date;
 }
 
 type StyleTemplate = {
@@ -90,15 +90,21 @@ const AdminPanel2: React.FC = () => {
             Authorization: `Bearer ${user?.token}`,
           },
         });
-        const reports = response.data.data;
-        console.log(reports);
+        const fetchedReports = response.data.data.map((report: Report) => ({
+          ...report,
+          created_at: new Date(report.created_at),
+        }));
+
+        const sortedReports = fetchedReports.sort((a, b) => {
+          return b.created_at.getTime() - a.created_at.getTime();
+        });
 
         // Separate reports into pending and resolved based on their status
         setPendingReports(
-          reports.filter((report: Report) => report.status === "pending")
+          sortedReports.filter((report: Report) => report.status === "pending")
         );
         setResolvedReports(
-          reports.filter((report: Report) => report.status === "resolved")
+          sortedReports.filter((report: Report) => report.status === "resolved")
         );
       } catch (error) {
         console.error("Failed to fetch reports:", error);

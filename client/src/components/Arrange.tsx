@@ -17,6 +17,8 @@ import { useLogContext } from "@/hooks/useLogContext";
 import ImageSize from "./ImageSize";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 import { Slider } from "./ui/slider";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { getRotatedBoundingBox } from "@/utils/commonFunctions";
 
 type ArrangeProps = {
   canvas: Canvas;
@@ -31,6 +33,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
+  const { setDownloadImageDimensions } = useCanvasObjects();
 
   useEffect(() => {
     image.set({
@@ -40,6 +43,31 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
 
     canvas.renderAll();
   }, [flipX, flipY]);
+
+  const handleRenderingFinalDimension = () => {
+    const originalViewportTransform = canvas.viewportTransform;
+    const originalZoom = canvas.getZoom();
+
+    // Reset to neutral
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    canvas.setZoom(1);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+
+    const bounds = getRotatedBoundingBox(image);
+    setDownloadImageDimensions({
+      imageHeight: bounds.height,
+      imageWidth: bounds.width,
+    });
+    // Restore zoom & transform
+    canvas.setViewportTransform(originalViewportTransform);
+    canvas.setZoom(originalZoom);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+  };
 
   const handleImageRotation = (e) => {
     const rotationValue = parseInt(e[0]);
@@ -63,6 +91,8 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       message: `rotation value changed from  to ${e[0]}`,
       value: `${e[0]}`,
     });
+
+    handleRenderingFinalDimension();
   };
 
   const handleOrientationReset = () => {

@@ -21,6 +21,7 @@ import {
 
 import { Label } from "./ui/label";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { getRotatedBoundingBox } from "@/utils/commonFunctions";
 
 type ImageSizeProps = {
   canvas: Canvas;
@@ -29,10 +30,38 @@ type ImageSizeProps = {
 
 const ImageSize = ({ canvas, image }: ImageSizeProps) => {
   const { user } = useAuthContext();
-  const { finalImageDimensions, setFinalImageDimensions } = useCanvasObjects();
+  const {
+    finalImageDimensions,
+    setFinalImageDimensions,
+    setDownloadImageDimensions,
+  } = useCanvasObjects();
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
   const { addLog } = useLogContext();
-  const [superResValue, setSuperResValue] = useState("none");
+
+  const handleRenderingFinalDimension = () => {
+    const originalViewportTransform = canvas.viewportTransform;
+    const originalZoom = canvas.getZoom();
+
+    // Reset to neutral
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    canvas.setZoom(1);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+
+    const bounds = getRotatedBoundingBox(image);
+    setDownloadImageDimensions({
+      imageHeight: bounds.height,
+      imageWidth: bounds.width,
+    });
+    // Restore zoom & transform
+    canvas.setViewportTransform(originalViewportTransform);
+    canvas.setZoom(originalZoom);
+    canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+  };
 
   const handleWidthChange = (e) => {
     const newWidth = parseInt(e.target.value);
@@ -79,6 +108,8 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     image.scaleX = scaleX;
     image.scaleY = scaleY;
     canvas.renderAll();
+
+    handleRenderingFinalDimension();
   };
   const handleHeightChange = (e) => {
     const newHeight = parseInt(e.target.value);
@@ -125,6 +156,15 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     image.scaleX = scaleX;
     image.scaleY = scaleY;
     canvas.renderAll();
+
+    const bounds = getRotatedBoundingBox(image);
+    console.log(bounds);
+    setDownloadImageDimensions({
+      imageHeight: bounds.height,
+      imageWidth: bounds.width,
+    });
+
+    handleRenderingFinalDimension();
   };
 
   const handleImageResizeReset = () => {
@@ -144,6 +184,8 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     image.scaleX = 1;
     image.scaleY = 1;
     canvas.renderAll();
+
+    handleRenderingFinalDimension();
   };
 
   const handleImageResizeX = (inc: number) => {
@@ -167,6 +209,8 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       param: `${inc}x scale`,
       objType: "image",
     });
+
+    handleRenderingFinalDimension();
   };
 
   return (

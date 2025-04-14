@@ -16,9 +16,11 @@ interface CanvasObjectsContextType {
   selectedObject: CanvasObject | null;
   setSelectedObject: (obj: CanvasObject | null) => void;
   originalImageDimensions: originalImageDimensionsType;
-  setOriginalImageDimensions: (obj: originalImageDimensionsType) => void;
+  setOriginalImageDimensions: (obj: originalImageDimensionsType) => void; // this is the original dimension of the image
   finalImageDimensions: finalImageDimensionsType;
-  setFinalImageDimensions: (obj: finalImageDimensionsType) => void;
+  setFinalImageDimensions: (obj: finalImageDimensionsType) => void; // this is the change dimension of the image
+  downloadImageDimensions: finalImageDimensionsType;
+  setDownloadImageDimensions: (obj: finalImageDimensionsType) => void; // this is the actual dimension in which the image would be downloaded
   loadedFromSaved: boolean;
   setLoadedFromSaved: (value: boolean) => void;
   zoomValue: number;
@@ -49,6 +51,10 @@ export const CanvasObjectsProvider = ({
       imageWidth: 0,
       imageHeight: 0,
     });
+
+  const [downloadImageDimensions, setDownloadImageDimensions] =
+    useState<finalImageDimensionsType>({ imageWidth: 0, imageHeight: 0 });
+
   const [loadedFromSaved, setLoadedFromSaved] = useState(false);
 
   const [zoomValue, setZoomValue] = useState(1);
@@ -62,6 +68,8 @@ export const CanvasObjectsProvider = ({
         finalImageDimensions,
         setFinalImageDimensions,
         setOriginalImageDimensions,
+        downloadImageDimensions,
+        setDownloadImageDimensions,
         loadedFromSaved,
         setLoadedFromSaved,
         zoomValue,

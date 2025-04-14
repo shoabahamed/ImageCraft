@@ -51,10 +51,13 @@ def save_project():
         # Retrieve JSON-like data from form fields
         original_image_shape = request.form.get('originalImageShape')
         final_image_shape = request.form.get('finalImageShape')
+        download_image_shape = request.form.get('downloadImageShape')
+        filter_names = request.form.get("filterNames")
 
         # Parse the JSON strings into Python dictionaries (optional)
         original_image_shape = eval(original_image_shape)
         final_image_shape = eval(final_image_shape)
+        download_image_shape = eval(download_image_shape)
  
 
         # whether loaded from saved
@@ -100,6 +103,8 @@ def save_project():
                     "project_data": canvas_data,
                     "project_logs": canvas_logs, 
                     "final_image_shape": final_image_shape, 
+                    "download_image_shape": download_image_shape,
+                    "filter_names": filter_names,
                     "project_name": project_name,
                     "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
                 }}
@@ -129,6 +134,8 @@ def save_project():
                 "total_bookmark": 0,
                 "original_image_shape": original_image_shape,
                 "final_image_shape": final_image_shape,
+                "download_image_shape": download_image_shape,
+                "filter_names": filter_names,
                 "project_name": project_name,
                 "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                 "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp

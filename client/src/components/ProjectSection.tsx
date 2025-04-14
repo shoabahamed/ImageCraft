@@ -31,7 +31,9 @@ interface Project {
   total_bookmark: number;
   original_image_shape: { width: number; height: number };
   final_image_shape: { width: number; height: number };
+  download_image_shape: { width: number; height: number };
   project_name: string;
+  filter_names: string[] | [];
   created_at: Date;
   updated_at: Date;
 }
@@ -245,7 +247,10 @@ const ProjectSection = ({
     project_id: string,
     project_data: Object,
     project_logs: string,
+    original_image_shape: object,
     final_image_shape: object,
+    download_image_shape: object,
+    filter_names: string[] | [],
     project_name: string,
     imageUrl: string
   ) => {
@@ -258,6 +263,15 @@ const ProjectSection = ({
       "final_image_shape",
       JSON.stringify(final_image_shape)
     );
+    localStorage.setItem(
+      "original_image_shape",
+      JSON.stringify(original_image_shape)
+    );
+    localStorage.setItem(
+      "download_image_shape",
+      JSON.stringify(download_image_shape)
+    );
+    localStorage.setItem("filter_names", JSON.stringify(filter_names));
     navigate("/mainpage", { state: { imageUrl } });
   };
 
@@ -326,20 +340,28 @@ const ProjectSection = ({
                 <h3 className="font-bold text-lg text-blue-800">
                   {project.project_name}
                 </h3>
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 text-yellow-500 mr-1"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="text-sm font-medium dark:text-black">
-                    {calculateRating(
-                      project.total_rating,
-                      project.rating_count
-                    )}
-                  </span>
+                <div className="flex items-center space-x-1">
+                  <div className="flex items-center bg-yellow-50 rounded-md px-1.5 py-0.5">
+                    <svg
+                      className="w-3.5 h-3.5 text-yellow-500 mr-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="text-xs font-medium text-gray-800">
+                      {calculateRating(
+                        project.total_rating,
+                        project.rating_count
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center bg-gray-100 rounded-md px-1.5 py-0.5">
+                    <span className="text-xs font-medium text-gray-600">
+                      {project.rating_count}{" "}
+                      {project.rating_count === 1 ? "review" : "reviews"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -452,7 +474,10 @@ const ProjectSection = ({
                             project.project_id,
                             project.project_data,
                             project.project_logs,
+                            project.original_image_shape,
                             project.final_image_shape,
+                            project.download_image_shape,
+                            project.filter_names,
                             project.project_name || "Untitled",
                             project.original_image_url
                           )

@@ -34,7 +34,8 @@ const CustomSlider = ({
         <p>{sliderValue}</p>
       </div>
       <Slider
-        defaultValue={[defaultValue]}
+        // defaultValue={[defaultValue]}
+        value={[sliderValue]}
         min={min}
         max={max}
         step={step}

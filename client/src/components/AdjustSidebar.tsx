@@ -13,19 +13,27 @@ import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import { Exposure } from "@/utils/ExposureFilter";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
+import { BBrightness } from "@/utils/BlueBrightnessFilter";
+import { GBrightness } from "@/utils/GreenBrightnessValue";
+import { useCommonProps } from "@/hooks/appStore/CommonProps";
+import { updateOrInsert } from "@/utils/commonFunctions";
 
 type AdjustSidebarProps = {
   canvas: Canvas;
   image: FabricImage;
-  databaseFilters: object[] | null;
-  setDatabaseFilters: (value: object[] | null) => void;
+  databaseFiltersName: string[] | null;
+  setDatabaseFiltersName: (value: string[] | null) => void;
+  databaseFiltersObject: object[] | null;
+  setDatabaseFiltersObject: (value: object[] | null) => void;
 };
 
 const AdjustSidebar = ({
   canvas,
   image,
-  databaseFilters,
-  setDatabaseFilters,
+  databaseFiltersName,
+  setDatabaseFiltersName,
+  databaseFiltersObject,
+  setDatabaseFiltersObject,
 }: AdjustSidebarProps) => {
   const { addLog } = useLogContext(); // Use log context
 
@@ -47,6 +55,34 @@ const AdjustSidebar = ({
   const enableSepia = useAdjustStore((state) => state.enableSepia);
   const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
   const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
+  const enableSharpen = useAdjustStore((state) => state.enableSharpen);
+
+  const enableInvert = useAdjustStore((state) => state.enableInvert);
+
+  const blueBrightnessValue = useAdjustStore(
+    (state) => state.blueBrightnessValue
+  );
+  const greenBrightnessValue = useAdjustStore(
+    (state) => state.greenBrightnessValue
+  );
+
+  const setBlueBrightnessValue = useAdjustStore(
+    (state) => state.setBlueBrightnessValue
+  );
+  const setGreenBrightnessValue = useAdjustStore(
+    (state) => state.setGreenBrightnessValue
+  );
+
+  const gammaBlue = useAdjustStore((state) => state.gammaBlue);
+  const gammaGreen = useAdjustStore((state) => state.gammaGreen);
+  const gammaRed = useAdjustStore((state) => state.gammaRed);
+
+  const setGammaBlueValue = useAdjustStore((state) => state.setGammaBlueValue);
+  const setGammaGreenValue = useAdjustStore(
+    (state) => state.setGammaGreenValue
+  );
+  const setGammaRedValue = useAdjustStore((state) => state.setGammaRedValue);
+
   const setEnableGrayScale = useAdjustStore(
     (state) => state.setEnableGrayScale
   );
@@ -58,6 +94,8 @@ const AdjustSidebar = ({
   const setEnableKodachrome = useAdjustStore(
     (state) => state.setEnableKodachrome
   );
+  const setEnableSharpen = useAdjustStore((state) => state.setEnableSharpen);
+  const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
 
   // Set functions for each value
   const setBrightnessValue = useAdjustStore(
@@ -77,183 +115,6 @@ const AdjustSidebar = ({
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
 
-  // Function to apply filters to the image
-  // const applyFilters = () => {
-  //   // @ts-ignore
-  //   const currentFilters: filters.BaseFilter[] = [];
-
-  //   // Add predefined filter first if any
-  //   if (predefinedFilter) {
-  //     switch (predefinedFilter) {
-  //       case "grayscale":
-  //         currentFilters.push(new filters.Grayscale());
-  //         break;
-  //       case "sepia":
-  //         currentFilters.push(new filters.Sepia());
-  //         break;
-  //       case "vintage":
-  //         currentFilters.push(new filters.Vintage());
-  //         break;
-  //       case "kodachrome":
-  //         currentFilters.push(new filters.Kodachrome());
-  //         break;
-  //       case "technicolor":
-  //         currentFilters.push(new filters.Technicolor());
-  //         break;
-  //       default:
-  //         break;
-  //     }
-  //   }
-
-  //   //test filters start
-  //   if (redBrightnessValue !== 0) {
-  //     currentFilters.push(new RBrightness({ RBrightness: redBrightnessValue }));
-  //   }
-
-  //   // test filters end
-
-  //   // Add dynamic filters
-  //   if (brightnessValue !== 0) {
-  //     currentFilters.push(
-  //       new filters.Brightness({ brightness: brightnessValue })
-  //     );
-  //   }
-
-  //   if (contrastValue !== 0) {
-  //     currentFilters.push(new filters.Contrast({ contrast: contrastValue }));
-  //   }
-
-  //   if (saturationValue !== 0) {
-  //     currentFilters.push(
-  //       new filters.Saturation({ saturation: saturationValue })
-  //     );
-  //   }
-
-  //   if (vibranceValue !== 0) {
-  //     currentFilters.push(new filters.Vibrance({ vibrance: vibranceValue }));
-  //   }
-
-  //   if (blurValue !== 0) {
-  //     currentFilters.push(new filters.Blur({ blur: blurValue }));
-  //   }
-
-  //   if (hueValue !== 0) {
-  //     currentFilters.push(new filters.HueRotation({ rotation: hueValue }));
-  //   }
-
-  //   if (noiseValue !== 0) {
-  //     currentFilters.push(new filters.Noise({ noise: noiseValue }));
-  //   }
-
-  //   if (pixelateValue !== 0) {
-  //     currentFilters.push(new filters.Pixelate({ blocksize: pixelateValue }));
-  //   }
-
-  //   image.filters = currentFilters;
-  //   image.applyFilters();
-  //   canvas.renderAll();
-  // };
-
-  // const applyPredefinedFilter = (filterType: string) => {
-  //   if (predefinedFilter) {
-  //     addLog({
-  //       section: "adjust",
-  //       tab: "filter",
-  //       event: "deletion",
-  //       message: `removed filter ${predefinedFilter} `,
-  //     });
-  //   }
-  //   if (predefinedFilter && filterType === predefinedFilter) {
-  //     setPredefinedFilter("");
-  //   } else {
-  //     addLog({
-  //       section: "adjust",
-  //       tab: "filter",
-  //       event: "update",
-  //       message: `applied filter ${filterType} `,
-  //       value: predefinedFilter,
-  //     });
-
-  //     setPredefinedFilter(filterType);
-  //   }
-  // };
-
-  useEffect(() => {
-    if (databaseFilters) {
-      databaseFilters.map((filter) => {
-        switch (filter.type) {
-          case filters.Grayscale.type:
-            setEnableGrayScale(true);
-            break;
-          case filters.Sepia.type:
-            setEnableSepia(true);
-            break;
-          case filters.Vintage.type:
-            setEnableVintage(true);
-            break;
-          case filters.Kodachrome.type:
-            setEnableKodachrome(true);
-            break;
-          case filters.Technicolor.type:
-            setEnableTechnicolor(true);
-            break;
-
-          case RBrightness.type:
-            setRedBrightnessValue(filter.RBrightness);
-            break;
-          case filters.Brightness.type:
-            setBrightnessValue(filter.brightness);
-            break;
-          case filters.Contrast.type:
-            setContrastValue(filter.contrast);
-            break;
-          case filters.Saturation.type:
-            setSaturationValue(filter.saturation);
-            break;
-          case filters.Vibrance.type:
-            setVibranceValue(filter.vibrance);
-            break;
-          case filters.Blur.type:
-            setBlurValue(filter.blur);
-            break;
-          case filters.HueRotation.type:
-            setHueValue(filter.rotation);
-            break;
-          case filters.Noise.type:
-            setNoiseValue(filter.noise);
-            break;
-          case filters.Pixelate.type:
-            setPixelateValue(filter.blocksize);
-            break;
-        }
-      });
-    }
-
-    return () => {
-      setDatabaseFilters(null);
-    };
-  }, []);
-
-  // useEffect(() => {
-  //   applyFilters();
-  // }, [
-  //   redBrightnessValue,
-  //   brightnessValue,
-  //   contrastValue,
-  //   saturationValue,
-  //   vibranceValue,
-  //   blurValue,
-  //   hueValue,
-  //   noiseValue,
-  //   pixelateValue,
-  //   predefinedFilter,
-  // ]);
-
-  // useEffect(() => {
-  //   image.set("opacity", opacityValue);
-  //   canvas.renderAll();
-  // }, [opacityValue]);
-
   const handleColorReset = () => {
     addLog({
       section: "adjust",
@@ -262,15 +123,13 @@ const AdjustSidebar = ({
       message: `reseted all image color properties `,
     });
 
-    addLog({
-      section: "adjust",
-      tab: "color",
-      event: "reset",
-      message: `reseted all image color properties `,
-    });
-
-    setRedBrightnessValue(0);
     setBrightnessValue(0);
+    setRedBrightnessValue(0);
+    setBlueBrightnessValue(0);
+    setGreenBrightnessValue(0);
+    setGammaBlueValue(1);
+    setGammaGreenValue(1);
+    setGammaRedValue(1);
     setVibranceValue(0);
     setContrastValue(0);
     setSaturationValue(0);
@@ -304,8 +163,11 @@ const AdjustSidebar = ({
     setEnableVintage(false);
     setEnableKodachrome(false);
     setEnableTechnicolor(false);
+    setEnableSharpen(false);
+    setEnableInvert(false);
   };
 
+  console.log(Math.random());
   return (
     <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <div className="w-[90%]">
@@ -351,6 +213,20 @@ const AdjustSidebar = ({
             >
               Technicolor
             </Button>
+            <Button
+              variant={`${enableSharpen ? "default" : "outline"}`}
+              className="w-full text-xs"
+              onClick={() => setEnableSharpen(!enableSharpen)}
+            >
+              Sharpen
+            </Button>
+            <Button
+              variant={`${enableInvert ? "default" : "outline"}`}
+              className="w-full text-xs"
+              onClick={() => setEnableInvert(!enableInvert)}
+            >
+              Invert
+            </Button>
             <button className="custom-button" onClick={handleFilterReset}>
               Reset
             </button>
@@ -376,10 +252,69 @@ const AdjustSidebar = ({
               tab={"color"}
             />
 
+            <CustomSlider
+              sliderName={"Blue"}
+              min={-1}
+              max={1}
+              sliderValue={blueBrightnessValue}
+              defaultValue={blueBrightnessValue}
+              step={0.01}
+              setSliderValue={setBlueBrightnessValue}
+              section={"adjust"}
+              tab={"color"}
+            />
+            <CustomSlider
+              sliderName={"Green"}
+              min={-1}
+              max={1}
+              sliderValue={greenBrightnessValue}
+              defaultValue={greenBrightnessValue}
+              step={0.01}
+              setSliderValue={setGreenBrightnessValue}
+              section={"adjust"}
+              tab={"color"}
+            />
+
+            <CustomSlider
+              sliderName={"Gamma Red"}
+              min={0.01}
+              max={2.2}
+              sliderValue={gammaRed}
+              defaultValue={gammaRed}
+              step={0.01}
+              setSliderValue={setGammaRedValue}
+              section={"adjust"}
+              tab={"color"}
+            />
+
+            <CustomSlider
+              sliderName={"Gamma Blue"}
+              min={0.01}
+              max={2.2}
+              sliderValue={gammaBlue}
+              defaultValue={gammaBlue}
+              step={0.01}
+              setSliderValue={setGammaBlueValue}
+              section={"adjust"}
+              tab={"color"}
+            />
+
+            <CustomSlider
+              sliderName={"Gamma Green"}
+              min={0.01}
+              max={2.2}
+              sliderValue={gammaGreen}
+              defaultValue={gammaGreen}
+              step={0.01}
+              setSliderValue={setGammaGreenValue}
+              section={"adjust"}
+              tab={"color"}
+            />
+
             {/* test filters ende */}
 
             <div className="flex flex-col gap-4 w-full">
-              <CustomSlider
+              {/* <CustomSlider
                 sliderName={"Brightness"}
                 min={-1}
                 max={1}
@@ -389,7 +324,7 @@ const AdjustSidebar = ({
                 setSliderValue={setBrightnessValue}
                 section={"adjust"}
                 tab={"color"}
-              />
+              /> */}
               <CustomSlider
                 sliderName={"Contrast"}
                 min={-1}
@@ -467,7 +402,7 @@ const AdjustSidebar = ({
                 max={1}
                 step={0.01}
                 sliderValue={blurValue}
-                defaultValue={blurValue}
+                defaultValue={blurValue + 1}
                 setSliderValue={setBlurValue}
                 section={"adjust"}
                 tab={"detail"}

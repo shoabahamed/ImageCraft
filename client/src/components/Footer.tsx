@@ -68,6 +68,8 @@ const Footer = ({
     zoomValue,
     setZoomValue,
     finalImageDimensions,
+    originalImageDimensions,
+    downloadImageDimensions,
     loadedFromSaved,
   } = useCanvasObjects();
   const { user } = useAuthContext();
@@ -79,7 +81,7 @@ const Footer = ({
 
   const [downloadFrame, setDownLoadFrame] = useState(false);
   const [superResValue, setSuperResValue] = useState("none");
-
+  const currentFilters = useCommonProps((state) => state.currentFilters);
   const projectName = useCommonProps((state) => state.projectName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
   const showUpdateButton = useCommonProps((state) => state.showUpdateButton);
@@ -149,7 +151,10 @@ const Footer = ({
 
       const { imageHeight: finalImageHeight, imageWidth: finalImageWidth } =
         finalImageDimensions;
-
+      const { imageHeight: originalHeight, imageWidth: originalWidth } =
+        originalImageDimensions;
+      const { imageHeight: downloadHeight, imageWidth: downloadWidth } =
+        downloadImageDimensions;
       const originalViewportTransform = canvas.viewportTransform;
       const originalZoom = canvas.getZoom();
 
@@ -189,6 +194,10 @@ const Footer = ({
       }
 
       const interImage = base64ToFile(mainImageSrc, "inter_image");
+      let filterNames = [];
+      if (currentFilters) {
+        filterNames = currentFilters.map((filter) => filter.filterName);
+      }
 
       // Create FormData object and append the image and other canvas data
       const formData = new FormData();
@@ -197,10 +206,11 @@ const Footer = ({
       formData.append("isPublic", "false");
       formData.append("canvasData", JSON.stringify(canvasJSON));
       formData.append("canvasLogs", JSON.stringify(logs));
+      formData.append("filterNames", JSON.stringify(filterNames));
       // formData.append("mainImageSrc", mainImageSrc);
       formData.append(
         "originalImageShape",
-        JSON.stringify({ width: image.width, height: image.height })
+        JSON.stringify({ width: originalWidth, height: originalHeight })
       );
 
       formData.append(
@@ -211,6 +221,13 @@ const Footer = ({
         })
       );
 
+      formData.append(
+        "downloadImageShape",
+        JSON.stringify({
+          width: downloadWidth,
+          height: downloadHeight,
+        })
+      );
       // @ts-ignore
       formData.append("originalImage", originalImageFile);
       // @ts-ignore

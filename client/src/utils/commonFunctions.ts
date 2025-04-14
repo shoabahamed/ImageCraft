@@ -150,7 +150,33 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
   }
 
 
-export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl}
+  const updateOrInsert = (
+    filtersList: object[],
+    filterName: string,
+    instance: any,
+    shouldApply: boolean
+  ) => {
+    const index = filtersList.findIndex((f) => f.filterName === filterName);
+    if (shouldApply) {
+      if (index !== -1) {
+        console.log("updating filter", filterName);
+        // Update existing
+        filtersList[index] = { instance: instance, filterName: filterName };
+      } else {
+        console.log("creating new filter", filterName);
+        // Add new
+        filtersList.push({ instance: instance, filterName: filterName });
+      }
+    } else if (index !== -1) {
+      console.log("removing filter", filterName);
+      // Remove disabled
+      filtersList.splice(index, 1);
+    }
+  };
+
+
+
+export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert}
 
 
 

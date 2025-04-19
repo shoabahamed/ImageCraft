@@ -34,6 +34,9 @@ import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
 import useAddTextStore from "@/hooks/appStore/AddTextStore";
 
+// TODO: I need to export the isUpper, Id and Frame as extra values during saving
+// TODO: when
+
 type AddTextProps = {
   canvas: Canvas;
 };
@@ -89,21 +92,13 @@ const AddText = ({ canvas }: AddTextProps) => {
       fontStyle: isItalic ? "italic" : "normal",
     });
     text.set("id", textId);
-    text.set("id", textId);
     text.set("isUpper", isUpper);
     text.set({
-      // lockScalingX: true, // Disable horizontal scaling
-      // lockScalingY: true, // Disable vertical scaling
-      selectable: true, // Ensure the object is selectable
+      selectable: true,
     });
     canvas.add(text);
+    canvas.centerObject(text);
     canvas.setActiveObject(text);
-    addLog({
-      section: "text",
-      tab: "text",
-      event: "create",
-      message: `Created text object with ID ${textId}`,
-    });
     addLog({
       section: "text",
       tab: "text",
@@ -157,37 +152,6 @@ const AddText = ({ canvas }: AddTextProps) => {
         //     objType: "text",
         //     propType: "selection",
         //     message: `Selected texbox object with ID: ${textObj.get("id")}`,
-        //   });
-        // }, 0);
-      } else {
-        setSelectedObject(null);
-      }
-    };
-
-    const handleObjectUpdated = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject && activeObject.type === "textbox") {
-        const textObj = activeObject as Textbox;
-        setSelectedObject(textObj);
-        setTextValue(textObj.text || "");
-        setTextColorValue(textObj.fill as string);
-        setTextSize(textObj.fontSize || 14);
-        setTextFont(textObj.fontFamily || "arial");
-        setTextOpacity(textObj.opacity || 1);
-
-        setTextAlignValue(textObj.textAlign);
-        setTextLineSpacing(textObj.lineHeight);
-
-        setItalic(textObj.fontStyle === "italic" ? true : false);
-        setUnderLine(textObj.underline ? true : false);
-        setBold(textObj.fontWeight === "bold" ? true : false);
-        setUpper(textObj.get("isUpper") || false);
-
-        // setTimeout(() => {
-        //   addLog({
-        //     objType: "text",
-        //     propType: "selection",
-        //     message: `Updated texbox object with ID: ${textObj.get("id")}`,
         //   });
         // }, 0);
       } else {
@@ -266,23 +230,16 @@ const AddText = ({ canvas }: AddTextProps) => {
       setSelectedObject(null);
     };
     canvas.on("selection:created", handleObjectSelected);
-    canvas.on("selection:updated", handleObjectUpdated);
-    canvas.on("object:modified", handleObjectModified);
-    canvas.on("object:scaling", handleObjectScaled);
-    canvas.on("selection:updated", handleObjectUpdated);
+
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
     canvas.on("selection:cleared", handleObjectDeselected);
 
     return () => {
       canvas.off("selection:created", handleObjectSelected);
-      canvas.off("selection:updated", handleObjectUpdated);
+      canvas.off("selection:cleared", handleObjectDeselected);
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
-      canvas.off("selection:updated", handleObjectUpdated);
-      canvas.off("object:modified", handleObjectModified);
-      canvas.off("object:scaling", handleObjectScaled);
-      canvas.off("object:modified", handleObjectSelected);
     };
   }, [canvas]);
 

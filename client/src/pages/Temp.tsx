@@ -1,984 +1,694 @@
-import React, { useState, useEffect, useCallback } from "react";
+// components/dashboard.tsx
 import {
-  Search,
-  ArrowUpDown,
-  PlusCircle,
-  Star,
-  Flag,
-  ArrowDownToLine,
-  Filter,
-  SlidersHorizontal,
-  Bookmark,
-} from "lucide-react";
-import Navbar from "@/components/Navbar";
-import { useAuthContext } from "@/hooks/useAuthContext";
-import { useToast } from "@/hooks/use-toast";
-import apiClient from "@/utils/appClient";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { useDropzone } from "react-dropzone";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useNavigate } from "react-router-dom";
-import SubmitRating from "@/components/SubmitRating";
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { DownloadIcon } from "lucide-react";
 
-interface Project {
-  _id: string;
-  user_id: string;
-  username: string;
-  project_id: string;
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+import { Badge } from "@/components/ui/badge";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { EyeIcon, StarIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import apiClient from "@/utils/appClient";
+import { useParams } from "react-router-dom";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { get } from "node:http";
+
+// TODO: what to do if the image is very big I do not think the display would look very good
+
+type logType = {
+  section: string;
+  tab: string;
+  event: string;
+  message: string;
+  param?: string | null;
+  objType?: string | null;
+  value?: string | null;
+  timestamp: string;
+};
+
+type projectType = {
   project_name: string;
+  username: string;
+  project_data: string;
+  project_logs: logType[];
+  original_image_url: string;
   canvas_image_url: string;
-  bookmarked: boolean;
-  rating_count: number;
-  total_rating: number;
+  original_image_shape: { width: number; height: number };
+  final_image_shape: { width: number; height: number }; // the image after resizing
+  download_image_shape: { width: number; height: number }; // this is the actual download canvas size(in case of rotation final image size and download size would not match)
   total_views: number;
-  total_bookmark: number;
+  total_rating: number;
+  rating_count: number;
+  filter_names: string[];
   created_at: Date;
   updated_at: Date;
+};
+
+export function ProjectInfo({ project }: { project: projectType }) {
+  const rating =
+    project.rating_count > 0
+      ? (project.total_rating / project.rating_count).toFixed(1)
+      : "No ratings";
+
+  return (
+    <Card className="border-blue-200">
+      <CardHeader>
+        <CardTitle className="text-blue-800">Project Information</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Project Name:
+              </span>
+              <span className="text-sm text-blue-900">
+                {project.project_name}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Created By:
+              </span>
+              <span className="text-sm text-blue-900">{project.username}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Created At:
+              </span>
+              <span className="text-sm text-blue-900">
+                {new Date(project.created_at).toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Last Updated:
+              </span>
+              <span className="text-sm text-blue-900">
+                {new Date(project.updated_at).toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Original Dimensions:
+              </span>
+              <span className="text-sm text-blue-900">
+                {project.original_image_shape.width} ×{" "}
+                {project.original_image_shape.height}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Final Dimensions:
+              </span>
+              <span className="text-sm text-blue-900">
+                {project.final_image_shape.width} ×{" "}
+                {project.final_image_shape.height}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium text-blue-700">
+                Download Dimensions:
+              </span>
+              <span className="text-sm text-blue-900">
+                {project.download_image_shape.width} ×{" "}
+                {project.download_image_shape.height}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-blue-700 flex items-center">
+                <EyeIcon className="h-4 w-4 mr-1" /> Views:
+              </span>
+              <span className="text-sm text-blue-900">
+                {project.total_views}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-blue-700 flex items-center">
+                <StarIcon className="h-4 w-4 mr-1" /> Rating:
+              </span>
+              <span className="text-sm text-blue-900">{rating}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
-export default function Temp() {
-  // State management
-  const { user } = useAuthContext();
-  const { toast } = useToast();
+export function ImageComparison({
+  original,
+  final,
+}: {
+  original: string;
+  final: string;
+}) {
+  return (
+    <Card className="border-blue-200">
+      <CardHeader>
+        <CardTitle className="text-blue-800">Image Comparison</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="side-by-side" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-blue-100">
+            <TabsTrigger
+              value="side-by-side"
+              className="text-blue-800 data-[state=active]:bg-blue-200"
+            >
+              Side by Side
+            </TabsTrigger>
+            <TabsTrigger
+              value="original"
+              className="text-blue-800 data-[state=active]:bg-blue-200"
+            >
+              Original
+            </TabsTrigger>
+            <TabsTrigger
+              value="final"
+              className="text-blue-800 data-[state=active]:bg-blue-200"
+            >
+              Final
+            </TabsTrigger>
+          </TabsList>
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("date");
-  const [sortDirection, setSortDirection] = useState("desc");
-  const [ratingInProgress, setRatingInProgress] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [openReport, setOpenReport] = useState(false);
-  const [openRate, setOpenRate] = useState(false);
-  const [selectedProjectUserId, setSelectedProjectUserId] = useState<
-    string | null
-  >(null);
-  const [selectedRating, setSelectedRating] = useState(0);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
+          <TabsContent value="side-by-side">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-blue-700">
+                  Original Image
+                </h3>
+
+                <div className="relative aspect-square border border-blue-200 rounded-lg overflow-hidden">
+                  <img
+                    src={original}
+                    alt="Original image"
+                    className="object-contain"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-blue-700">
+                  Final Image
+                </h3>
+                <div className="relative aspect-square border border-blue-200 rounded-lg overflow-hidden">
+                  <img
+                    src={final}
+                    alt="Final image"
+                    className="object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="original">
+            <div className="flex justify-center items-center w-full border border-blue-200 rounded-lg overflow-hidden">
+              <img
+                src={original}
+                alt="Original image"
+                className="object-contain space-y-2 rounded-lg"
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="final">
+            <div className="relative w-full aspect-square border border-blue-200 rounded-lg overflow-hidden">
+              <img src={final} alt="Final image" className="object-contain" />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
-  const projectPerPage = 8;
-  const [startIndex, setStartIndex] = useState(0);
-  const [endIndex, setEndIndex] = useState(projectPerPage);
-  const [currentPageNo, setCurrentPageNo] = useState(1);
-  const [pages, setPages] = useState<number[]>([1]);
+}
 
-  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
-  const [dataURL, setDataURL] = useState(null);
-  const navigate = useNavigate();
-  const [reportData, setReportData] = useState({ title: "", description: "" });
+export function FiltersDisplay({ filters }: { filters: string[] }) {
+  return (
+    <Card className="border-blue-200">
+      <CardHeader>
+        <CardTitle className="text-blue-800">Applied Filters</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {filters.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {filters.map((filter, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200"
+              >
+                {filter}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-blue-700">
+            No filters were applied to this project.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
-  const sortTypes = [
-    "Newest",
-    "Highest Rated",
-    "Most Viewed",
-    "Alphabetical",
-    "Bookmarked",
-  ];
+export function LogsSection({ logs }: { logs: logType[] }) {
+  // Group logs by event type for the chart
+  const eventCounts = logs.reduce((acc, log) => {
+    acc[log.event] = (acc[log.event] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-  // Mock data - replace with actual API call
+  const chartData = Object.entries(eventCounts).map(([event, count]) => ({
+    event,
+    count,
+  }));
+
+  return (
+    <Card className="border-blue-200 h-full">
+      <CardHeader>
+        <CardTitle className="text-blue-800">Activity Logs</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="event" stroke="#1e40af" />
+              <YAxis stroke="#1e40af" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#f8fafc",
+                  borderColor: "#bfdbfe",
+                  borderRadius: "0.5rem",
+                }}
+                itemStyle={{ color: "#1e40af" }}
+                labelStyle={{ color: "#1e3a8a", fontWeight: "bold" }}
+              />
+              <Bar dataKey="count" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="max-h-96 overflow-y-auto">
+          <Table>
+            <TableHeader className="bg-blue-50">
+              <TableRow>
+                <TableHead className="text-blue-800">Time</TableHead>
+                <TableHead className="text-blue-800">Event</TableHead>
+                <TableHead className="text-blue-800">Message</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log, index) => (
+                <TableRow key={index} className="hover:bg-blue-50">
+                  <TableCell className="text-sm text-blue-900">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </TableCell>
+                  <TableCell className="text-sm text-blue-900">
+                    {log.event}
+                  </TableCell>
+                  <TableCell className="text-sm text-blue-900">
+                    {log.message}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function Histograms({
+  original,
+  final,
+  originalShape,
+  finalShape,
+}: {
+  original: string;
+  final: string;
+  originalShape: { width: number; height: number };
+  finalShape: { width: number; height: number };
+}) {
+  type HistogramDataType = {
+    red: { value: number; count: number }[];
+    green: { value: number; count: number }[];
+    blue: { value: number; count: number }[];
+  };
+
+  const [loading, setLoading] = useState(true);
+
+  const [originalImageData, setOriginalImageData] =
+    useState<HistogramDataType | null>(null);
+  const [finalImageData, setFinalImageData] =
+    useState<HistogramDataType | null>(null);
+
   useEffect(() => {
-    // const mockProjects: Project[] = [
-    //   {
-    //     project_id: "1",
-    //     project_name: "Sunset Landscape Edit",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "creative_editor",
-    //     user_id: "101",
-    //     updated_at: new Date("2025-04-01"),
-    //     total_rating: 24,
-    //     rating_count: 6,
-    //     total_views: 142,
-    //   },
-    //   {
-    //     project_id: "2",
-    //     project_name: "Portrait Retouch",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "photo_master",
-    //     user_id: "102",
-    //     updated_at: new Date("2025-04-05"),
-    //     total_rating: 18,
-    //     rating_count: 4,
-    //     total_views: 98,
-    //     user_rating: 4,
-    //   },
-    //   {
-    //     project_id: "3",
-    //     project_name: "Product Photography",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "studio_pro",
-    //     user_id: "103",
-    //     updated_at: new Date("2025-03-28"),
-    //     total_rating: 35,
-    //     rating_count: 7,
-    //     total_views: 210,
-    //   },
-    //   {
-    //     project_id: "4",
-    //     project_name: "Nature Scene Enhancement",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "nature_lover",
-    //     user_id: "104",
-    //     updated_at: new Date("2025-04-08"),
-    //     total_rating: 40,
-    //     rating_count: 8,
-    //     total_views: 175,
-    //   },
-    //   {
-    //     project_id: "5",
-    //     project_name: "Architectural Edit",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "design_architect",
-    //     user_id: "105",
-    //     updated_at: new Date("2025-04-02"),
-    //     total_rating: 27,
-    //     rating_count: 6,
-    //     total_views: 132,
-    //   },
-    //   {
-    //     project_id: "6",
-    //     project_name: "Abstract Art Creation",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "abstract_artist",
-    //     user_id: "106",
-    //     updated_at: new Date("2025-03-25"),
-    //     total_rating: 32,
-    //     rating_count: 8,
-    //     total_views: 156,
-    //   },
-    //   {
-    //     project_id: "9",
-    //     project_name: "Architectural Edit",
-    //     canvas_image_url: "/api/placeholder/400/300",
-    //     username: "design_architect",
-    //     user_id: "105",
-    //     updated_at: new Date("2025-04-02"),
-    //     total_rating: 27,
-    //     rating_count: 6,
-    //     total_views: 132,
-    //   },
-    // ];
+    const getImageHistogramData = async (
+      imageUrl: string
+    ): Promise<{
+      red: { value: number; count: number }[];
+      green: { value: number; count: number }[];
+      blue: { value: number; count: number }[];
+    }> => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = imageUrl;
 
-    const fetchProjects = async () => {
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = rej;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Unable to get canvas context");
+
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      ).data;
+
+      // Using objects to store only existing values
+      const red: Record<number, number> = {};
+      const green: Record<number, number> = {};
+      const blue: Record<number, number> = {};
+
+      for (let i = 0; i < imageData.length; i += 4) {
+        const r = imageData[i];
+        const g = imageData[i + 1];
+        const b = imageData[i + 2];
+
+        red[r] = (red[r] || 0) + 1;
+        green[g] = (green[g] || 0) + 1;
+        blue[b] = (blue[b] || 0) + 1;
+      }
+
+      // Convert to array format and fill missing values if needed
+      const convertToHistogramArray = (channelData: Record<number, number>) => {
+        const result = [];
+        for (let value = 0; value <= 255; value++) {
+          result.push({
+            value,
+            count: channelData[value] || 0,
+          });
+        }
+        return result;
+      };
+
+      return {
+        red: convertToHistogramArray(red),
+        green: convertToHistogramArray(green),
+        blue: convertToHistogramArray(blue),
+      };
+    };
+
+    const getData = async () => {
       try {
-        const response = await apiClient.get("/get_all_projects", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
-          },
-        });
-        const fetchedProjects = response.data.data.projects.map(
-          (project: Project) => ({
-            ...project,
-            created_at: new Date(project.created_at),
-            updated_at: new Date(project.updated_at),
-          })
-        );
+        const [originalData, finalData] = await Promise.all([
+          getImageHistogramData(original),
+          getImageHistogramData(final),
+        ]);
 
-        setProjects(fetchedProjects);
-        setFilteredProjects(fetchedProjects);
-        setPages(calculatePages(fetchedProjects.length));
-      } catch (err) {
-        setError("Failed to fetch projects");
-        console.error(err);
+        setOriginalImageData({
+          red: originalData.red,
+          blue: originalData.blue,
+          green: originalData.green,
+        });
+
+        setFinalImageData({
+          red: finalData.red,
+          blue: finalData.blue,
+          green: finalData.green,
+        });
+      } catch (error) {
+        console.error("Error loading image data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProjects();
-  }, []);
 
-  useEffect(() => {
-    const eIndex = Math.max(currentPageNo * projectPerPage, 0);
-    const sIndex = Math.min(eIndex - projectPerPage, projects.length);
+    getData();
+  }, [original, final]); // Add dependencies here
 
-    setStartIndex(sIndex);
-    setEndIndex(eIndex);
-  }, [currentPageNo]);
-
-  // Handle search input changes
-  useEffect(() => {
-    const filtered = projects.filter(
-      (project) =>
-        project.project_name
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        project.username.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredProjects(filtered);
-    setPages(calculatePages(filtered.length));
-    setCurrentPageNo(1);
-  }, [searchQuery]);
-
-  // Handle sorting changes
-  useEffect(() => {
-    const sorted = [...filteredProjects].sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortBy) {
-        case "date":
-          comparison = a.updated_at.getTime() - b.updated_at.getTime();
-          break;
-        case "rating":
-          const ratingA =
-            a.rating_count > 0 ? a.total_rating / a.rating_count : 0;
-          const ratingB =
-            b.rating_count > 0 ? b.total_rating / b.rating_count : 0;
-          comparison = ratingA - ratingB;
-          break;
-        case "views":
-          comparison = a.total_views - b.total_views;
-          break;
-        case "name":
-          comparison = a.project_name.localeCompare(b.project_name);
-          break;
-        case "bookmarked":
-          comparison = a.total_bookmark - b.total_bookmark;
-          break;
-      }
-
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-
-    setFilteredProjects(sorted);
-  }, [sortBy, sortDirection]);
-
-  const calculatePages = (totalProjects: number) => {
-    const totalPages = Math.ceil(totalProjects / projectPerPage);
-    // console.log(totalProjects);
-    const temp: number[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      temp.push(i);
-    }
-
-    return temp;
-  };
-
-  // Calculate average rating
-  const calculateRating = (total: number, count: number) => {
-    if (count === 0) return 0;
-    return (total / count).toFixed(1);
-  };
-
-  // Handle profile navigation
-  const navigateToProfile = (userId: string) => {
-    // In a real application without react-router, you might do:
-    window.location.href = `/profile/${userId}`;
-    // For this demo, we'll just show an alert
-    alert(`Navigating to profile of user ${userId}`);
-  };
-
-  // Handle download image
-  const downloadImage = async (url: string, projectId: string) => {
-    // Open image in a new tab
-    const newTab = window.open(url, "_blank");
-    if (!newTab) {
-      toast({
-        description: "Failed to open the image in a new tab.",
-        duration: 3000,
-      });
-      return;
-    }
-
-    try {
-      // Send request to update total views in the backend
-      await apiClient.post(
-        "/projects/update_views",
-        { project_id: projectId },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Error updating views:", error);
-    }
-  };
-
-  // Toggle sort direction
-  const toggleSortDirection = () => {
-    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-  };
-
-  //  code for handling image upload
-  const onDrop = useCallback((acceptedFiles) => {
-    acceptedFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        const binaryStr = reader.result;
-        setDataURL(binaryStr);
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  const { getRootProps, acceptedFiles, getInputProps, isDragActive } =
-    useDropzone({
-      onDrop,
-      accept: {
-        "image/jpeg": [".jpg", ".jpeg"],
-        "image/png": [".png"],
-      },
-    });
-
-  const handleImageUpload = (imageUrl: string) => {
-    navigate("/mainpage", { state: { imageUrl } });
-  };
-
-  const changeSortType = (index: number) => {
-    {
-      switch (index) {
-        case 0:
-          setSortBy("date");
-          break;
-        case 1:
-          setSortBy("rating");
-          break;
-        case 2:
-          setSortBy("views");
-          break;
-        case 3:
-          setSortBy("name");
-          break;
-        case 4:
-          setSortBy("bookmarked");
-          break;
-      }
-    }
-  };
-
-  const handleSubmitRating = async () => {
-    if (!selectedProjectId || !selectedRating) {
-      toast({
-        description: "Please select a rating before submitting.",
-        className: "bg-red-500 text-gray-900",
-        duration: 3000,
-      });
-      return;
-    }
-
-    try {
-      const response = await apiClient.post(
-        "/projects/rate",
-        {
-          project_id: selectedProjectId,
-          rating: selectedRating,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
-          },
-        }
-      );
-      toast({
-        description: "Rating submitted successfully!",
-        className: "bg-green-500 text-gray-900",
-        duration: 3000,
-      });
-      setOpenRate(false);
-    } catch (error) {
-      toast({
-        description: "Failed to submit rating.",
-        className: "bg-red-500 text-gray-900",
-        duration: 3000,
-      });
-      console.error(error);
-    }
-  };
-
-  const handleBookmark = async (projectId: string, bookmark: boolean) => {
-    try {
-      const response = await apiClient.post(
-        "/projects/toggle_bookmark", // API endpoint to toggle bookmark
-        {
-          project_id: projectId,
-          bookmark: !bookmark,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
-          },
-        }
-      );
-      toast({
-        description: "Bookmark updated!",
-        className: "bg-green-500 text-gray-900",
-        duration: 3000,
-      });
-      // update the local state to reflect the new bookmark status
-      setFilteredProjects((prevProjects) =>
-        prevProjects.map((project) =>
-          project.project_id === projectId
-            ? { ...project, bookmarked: !project.bookmarked }
-            : project
-        )
-      );
-
-      // Optionally update the local state to reflect the new bookmark status
-      setProjects((prevProjects) =>
-        prevProjects.map((project) =>
-          project.project_id === projectId
-            ? { ...project, bookmarked: !project.bookmarked }
-            : project
-        )
-      );
-    } catch (err) {
-      toast({
-        description: "Failed to update bookmark.",
-        className: "bg-red-500 text-gray-900",
-        duration: 3000,
-      });
-      console.error(err);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { id, value } = e.target;
-    setReportData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleReport = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedProjectId) {
-      toast({ description: "Project ID is missing.", duration: 3000 });
-      return;
-    }
-
-    try {
-      const response = await apiClient.post(
-        "/submit_report",
-        {
-          project_id: selectedProjectId,
-          project_user_id: selectedProjectUserId,
-          title: reportData.title,
-          description: reportData.description,
-          reporter_name: user?.username,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
-          },
-        }
-      );
-      toast({
-        description: "Report submitted successfully!",
-        className: "bg-green-500 text-gray-900",
-        duration: 3000,
-      });
-      setOpenReport(false);
-      setReportData({ title: "", description: "" });
-      setSelectedProjectId(null);
-    } catch (error) {
-      toast({
-        description: "Failed to submit the report.",
-        className: "bg-red-500 text-gray-900",
-        duration: 3000,
-      });
-      console.error(error);
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) return <h1>Loading</h1>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-700 to-blue-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-black opacity-20 z-10"></div>
-          <img
-            src="server/static/67f6dd87270e12fecef8ced0/canvas/345c070f-e3af-41f5-a557-9b58e0f15e76.png"
-            alt="Header Background"
-            className="w-full h-full object-cover"
+    <Card className="border-blue-200">
+      <CardHeader>
+        <CardTitle className="text-blue-800">Image Histograms</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="original" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-blue-100">
+            <TabsTrigger
+              value="original"
+              className="text-blue-800 data-[state=active]:bg-blue-200"
+            >
+              Original Image
+            </TabsTrigger>
+            <TabsTrigger
+              value="final"
+              className="text-blue-800 data-[state=active]:bg-blue-200"
+            >
+              Final Image
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="original">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <HistogramChart
+                  data={originalImageData.red}
+                  color="red"
+                  title="Red Channel"
+                />
+                <HistogramChart
+                  data={originalImageData.green}
+                  color="green"
+                  title="Green Channel"
+                />
+                <HistogramChart
+                  data={originalImageData.blue}
+                  color="blue"
+                  title="Blue Channel"
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="final">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <HistogramChart
+                  data={finalImageData.red}
+                  color="red"
+                  title="Red Channel"
+                />
+                <HistogramChart
+                  data={finalImageData.green}
+                  color="green"
+                  title="Green Channel"
+                />
+                <HistogramChart
+                  data={finalImageData.blue}
+                  color="blue"
+                  title="Blue Channel"
+                />
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function HistogramChart({
+  data,
+  color,
+  title,
+}: {
+  data: { value: number; count: number }[];
+  color: string;
+  title: string;
+}) {
+  // Find the maximum count for normalization
+  const maxCount = Math.max(...data.map((d) => d.count));
+
+  // Create normalized data while preserving original counts
+  const normalizedData = data.map((d) => ({
+    ...d,
+    normalizedCount: d.count / maxCount,
+  }));
+
+  // Calculate statistics
+  const totalPixels = data.reduce((sum, d) => sum + d.count, 0);
+  const mean =
+    data.reduce((sum, d) => sum + d.value * d.count, 0) / totalPixels;
+  const variance =
+    data.reduce((sum, d) => sum + Math.pow(d.value - mean, 2) * d.count, 0) /
+    totalPixels;
+  const std = Math.sqrt(variance);
+  const min = data.find((d) => d.count > 0)?.value ?? 0;
+  const max = [...data].reverse().find((d) => d.count > 0)?.value ?? 0;
+
+  return (
+    <div className="h-80 flex flex-col items">
+      <h3 className="text-sm font-medium text-blue-800 text-center">{title}</h3>
+      <ResponsiveContainer width="100%" height="90%">
+        <BarChart data={normalizedData}>
+          <XAxis
+            dataKey="value"
+            tick={{ fontSize: 10 }}
+            stroke="#1e40af"
+            tickCount={5}
           />
-        </div>
-        <div className="container mx-auto px-4 py-12 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
-              <h1 className="text-4xl font-bold text-white mb-2">
-                Creative Showcase
-              </h1>
-              <p className="text-blue-100 max-w-lg">
-                Discover and explore stunning image edits from our creative
-                community
-              </p>
-            </div>
-            <button
-              className="bg-white text-blue-800 hover:bg-blue-50 py-3 px-6 rounded-lg flex items-center shadow-lg transition-all duration-300 font-medium"
-              onClick={() => setShowLoadingDialog(true)}
-            >
-              <PlusCircle className="mr-2 w-5 h-5" />
-              <span>Create Project</span>
-            </button>
-          </div>
-
-          {/* Integrated Search Bar */}
-          <div className="mt-8 max-w-3xl mx-auto">
-            <div className="relative flex bg-white rounded-full shadow-lg">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-blue-600" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-12 pr-4 py-3 rounded-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Search projects, creators, or techniques..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button
-                className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-full text-sm font-medium ml-2"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filters
-              </button>
-            </div>
-          </div>
+          <YAxis stroke="#1e40af" tick={{ fontSize: 10 }} domain={[0, 1]} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#f8fafc",
+              borderColor: "#bfdbfe",
+              borderRadius: "0.5rem",
+              fontSize: "12px",
+            }}
+            itemStyle={{ color: "#1e40af" }}
+            labelStyle={{ color: "#1e3a8a", fontWeight: "bold" }}
+            formatter={(value: number, name: string, props: any) => [
+              props.payload.count, // Show original count in tooltip
+              "Count",
+            ]}
+          />
+          <Bar dataKey="normalizedCount" fill={color} radius={[2, 2, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="text-xs text-blue-700 mt-2 ml-16">
+        <div className="grid grid-cols-2 gap-x-2 justify-center">
+          <span className="w-20">Min: {min}</span>
+          <span className="w-20">Max: {max}</span>
+          <span className="w-20">Mean: {mean.toFixed(2)}</span>
+          <span className="w-20">Std: {std.toFixed(2)}</span>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Filter Panel (Collapsible) */}
-      <div
-        className={`bg-white border-b border-gray-200 transition-all duration-300 ${
-          showFilters ? "max-h-44" : "max-h-0 overflow-hidden"
-        }`}
-      >
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="font-medium text-gray-700">Sort by:</div>
-            <div className="flex flex-wrap gap-3">
-              {sortTypes.map((option, index) => (
-                <button
-                  key={index}
-                  className={`px-4 py-2 rounded-full text-sm ${
-                    (index === 0 && sortBy === "date") ||
-                    (index === 1 && sortBy === "rating") ||
-                    (index === 2 && sortBy === "views") ||
-                    (index === 3 && sortBy === "name") ||
-                    (index === 4 && sortBy === "Bookmarked")
-                      ? "bg-blue-100 text-blue-800 font-medium"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  onClick={() => changeSortType(index)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-            <div className="ml-auto">
-              <button
-                className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
-                onClick={toggleSortDirection}
-              >
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                {sortDirection === "asc" ? "Ascending" : "Descending"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+export default function Dashboard() {
+  const { projectId } = useParams();
+  const { user } = useAuthContext();
+  const [loading, setLoading] = useState(true);
+  const [project, setProject] = useState<null | projectType>();
 
-      {/* Gallery Content */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Results Count */}
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-medium text-gray-800">
-            {filteredProjects.length && searchQuery.length > 0
-              ? `${filteredProjects.length} projects found`
-              : ""}
-          </h2>
-        </div>
+  // Sort the bar chart data from highest to lowest
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const response = await apiClient.get(`/project_log/${projectId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token}`,
+            Role: `${user?.role}`,
+          },
+        });
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {filteredProjects.slice(startIndex, endIndex).map((project) => (
-            <div
-              key={project.project_id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
-            >
-              {/* Project Image */}
-              <div className="w-full relative">
-                <img
-                  src={project.canvas_image_url}
-                  alt={project.project_name}
-                  className="w-full h-48 object-cover"
-                />
-                <ArrowDownToLine
-                  className="absolute top-2 right-2 z-10 w-6 h-6 p-1 bg-white bg-opacity-75 rounded-full text-blue-700 cursor-pointer hover:bg-opacity-100 transition-all"
-                  onClick={() =>
-                    downloadImage(project.canvas_image_url, project.project_id)
-                  }
-                />
-              </div>
+        console.log(response.data.data);
+        setProject(response.data.data);
+        setLoading(false);
+        // console.log(response.data.data);
+      } catch (err) {
+        console.log("Log fecthing failed", err);
+      }
+    };
+    if (user) fetchLogs();
+  }, [user]);
 
-              {/* Project Content */}
-              <div className="p-4">
-                {/* Title and Rating */}
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-blue-800">
-                    {project.project_name}
-                  </h3>
-                  <div className="flex items-center">
-                    <svg
-                      className="w-4 h-4 text-yellow-500 mr-1"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="text-sm font-medium">
-                      {calculateRating(
-                        project.total_rating,
-                        project.rating_count
-                      )}
-                    </span>
-                  </div>
-                </div>
+  if (loading) return <h1>Loading</h1>;
 
-                {/* Creator and Date */}
-                <div className="flex items-center text-sm text-gray-500 mb-3">
-                  <button
-                    className="hover:text-blue-600 text-left"
-                    onClick={() => navigateToProfile(project.user_id)}
-                  >
-                    By {project.username}
-                  </button>
-                  <span className="mx-2">•</span>
-                  <span>
-                    {project.updated_at.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-
-                {/* Stats and Actions */}
-                <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                  {/* Views */}
-                  <div className="flex items-center text-sm text-gray-500">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                    {project.total_views}
-                  </div>
-
-                  {/* Rate, Bookmark & Report buttons */}
-                  <div className="flex space-x-2">
-                    <button
-                      className="text-blue-600 hover:text-blue-800"
-                      onClick={() => {
-                        setOpenRate(true);
-                        setSelectedProjectId(project.project_id);
-                        setSelectedProjectUserId(project.user_id);
-                      }}
-                    >
-                      <Star className={`w-4 h-4 ${"fill-yellow-500"}`} />
-                    </button>
-
-                    {/* Bookmark button */}
-                    <button
-                      className="text-blue-600 hover:text-blue-800"
-                      onClick={() =>
-                        handleBookmark(project.project_id, project.bookmarked)
-                      }
-                    >
-                      <Bookmark
-                        className={`w-4 h-4 ${
-                          project.bookmarked ? "fill-current " : "fill-none"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      className="text-red-600 hover:text-red-800"
-                      onClick={() => {
-                        setOpenReport(true);
-                        setSelectedProjectId(project.project_id);
-                        setSelectedProjectUserId(project.user_id);
-                      }}
-                    >
-                      <Flag className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
-              </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">
-                No projects found
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your search or filters to find what you're looking
-                for.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Pagination className="flex justify-end p-7">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              className="cursor-pointer"
-              onClick={() => {
-                setCurrentPageNo(Math.max(currentPageNo - 1, 1));
-              }}
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-
-          {pages
-            .slice(
-              Math.max(currentPageNo - 2, 0),
-              Math.min(currentPageNo + 1, pages.length)
-            )
-            .map((pageNo) => (
-              <PaginationItem key={pageNo}>
-                <PaginationLink
-                  onClick={() => setCurrentPageNo(pageNo)}
-                  isActive={pageNo === currentPageNo}
-                  className="cursor-pointer"
-                >
-                  {pageNo}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext
-              className="cursor-pointer"
-              onClick={() => {
-                setCurrentPageNo(Math.min(currentPageNo + 1, pages.length));
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-
-      {/* Footer */}
-      <footer className="bg-blue-900 text-white py-6">
-        <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2025 Creative Showcase. All rights reserved.</p>
-        </div>
-      </footer>
-      <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
-        <DialogTrigger asChild>
-          <button className="hidden"></button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-900 text-center">
-              Upload Image
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex justify-center items-center">
-            <div
-              {...getRootProps()}
-              className="border-2 border-dashed border-blue-400 w-full max-w-sm p-6 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50"
-            >
-              <input {...getInputProps()} />
-              {dataURL ? (
-                <img
-                  src={dataURL}
-                  alt="Uploaded Preview"
-                  className="w-full h-auto rounded-lg shadow-md"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    height="50"
-                    width="50"
-                    className="text-blue-500"
-                  >
-                    <path d="M1 14.5C1 12.1716 2.22429 10.1291 4.06426 8.9812C4.56469 5.044 7.92686 2 12 2C16.0731 2 19.4353 5.044 19.9357 8.9812C21.7757 10.1291 23 12.1716 23 14.5C23 17.9216 20.3562 20.7257 17 20.9811L7 21C3.64378 20.7257 1 17.9216 1 14.5ZM16.8483 18.9868C19.1817 18.8093 21 16.8561 21 14.5C21 12.927 20.1884 11.4962 18.8771 10.6781L18.0714 10.1754L17.9517 9.23338C17.5735 6.25803 15.0288 4 12 4C8.97116 4 6.42647 6.25803 6.0483 9.23338L5.92856 10.1754L5.12288 10.6781C3.81156 11.4962 3 12.927 3 14.5C3 16.8561 4.81833 18.8093 7.1517 18.9868L7.325 19H16.675L16.8483 18.9868ZM13 13V17H11V13H8L12 8L16 13H13Z" />
-                  </svg>
-                  <p className="mt-2 text-sm">
-                    {isDragActive
-                      ? "Drop the files here..."
-                      : "Drag & drop an image here, or click to select one"}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6 flex justify-center">
-            {dataURL && (
-              <button
-                className="custom-button w-32"
-                onClick={() => {
-                  handleImageUpload(dataURL);
-                }}
-              >
-                Upload
-              </button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* Rate Modal */}
-      <Dialog open={openRate} onOpenChange={setOpenRate}>
-        <DialogTrigger asChild>
-          <Button className="hidden"></Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-800 text-center">
-              Rate This Image
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 text-center mt-2">
-              Share your feedback by rating this image! .
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="mt-6">
-            <div className="flex justify-center">
-              <SubmitRating
-                rating={selectedRating} // Default to no rating initially
-                onRatingChange={setSelectedRating}
-              />
-            </div>
-            <div className="mt-4 flex justify-center text-gray-600 text-sm">
-              {selectedRating
-                ? `You selected ${selectedRating} stars!`
-                : "No rating yet."}
-            </div>
-          </div>
-          <DialogFooter className="mt-6">
+  return (
+    <div className="min-h-screen bg-blue-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-blue-800">
+            Project Dashboard
+          </h1>
+          <div className="flex space-x-2">
             <Button
-              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition"
-              onClick={handleSubmitRating}
+              variant="outline"
+              className="bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200"
             >
-              Submit Rating
+              <DownloadIcon className="mr-2 h-4 w-4" />
+              Download Project Data
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* Report Modal */}
-      <Dialog open={openReport} onOpenChange={setOpenReport}>
-        <DialogTrigger asChild>
-          <Button className="hidden"></Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Report to Admin</DialogTitle>
-            <DialogDescription>
-              Please provide the necessary information to help us review the
-              report.
-            </DialogDescription>
-          </DialogHeader>
+            <Button
+              variant="outline"
+              className="bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200"
+            >
+              <DownloadIcon className="mr-2 h-4 w-4" />
+              Download Logs
+            </Button>
+          </div>
+        </div>
 
-          <form onSubmit={handleReport}>
-            <div className="grid gap-4 py-4">
-              <div className="grid w-full gap-1.5">
-                <Label htmlFor="title">Report Title</Label>
-                <Input
-                  placeholder="Write a short title"
-                  id="title"
-                  className="mt-2"
-                  required
-                  value={reportData.title}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="grid w-full gap-1.5">
-                <Label htmlFor="description">Report Description</Label>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <ImageComparison
+              original={project.original_image_url}
+              final={project.canvas_image_url}
+            />
 
-                <Textarea
-                  placeholder="Write a short description"
-                  id="description"
-                  className="mt-2"
-                  required
-                  value={reportData.description}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Submit Report</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            <ProjectInfo project={project} />
+
+            <FiltersDisplay filters={project.filter_names} />
+          </div>
+
+          <div className="space-y-6">
+            <LogsSection logs={project.project_logs} />
+          </div>
+        </div>
+
+        <Histograms
+          original={project.original_image_url}
+          final={project.canvas_image_url}
+          originalShape={project.original_image_shape}
+          finalShape={project.final_image_shape}
+        />
+      </div>
     </div>
   );
 }

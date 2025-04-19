@@ -189,6 +189,12 @@ const AddShape = ({ canvas }: Props) => {
       canvas.off("selection:cleared", handleObjectDeselected);
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
+
+      deactivateAddingLine();
+      deactivateAddingRect();
+      deactivateAddingTriangle();
+      deactivateAddingCircle();
+      setShapeType("");
     };
   }, [canvas]);
 
@@ -424,6 +430,7 @@ const AddShape = ({ canvas }: Props) => {
       canvas.renderAll();
     }
   }, []);
+
   const stopDrawingCircle = useCallback(() => {
     circleRef.current?.setCoords();
     circleRef.current = null;

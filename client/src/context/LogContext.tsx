@@ -8,10 +8,12 @@ type logType = {
   param?: string | null;
   objType?: string | null;
   value?: string | null;
+  timestamp?: string;
 };
 
 type LogContextType = {
   logs: logType[]; // Array of log messages
+  setLogs: (log: logType[]) => void;
   addLog: (log: logType) => void; // Function to add a log message
   clearLogs: () => void; // Clear all logs
 };
@@ -31,9 +33,11 @@ export const LogProvider = ({ children }: { children: ReactNode }) => {
       objType = "",
       value = "",
     } = log;
+    const timestamp = new Date().toISOString();
+
     setLogs((prevLogs) => [
       ...prevLogs,
-      { section, tab, event, message, param, objType, value },
+      { section, tab, event, message, param, objType, value, timestamp },
     ]); // Append new message
   };
 
@@ -42,11 +46,11 @@ export const LogProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // console.log(logs);
+    console.log(logs);
   });
 
   return (
-    <LogContext.Provider value={{ logs, addLog, clearLogs }}>
+    <LogContext.Provider value={{ logs, addLog, clearLogs, setLogs }}>
       {children}
     </LogContext.Provider>
   );

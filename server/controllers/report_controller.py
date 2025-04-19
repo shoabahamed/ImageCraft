@@ -363,22 +363,10 @@ def get_project_log(project_id):
 
         
         if(role == "admin" or user_id in granted_logs):
-            logs = {
-                "project_data": project.get("project_data"),
-                "project_logs": project.get("project_logs"),
-                "original_image_url": project.get("original_image_url"),
-                "canvas_image_url": project.get("canvas_image_url"),
-                "original_image_shape": project.get('original_image_shape'),
-                "final_image_shape": project.get('final_image_shape'),
-                "total_views": project.get('total_views'),
-                "rating": int(project.get('total_rating')) / int(project.get('rating_count')),
-                "total_edits": len(project["project_logs"]),
-                "filter": "Sepia"
-            }
+            project["_id"] = str(project["_id"])  # MongoDB ObjectId needs to be converted to string
             
             
-            
-            return jsonify({"success": True, "message": "Logs returned successfully", "data": logs}), 200
+            return jsonify({"success": True, "message": "Logs returned successfully", "data": project}), 200
         else:
             return jsonify({"success": False, "message": "You do not have necessary access"}), 401
 

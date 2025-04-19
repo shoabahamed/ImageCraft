@@ -9,7 +9,6 @@ import { CanvasObjectsProvider } from "./context/CanvasObjectContext";
 import { LogProvider } from "./context/LogContext";
 import LogsPage from "./pages/LogsPage";
 import LogDashboard from "./pages/LogDashboard";
-import AdminPanel2 from "./pages/Admin2";
 import Temp from "./pages/Temp";
 import UserProfilePage from "./pages/Profile";
 import Gallery from "./pages/Gallery";
@@ -43,7 +42,7 @@ export default function App() {
             />
 
             <Route path="/gallery" element={<Gallery />} />
-            <Route path="/temp" element={<Temp />} />
+            <Route path="/temp/:projectId" element={<Temp />} />
 
             <Route
               path="/admin"
@@ -53,6 +52,7 @@ export default function App() {
               }
             />
 
+            {/* compare page and logspage are redundant */}
             <Route
               path="/admin/compare_img"
               element={

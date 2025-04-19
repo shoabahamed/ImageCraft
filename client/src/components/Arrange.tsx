@@ -78,19 +78,12 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       event: "update",
       message: `rotation value changed from  ${imageRotation} to ${e[0]}`,
       value: `${e[0]}`,
+      objType: "canvas",
     });
 
     setImageRotation(rotationValue);
     image.angle = rotationValue;
     canvas.renderAll();
-
-    addLog({
-      section: "arrange",
-      tab: "flip",
-      event: "update",
-      message: `rotation value changed from  to ${e[0]}`,
-      value: `${e[0]}`,
-    });
 
     handleRenderingFinalDimension();
   };
@@ -100,7 +93,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       section: "arrange",
       tab: "flip",
       event: "reset",
-      message: `image flip set to default`,
+      message: `canvas flip and rotation set to default`,
       param: "rotation",
       objType: "image",
     });

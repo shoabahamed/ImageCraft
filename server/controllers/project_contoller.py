@@ -54,6 +54,8 @@ def save_project():
         download_image_shape = request.form.get('downloadImageShape')
         filter_names = request.form.get("filterNames")
 
+        filter_names = eval(filter_names)
+
         # Parse the JSON strings into Python dictionaries (optional)
         original_image_shape = eval(original_image_shape)
         final_image_shape = eval(final_image_shape)

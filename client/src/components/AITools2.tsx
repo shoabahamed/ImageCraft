@@ -287,7 +287,12 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
               <div className="flex flex-col items-center text-center h-full">
                 <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 rounded-lg overflow-hidden">
                   <img
-                    src={imageUrl} // Get the image URL from FabricImage
+                    src={getCanvasDataUrl(
+                      canvas,
+                      imageRef.current,
+                      false,
+                      true
+                    )} // Get the image URL from FabricImage
                     alt="Fabric Image"
                     className="object-contain w-full h-full"
                   />

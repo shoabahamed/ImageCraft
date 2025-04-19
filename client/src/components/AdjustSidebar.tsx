@@ -120,7 +120,7 @@ const AdjustSidebar = ({
       section: "adjust",
       tab: "color",
       event: "reset",
-      message: `reseted all image color properties `,
+      message: `reseted all image color related properties `,
     });
 
     setBrightnessValue(0);
@@ -167,7 +167,6 @@ const AdjustSidebar = ({
     setEnableInvert(false);
   };
 
-  console.log(Math.random());
   return (
     <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <div className="w-[90%]">
@@ -181,49 +180,126 @@ const AdjustSidebar = ({
             <Button
               variant={`${enableGrayScale ? "default" : "outline"}`}
               className={`w-full text-xs`}
-              onClick={() => setEnableGrayScale(!enableGrayScale)}
+              onClick={() => {
+                const filterName = "gray scale";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableGrayScale
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName} scale filter`,
+                });
+                setEnableGrayScale(!enableGrayScale);
+              }}
             >
               Grayscale
             </Button>
             <Button
               variant={`${enableSepia ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => setEnableSepia(!enableSepia)}
+              onClick={() => {
+                const filterName = "sepia";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableSepia
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableSepia(!enableSepia);
+              }}
             >
               Sepia
             </Button>
             <Button
               variant={`${enableVintage ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => setEnableVintage(!enableVintage)}
+              onClick={() => {
+                const filterName = "vintage";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableVintage
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableVintage(!enableVintage);
+              }}
             >
               Vintage
             </Button>
             <Button
               variant={`${enableKodachrome ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => setEnableKodachrome(!enableKodachrome)}
+              onClick={() => {
+                const filterName = "kodachrome";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableKodachrome
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableKodachrome(!enableKodachrome);
+              }}
             >
               Kodachrome
             </Button>
             <Button
               variant={`${enableTechnicolor ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => setEnableTechnicolor(!enableTechnicolor)}
+              onClick={() => {
+                const filterName = "technicolor";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableTechnicolor
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableTechnicolor(!enableTechnicolor);
+              }}
             >
               Technicolor
             </Button>
             <Button
               variant={`${enableSharpen ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => setEnableSharpen(!enableSharpen)}
+              onClick={() => {
+                const filterName = "sharpen";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableSharpen
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableSharpen(!enableSharpen);
+              }}
             >
               Sharpen
             </Button>
             <Button
               variant={`${enableInvert ? "default" : "outline"}`}
               className="w-full text-xs"
-              onClick={() => setEnableInvert(!enableInvert)}
+              onClick={() => {
+                const filterName = "invert";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableInvert
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableInvert(!enableInvert);
+              }}
             >
               Invert
             </Button>
@@ -241,7 +317,7 @@ const AdjustSidebar = ({
           <CardContent className="w-full">
             {/* test filters start */}
             <CustomSlider
-              sliderName={"Red"}
+              sliderName={"Brightness Red"}
               min={-1}
               max={1}
               sliderValue={redBrightnessValue}
@@ -253,7 +329,7 @@ const AdjustSidebar = ({
             />
 
             <CustomSlider
-              sliderName={"Blue"}
+              sliderName={"Brightness Blue"}
               min={-1}
               max={1}
               sliderValue={blueBrightnessValue}
@@ -264,7 +340,7 @@ const AdjustSidebar = ({
               tab={"color"}
             />
             <CustomSlider
-              sliderName={"Green"}
+              sliderName={"Brightness Green"}
               min={-1}
               max={1}
               sliderValue={greenBrightnessValue}

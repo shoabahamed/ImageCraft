@@ -32,9 +32,11 @@ import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import { BBrightness } from "@/utils/BlueBrightnessFilter";
 import { GBrightness } from "@/utils/GreenBrightnessValue";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
+import { useLogContext } from "@/hooks/useLogContext";
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
+//TODO: I think it would make more sense if we allow the user to grant access to an project to another user through perhaps notification
 
 const override: CSSProperties = {
   borderWidth: "5px",
@@ -42,6 +44,7 @@ const override: CSSProperties = {
 
 const Test = () => {
   const sidebarName = useCommonProps((state) => state.sidebarName);
+  const { setLogs } = useLogContext();
   const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
   const setSidebarName = useCommonProps((state) => state.setSidebarName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
@@ -207,8 +210,6 @@ const Test = () => {
     vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
     mainCanvasRef.current.setViewportTransform(vp);
 
-    console.log(getRotatedBoundingBox(currentImageRef.current));
-
     mainCanvasRef.current.renderAll();
   };
   // the below code is responsible for handling canvas and image loading
@@ -231,13 +232,11 @@ const Test = () => {
         height: containerHeight,
       });
 
-      initCanvas.backgroundColor = "#fff";
+      initCanvas.backgroundColor = "#000";
 
       const savedData = localStorage.getItem("project_data");
-      console.log(JSON.stringify(savedData));
 
       if (savedData) {
-        console.log("before loading");
         const finalImageShape: { width: number; height: number } = JSON.parse(
           localStorage.getItem("final_image_shape")!
         );
@@ -246,9 +245,9 @@ const Test = () => {
         const originalImageShape: { width: number; height: number } =
           JSON.parse(localStorage.getItem("original_image_shape")!);
 
-        const filterNames = JSON.parse(
-          JSON.parse(localStorage.getItem("filter_names")!)
-        );
+        const filterNames = JSON.parse(localStorage.getItem("filter_names")!);
+        const project_logs = JSON.parse(localStorage.getItem("project_logs"));
+
         console.log(filterNames);
 
         const projectName = localStorage.getItem("project_name");
@@ -296,8 +295,6 @@ const Test = () => {
               .find((obj) => obj.name?.startsWith("Frame"));
 
             if (imageObject) {
-              console.log(imageObject);
-
               // @ts-ignore
               imageObject.crossOrigin = "anonymous";
 
@@ -315,6 +312,8 @@ const Test = () => {
                 imageWidth: finalImageShape.width,
                 imageHeight: finalImageShape.height,
               });
+
+              setLogs(project_logs);
 
               initCanvas.setDimensions({
                 width: containerWidth,
@@ -374,7 +373,6 @@ const Test = () => {
             setFlipY(imageObject.flipY);
 
             initCanvas.renderAll();
-            console.log("sdjf");
 
             canvasIdRef.current = localStorage.getItem("canvasId")!;
             localStorage.removeItem("project_data");

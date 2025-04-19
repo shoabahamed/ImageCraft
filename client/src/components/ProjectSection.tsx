@@ -14,6 +14,8 @@ import { ArrowDownToLine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 
+// TODO: I think I need to learn more about types usage when recieving and sending data between front end backend
+
 interface Project {
   _id: string;
   user_id: string;
@@ -21,7 +23,7 @@ interface Project {
   project_id: string;
   username: string;
   project_data: object;
-  project_logs: string;
+  project_logs: object;
   original_image_url: string;
   canvas_image_url: string;
   bookmarked: boolean;
@@ -97,6 +99,7 @@ const ProjectSection = ({
             Authorization: `Bearer ${user?.token}`,
           },
         });
+
         const fetchedProjects = response.data.data.projects.map(
           (project: Project) => ({
             ...project,
@@ -246,7 +249,7 @@ const ProjectSection = ({
   const goToMainPage = (
     project_id: string,
     project_data: Object,
-    project_logs: string,
+    project_logs: Object,
     original_image_shape: object,
     final_image_shape: object,
     download_image_shape: object,
@@ -256,7 +259,7 @@ const ProjectSection = ({
   ) => {
     localStorage.setItem("CanvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
-    localStorage.setItem("project_logs", project_logs);
+    localStorage.setItem("project_logs", JSON.stringify(project_logs));
     localStorage.setItem("project_name", project_name);
 
     localStorage.setItem(

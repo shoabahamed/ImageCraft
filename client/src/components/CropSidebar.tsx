@@ -108,7 +108,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
       //   image.clipPath = null; // Remove the clipping path
       // }
       setSelectedObject(null);
-      console.log(image.clipPath);
     };
 
     const handleObjectCreated = () => {
@@ -116,25 +115,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
       if (activeObject) {
         setSelectedObject(activeObject);
 
-        // if (activeObject.cropRect != undefined) {
-        // const newWidth = Math.floor(
-        //   activeObject.width! * activeObject.scaleX!
-        // );
-        // const newHeight = Math.floor(
-        //   activeObject.height! * activeObject.scaleY!
-        // );
-
-        // setCropWidth(newWidth.toString());
-        // setCropHeight(newHeight.toString());
-        // }
-      }
-    };
-
-    const handleObjectUpdated = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        // const objectName = activeObject.type || "Unknown Object";
-        setSelectedObject(activeObject);
         // if (activeObject.cropRect != undefined) {
         // const newWidth = Math.floor(
         //   activeObject.width! * activeObject.scaleX!
@@ -199,10 +179,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
     };
 
     canvas.on("selection:created", handleObjectCreated);
-    canvas.on("selection:updated", handleObjectUpdated);
     canvas.on("selection:cleared", handleObjectCleared);
-    canvas.on("object:modified", handleObjectModified);
-    canvas.on("object:scaling", handleObjectScaled);
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
 
@@ -224,15 +201,17 @@ const CropSidebar = ({ canvas, image }: Props) => {
           }
         });
         canvas.renderAll();
+      } else {
+        canvas.discardActiveObject();
+        setSelectedObject(null);
+
+        canvas.requestRenderAll();
       }
 
       canvas.off("selection:created", handleObjectCreated);
-      canvas.off("selection:updated", handleObjectUpdated);
       canvas.off("selection:cleared", handleObjectCleared);
-      canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
       canvas.off("object:modified", handleObjectModified);
-      canvas.off("object:scaling", handleObjectScaled);
     };
   }, [canvas]);
 
@@ -299,7 +278,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
         section: "crop&cut",
         tab: "cut",
         event: "reset",
-        message: `removed ${frameObject.type} cut from image`,
+        message: `removed clipping and deleted ${frameObject.type} object`,
         objType: frameObject.type,
       });
 

@@ -37,6 +37,7 @@ import {
   isBase64,
   urlToBase64,
 } from "@/utils/commonFunctions";
+import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 
 // TODO: saving canvas when style transfer has been done
 // TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
@@ -70,6 +71,9 @@ const Footer = ({
     finalImageDimensions,
     originalImageDimensions,
     downloadImageDimensions,
+    setDownloadImageDimensions,
+    setFinalImageDimensions,
+
     loadedFromSaved,
   } = useCanvasObjects();
   const { user } = useAuthContext();
@@ -89,6 +93,9 @@ const Footer = ({
     (state) => state.setShowUpdateButton
   );
   const resetFilters = useAdjustStore((state) => state.resetFilters);
+  const setFlipY = useArrangeStore((state) => state.setFlipY);
+  const setFlipX = useArrangeStore((state) => state.setFlipX);
+  const setImageRotation = useArrangeStore((state) => state.setImageRotation);
 
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [dataURL, setDataURL] = useState(null);
@@ -179,7 +186,7 @@ const Footer = ({
       });
 
       // json data
-      const canvasJSON = canvas.toObject(["name"]);
+      const canvasJSON = canvas.toObject(["name", "isUpper", "id"]);
       let mainImageSrc = canvasJSON.objects[0].src;
       canvasJSON.objects[0].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
 
@@ -372,6 +379,9 @@ const Footer = ({
       ) {
         section = "shape";
         tab = "shape";
+      } else {
+        section = "text";
+        tab = "text";
       }
 
       addLog({
@@ -409,6 +419,64 @@ const Footer = ({
     canvas.setZoom(newZoomValue);
   };
 
+  const handleRestore = () => {
+    // removing all objects from the canvas
+
+    canvas.getObjects().map((obj) => {
+      if (obj.type.toLowerCase() !== "image") canvas.remove(obj);
+    });
+
+    // removing all filters
+    resetFilters();
+
+    // restoring the original image
+    FabricImage.fromURL(imageUrl).then((img) => {
+      if (!img || !image) return;
+      image.setElement(img.getElement());
+
+      // reset the scale to 1
+      image.scaleX = 1;
+      image.scaleY = 1;
+
+      // reset the flip to default
+      image.flipX = false;
+      image.flipY = false;
+
+      // reset image rotation to default 0
+      image.angle = 0;
+      setImageRotation(0);
+
+      // remove clippath
+      image.clipPath = null;
+
+      // reset the flipping in zustand so that it is reflected in ui
+      setFlipX(false);
+      setFlipY(false);
+
+      // reset the final dimension to images original dimension
+      setFinalImageDimensions({
+        imageWidth: img.width,
+        imageHeight: img.height,
+      });
+
+      setDownloadImageDimensions({
+        imageWidth: img.width,
+        imageHeight: img.height,
+      });
+
+      // Refresh canvas
+      image.setCoords();
+      canvas.requestRenderAll();
+    });
+
+    addLog({
+      section: "canvas",
+      tab: "canvas",
+      event: "reset",
+      message: `reseted whole canvas `,
+    });
+  };
+
   return (
     <div className="flex w-full items-center justify-between rounded-none border-slate-800 border-t-2 gap-4">
       <div className="px-2 flex items-center gap-2">
@@ -431,12 +499,7 @@ const Footer = ({
           icon={<RotateCcw />}
           iconName={"Restore"}
           handleClick={() => {
-            // canvas.remove(...canvas.getObjects());
-            // console.log(image.toObject());
-            // canvas.add(backupImage);
-            resetFilters();
-            canvas.renderAll();
-            // canvas.add()
+            handleRestore();
           }}
         />
         <IconComponent

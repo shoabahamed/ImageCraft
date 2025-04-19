@@ -176,6 +176,9 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
 
 
 
+
+
+
 export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert}
 
 

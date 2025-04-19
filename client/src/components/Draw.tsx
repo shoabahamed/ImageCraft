@@ -78,6 +78,10 @@ const Draw = ({ canvas }: DrawProps) => {
         canvas.isDrawingMode = false;
       }
     }
+
+    return () => {
+      canvas.isDrawingMode = false;
+    };
   }, [canvas, brushType, brushColor, brushSize]);
 
   const clearBrushStrokes = () => {

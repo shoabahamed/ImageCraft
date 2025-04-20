@@ -22,11 +22,13 @@ def auth_middleware():
             token_value = token_parts[1]
             payload = jwt.decode(token_value, os.getenv("JWT_SECRET"), algorithms=["HS256"])
             user_id = payload.get("_id")
+            role = payload.get('role')
             if not user_id:
                 return jsonify({"success": False, "message": "Invalid token payload"}), 401
 
             # Attach `_id` to `g` for downstream use
             g._id = user_id
+            g.role = role
 
         except jwt.ExpiredSignatureError:
             return jsonify({"success": False, "message": "Token has expired"}), 401

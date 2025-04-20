@@ -623,7 +623,6 @@ export default function LogDashboard() {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user?.token}`,
-            Role: `${user?.role}`,
           },
         });
 

@@ -351,7 +351,7 @@ def send_message():
 
 def get_project_log(project_id):
     try:
-        role = request.headers.get("Role")
+        role = g.role
         user_id = g._id
         # project_id = request.args.get("project_id")
         project = projects_collection.find_one({"project_id": project_id})
@@ -360,15 +360,13 @@ def get_project_log(project_id):
             granted_logs = []
         
         
-
-        
-        if(role == "admin" or user_id in granted_logs):
+        if(role.lower() == "admin" or user_id in granted_logs):
             project["_id"] = str(project["_id"])  # MongoDB ObjectId needs to be converted to string
             
             
             return jsonify({"success": True, "message": "Logs returned successfully", "data": project}), 200
         else:
-            return jsonify({"success": False, "message": "You do not have necessary access"}), 401
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
 
         
     except Exception as e:
@@ -439,9 +437,9 @@ def delete_style_img(image_id):
 # handle users from admin
 def get_all_users():
     try:
-        users = list(users_collection.find())
-        role = request.headers.get("Role")
-        if(role.lower() == 'admin'):
+        users = list(users_collection.find({"role": "user"}))
+        role = g.role
+        if(role.lower() == 'admin' or role.lower() == 'super admin'):
             formatted_users = [
                 {
                     "user_id": str(user["_id"]),
@@ -453,7 +451,7 @@ def get_all_users():
             ]
             return jsonify({"success": True, "data": formatted_users}), 200
         else:
-            return jsonify({"success": True, "data": []}), 200
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
         
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
@@ -468,7 +466,7 @@ def send_notice():
         
         title = data['title']
         message = data['message']
-        role = request.headers.get("Role")
+        role = g.role
         
         
         if role.lower() == 'admin':
@@ -476,7 +474,7 @@ def send_notice():
             notice_collection.insert_one({"admin_id": admin_id, "user_id":user_id, "title": title, "message": message,  "created_at": datetime.datetime.utcnow()})
             return jsonify({"success": True, "message": "Message sent successfully"}), 200
         else:
-            return jsonify({"success": False, "message": "Unauthorized access"}), 200
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
     
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
@@ -513,7 +511,7 @@ def get_user_notices(user_id):
 
 
 def delete_user(user_id):
-    role = request.headers.get("Role")
+    role = g.role
     try:
         if role.lower() == 'admin':
             # delete user
@@ -534,7 +532,7 @@ def delete_user(user_id):
         
 
         else:
-            return jsonify({"success": False, "message": "User deletion failed you do not have enough credential"}), 200
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
 
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

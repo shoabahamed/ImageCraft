@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import SubmitRating from "./SubmitRating";
+import NewProjectBox from "./NewProjectBox";
 
 interface Project {
   _id: string;
@@ -46,16 +47,9 @@ interface Project {
   updated_at: Date;
 }
 
-const BookmarkSection = ({
-  userId,
-  setShowLoadingDialog,
-}: {
-  userId: string;
-  setShowLoadingDialog: (value: boolean) => void;
-}) => {
+const BookmarkSection = ({ userId }: { userId: string }) => {
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -346,18 +340,9 @@ const BookmarkSection = ({
           </div>
         </div>
 
-        <button
-          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onClick={() => setShowLoadingDialog(true)}
-        >
-          Create Project
-        </button>
+        <NewProjectBox />
       </div>
-      {filteredProjects.length < 1 && (
-        <h1 className="flex justify-center items-center text-3xl text-red-500">
-          No bookmarks found
-        </h1>
-      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.slice(startIndex, endIndex).map((project) => (
           <div
@@ -498,6 +483,34 @@ const BookmarkSection = ({
           </div>
         ))}
       </div>
+
+      {/* Empty State */}
+      {filteredProjects.length === 0 && (
+        <div className="text-center py-12">
+          <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">
+              No projects found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try adjusting your search or filters to find what you're looking
+              for.
+            </p>
+          </div>
+        </div>
+      )}
       <Pagination className="flex justify-end p-7">
         <PaginationContent>
           <PaginationItem>

@@ -23,7 +23,7 @@ export default function App() {
 
   return (
     <div>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -42,7 +42,7 @@ export default function App() {
             />
 
             <Route path="/gallery" element={<Gallery />} />
-            <Route path="/temp/:projectId" element={<Temp />} />
+            <Route path="/temp" element={<Temp />} />
 
             <Route
               path="/admin"
@@ -50,19 +50,6 @@ export default function App() {
                 user && user.role === "admin" ? <AdminPanel /> : <Home />
                 // user && user.role === "admin" ? <AdminPanel2 /> : <Home />
               }
-            />
-
-            {/* compare page and logspage are redundant */}
-            <Route
-              path="/admin/compare_img"
-              element={
-                user && user.role === "admin" ? <ComparePage /> : <Home />
-              }
-            />
-
-            <Route
-              path="/admin/view_logs"
-              element={user && user.role === "admin" ? <LogsPage /> : <Home />}
             />
 
             <Route

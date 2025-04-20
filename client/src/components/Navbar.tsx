@@ -1,23 +1,43 @@
-// import { ModeToggle } from "./ui/mode-toggle";
-import { DialogTrigger } from "@radix-ui/react-dialog";
+import { useEffect, useState } from "react";
+import {
+  Moon,
+  Sun,
+  Menu,
+  LogOut,
+  User,
+  Home,
+  Camera,
+  Image,
+} from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "./ui/theme-provider";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-
-import { Button } from "@/components/ui/button";
-
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Input } from "@/components/ui/input";
 import { z } from "zod";
-
-import axios from "axios";
 import apiClient from "@/utils/appClient";
-
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -26,11 +46,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuthContext } from "@/hooks/useAuthContext";
-import { Link, useNavigate } from "react-router-dom";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import axios from "axios";
 
 const signupformSchema = z.object({
   username: z.string().min(2, {
@@ -55,14 +71,15 @@ const loginformSchema = z.object({
   }),
 });
 
-const Navbar = () => {
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+// Main Navbar Component
+export default function Navbar() {
+  const { setTheme } = useTheme();
   const { user, dispatch } = useAuthContext();
-  const navigate = useNavigate();
-
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     // Parse the query parameters from the URL
@@ -72,10 +89,11 @@ const Navbar = () => {
     const role = urlParams.get("role");
     const username = urlParams.get("username");
     const userId = urlParams.get("userId");
+    const imageUrl = urlParams.get("image_url");
 
     // If email and token are present, store them and clear the query string
     if (email && token && role && username) {
-      const userData = { email, token, role, username, userId };
+      const userData = { email, token, role, username, userId, imageUrl };
       localStorage.setItem("user", JSON.stringify(userData));
       dispatch({ type: "LOGIN", payload: userData });
 
@@ -109,7 +127,7 @@ const Navbar = () => {
     },
   });
 
-  async function handleSignUp(values: z.infer<typeof signupformSchema>) {
+  const handleSignUp = async (values: z.infer<typeof signupformSchema>) => {
     try {
       // Call the signup API endpoint
       const response = await apiClient.post("/signup", {
@@ -120,8 +138,17 @@ const Navbar = () => {
 
       if (response.data.success) {
         console.log("Signup successful:", response.data.data);
-        localStorage.setItem("user", JSON.stringify(response.data.data));
-        dispatch({ type: "LOGIN", payload: response.data.data });
+        const {
+          email,
+          token,
+          role,
+          username,
+          userId,
+          image_url: imageUrl,
+        } = response.data.data;
+        const userData = { email, token, role, username, userId, imageUrl };
+        localStorage.setItem("user", JSON.stringify(userData));
+        dispatch({ type: "LOGIN", payload: userData });
         toast({
           description: "Sign up Successfull.",
           className: "bg-green-500 text-gray-900",
@@ -154,9 +181,9 @@ const Navbar = () => {
     }
 
     setIsSignUpOpen(false);
-  }
+  };
 
-  async function handleLogIn(values: z.infer<typeof loginformSchema>) {
+  const handleLogIn = async (values: z.infer<typeof loginformSchema>) => {
     try {
       // Call the signup API endpoint
       const response = await apiClient.post("/login", {
@@ -166,8 +193,18 @@ const Navbar = () => {
 
       if (response.data.success) {
         console.log("Login successful:", response.data.data);
-        localStorage.setItem("user", JSON.stringify(response.data.data));
-        dispatch({ type: "LOGIN", payload: response.data.data });
+        const {
+          email,
+          token,
+          role,
+          username,
+          userId,
+          image_url: imageUrl,
+        } = response.data.data;
+        const userData = { email, token, role, username, userId, imageUrl };
+        localStorage.setItem("user", JSON.stringify(userData));
+
+        dispatch({ type: "LOGIN", payload: userData });
         toast({
           description: "Log in Successfull.",
           className: "bg-green-500 text-gray-900",
@@ -203,7 +240,7 @@ const Navbar = () => {
     }
 
     setIsLoginOpen(false);
-  }
+  };
 
   async function handleGoogleLogIn() {
     try {
@@ -247,71 +284,208 @@ const Navbar = () => {
     navigate("/");
   };
 
-  const navigateToGallery = () => {
-    navigate("/gallery");
-  };
+  const navItems = [
+    { name: "Home", href: "/", icon: Home },
+    { name: "Gallery", href: "/gallery", icon: Image },
+    {
+      name: "Profile",
+      href: `/profile/${user?.userId}`,
+      icon: User,
+      protected: true,
+    },
+  ];
+
+  console.log(user);
 
   return (
-    <nav className="w-full pt-3">
-      <div className="flex items-center justify-between mx-3 border-b-2 border-slate-300 pb-3">
-        <div
-          className="flex items-center space-x-2 cursor-pointer"
-          onClick={() => navigate("/")}
-        >
-          <p className="text-3xl font-bold italic">StyleForge</p>
-        </div>
-        <div className="flex gap-9 items-center">
-          {user ? (
-            <>
-              <Link
-                to="/"
-                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
-      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
-              >
-                Home
-              </Link>
-              <Link
-                to="/gallery"
-                className="relative text-gray-400 font-medium transition-all duration-200 hover:text-white 
-      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full"
-              >
-                Gallery
-              </Link>
+    <nav className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          {/* Logo and site name */}
+          <div className="flex items-center">
+            <a href="/" className="flex-shrink-0 flex items-center">
+              <div className="flex items-center">
+                <Camera className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-300">
+                  Image Craft
+                </span>
+              </div>
+            </a>
+          </div>
 
-              <Link
-                to={`/profile/${user.userId}`}
-                className="relative text-gray-500 font-medium transition-all duration-200 
-      before:content-[''] before:absolute before:left-0 before:bottom-0 before:h-[2px] before:w-0 before:bg-gradient-to-r before:from-blue-300 before:to-cyan-300 before:rounded-full before:transition-all before:duration-300 hover:before:w-full hover:text-black"
-              >
-                Profile
-              </Link>
+          {/* Right side items */}
+          <div className="flex items-center space-x-2">
+            {/* Theme toggle */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-              <Button
-                size={"sm"}
-                onClick={handleLogOut}
-                className="custom-delete-button"
-              >
-                Log Out
-              </Button>
-            </>
-          ) : (
+            {/* User controls */}
+            {user ? (
+              <div className="flex items-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="rounded-full p-0 h-9 w-9 overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                      aria-label="User menu"
+                    >
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage
+                          src={user.imageUrl}
+                          alt={user.username}
+                          className="object-cover"
+                        />
+
+                        <AvatarFallback className="bg-blue-500 text-white">
+                          {user.username.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 shadow-lg rounded-lg"
+                  >
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {user.username}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {user?.email || "user@example.com"}
+                      </p>
+                    </div>
+
+                    {navItems.map((item) =>
+                      !item.protected || user ? (
+                        <DropdownMenuItem
+                          key={item.name}
+                          className="cursor-pointer flex items-center hover:bg-gray-100 dark:hover:bg-gray-900 px-4 py-2"
+                          asChild
+                        >
+                          <a href={item.href}>
+                            <item.icon className="mr-2 h-4 w-4" />
+                            <span>{item.name}</span>
+                          </a>
+                        </DropdownMenuItem>
+                      ) : null
+                    )}
+
+                    <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                    <DropdownMenuItem
+                      className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer flex items-center px-4 py-2"
+                      onClick={handleLogOut}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <>
+                <div className="hidden md:flex space-x-3">
+                  <Button
+                    variant="ghost"
+                    className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => setIsLoginOpen(true)}
+                  >
+                    Log in
+                  </Button>
+
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white "
+                    onClick={() => setIsSignUpOpen(true)}
+                  >
+                    Sign up
+                  </Button>
+                </div>
+
+                {/* Mobile menu button - only shown when not logged in */}
+                <div className="md:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                        aria-label="Menu"
+                      >
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-48 mt-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 shadow-lg rounded-lg"
+                    >
+                      <DropdownMenuItem asChild>
+                        <a
+                          href="/"
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        >
+                          <Home className="mr-2 h-4 w-4" />
+                          Home
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                      <DropdownMenuItem asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start font-normal text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => setIsLoginOpen(true)}
+                        >
+                          Log in
+                        </Button>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Button
+                          className="w-full justify-start bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-normal"
+                          onClick={() => setIsSignUpOpen(true)}
+                        >
+                          Sign up
+                        </Button>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </>
+            )}
+
             <>
               <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
                 <DialogTrigger asChild>
-                  <p className="cursor-pointer text-gray-300 hover:text-white transition-colors duration-200">
+                  <p className="hidden cursor-pointer text-gray-300 hover:text-white transition-colors duration-200">
                     SignIn
                   </p>
                 </DialogTrigger>
-                {/* sm:w-[60%] md:w-[30%] */}
-                <DialogContent className="">
+                <DialogContent className="sm:max-w-[425px] bg-background">
                   <DialogHeader>
-                    <DialogTitle className="text-2xl">Login</DialogTitle>
-                    <DialogDescription>
-                      Enter your email below to login to your account
+                    <DialogTitle className="text-2xl font-bold text-foreground">
+                      Welcome Back
+                    </DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Sign in to your account to continue
                     </DialogDescription>
                   </DialogHeader>
 
-                  <div>
+                  <div className="space-y-6">
                     <Form {...loginform}>
                       <form
                         onSubmit={loginform.handleSubmit(handleLogIn)}
@@ -322,15 +496,18 @@ const Navbar = () => {
                             control={loginform.control}
                             name="email"
                             render={({ field }) => (
-                              <FormItem className="grid gap-2">
-                                <FormLabel>Email</FormLabel>
+                              <FormItem className="space-y-2">
+                                <FormLabel className="text-foreground">
+                                  Email
+                                </FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="john@gmail.com"
+                                    placeholder="Enter your email"
+                                    className="bg-background border-input"
                                     {...field}
                                   />
                                 </FormControl>
-                                <FormMessage />
+                                <FormMessage className="text-destructive" />
                               </FormItem>
                             )}
                           />
@@ -338,63 +515,93 @@ const Navbar = () => {
                             control={loginform.control}
                             name="password"
                             render={({ field }) => (
-                              <FormItem className="grid gap-2">
-                                <FormLabel>Password</FormLabel>
+                              <FormItem className="space-y-2">
+                                <FormLabel className="text-foreground">
+                                  Password
+                                </FormLabel>
                                 <FormControl>
-                                  <div className=" relative">
+                                  <div className="relative">
                                     <Input
-                                      placeholder="123456"
+                                      placeholder="Enter your password"
+                                      className="bg-background border-input"
                                       {...field}
                                       type={showPassword ? "text" : "password"}
                                     />
-
                                     <button
                                       type="button"
-                                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                       onClick={() =>
                                         setShowPassword((prev) => !prev)
                                       }
                                     >
                                       {showPassword ? (
-                                        <EyeIcon className="w-5 h-5 text-gray-500" />
+                                        <EyeIcon className="w-5 h-5" />
                                       ) : (
-                                        <EyeOffIcon className="w-5 h-5 text-gray-500" />
+                                        <EyeOffIcon className="w-5 h-5" />
                                       )}
                                     </button>
                                   </div>
                                 </FormControl>
-                                <FormMessage />
+                                <FormMessage className="text-destructive" />
                               </FormItem>
                             )}
                           />
-                          <Button className="w-full custom-button">
-                            LogIn
+                          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                            Sign In
                           </Button>
                         </div>
                       </form>
                     </Form>
 
-                    <div className="mt-4">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleGoogleLogIn}
-                      >
-                        Login with Google
-                      </Button>
-                      <div className="mt-4 text-center text-sm">
-                        Don&apos;t have an account?{" "}
-                        <button
-                          type="button"
-                          className="underline underline-offset-4"
-                          onClick={() => {
-                            setIsLoginOpen(false);
-                            setIsSignUpOpen(true);
-                          }}
-                        >
-                          Sign Up
-                        </button>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border" />
                       </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full border-input hover:bg-accent hover:text-accent-foreground"
+                      onClick={handleGoogleLogIn}
+                    >
+                      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                        <path
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          fill="#4285F4"
+                        />
+                        <path
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          fill="#34A853"
+                        />
+                        <path
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                          fill="#FBBC05"
+                        />
+                        <path
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                          fill="#EA4335"
+                        />
+                      </svg>
+                      Continue with Google
+                    </Button>
+
+                    <div className="text-center text-sm text-muted-foreground">
+                      Don't have an account?{" "}
+                      <button
+                        type="button"
+                        className="font-medium text-primary hover:underline"
+                        onClick={() => {
+                          setIsLoginOpen(false);
+                          setIsSignUpOpen(true);
+                        }}
+                      >
+                        Sign up
+                      </button>
                     </div>
                   </div>
                 </DialogContent>
@@ -402,18 +609,21 @@ const Navbar = () => {
 
               <Dialog open={isSignUpOpen} onOpenChange={setIsSignUpOpen}>
                 <DialogTrigger asChild>
-                  <Button className="rounded-sm" variant={"outline"}>
+                  <Button className="rounded-sm hidden" variant={"outline"}>
                     Getting Started
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[425px] bg-background">
                   <DialogHeader>
-                    <DialogTitle className="text-2xl">SignUp</DialogTitle>
-                    <DialogDescription>
-                      Enter your email below to create a account
+                    <DialogTitle className="text-2xl font-bold text-foreground">
+                      Create an Account
+                    </DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Join us and start your journey
                     </DialogDescription>
                   </DialogHeader>
-                  <div>
+
+                  <div className="space-y-6">
                     <Form {...signupform}>
                       <form
                         onSubmit={signupform.handleSubmit(handleSignUp)}
@@ -424,12 +634,18 @@ const Navbar = () => {
                             control={signupform.control}
                             name="username"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Username</FormLabel>
+                              <FormItem className="space-y-2">
+                                <FormLabel className="text-foreground">
+                                  Username
+                                </FormLabel>
                                 <FormControl>
-                                  <Input placeholder="John Doe" {...field} />
+                                  <Input
+                                    placeholder="Choose a username"
+                                    className="bg-background border-input"
+                                    {...field}
+                                  />
                                 </FormControl>
-                                <FormMessage />
+                                <FormMessage className="text-destructive" />
                               </FormItem>
                             )}
                           />
@@ -437,15 +653,18 @@ const Navbar = () => {
                             control={signupform.control}
                             name="email"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email</FormLabel>
+                              <FormItem className="space-y-2">
+                                <FormLabel className="text-foreground">
+                                  Email
+                                </FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="john@gmail.com"
+                                    placeholder="Enter your email"
+                                    className="bg-background border-input"
                                     {...field}
                                   />
                                 </FormControl>
-                                <FormMessage />
+                                <FormMessage className="text-destructive" />
                               </FormItem>
                             )}
                           />
@@ -453,72 +672,101 @@ const Navbar = () => {
                             control={signupform.control}
                             name="password"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Password</FormLabel>
+                              <FormItem className="space-y-2">
+                                <FormLabel className="text-foreground">
+                                  Password
+                                </FormLabel>
                                 <FormControl>
                                   <div className="relative">
                                     <Input
-                                      placeholder="123456"
+                                      placeholder="Create a password"
+                                      className="bg-background border-input"
                                       {...field}
                                       type={showPassword ? "text" : "password"}
                                     />
                                     <button
                                       type="button"
-                                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                       onClick={() =>
                                         setShowPassword((prev) => !prev)
                                       }
                                     >
                                       {showPassword ? (
-                                        <EyeIcon className="w-5 h-5 text-gray-500" />
+                                        <EyeIcon className="w-5 h-5" />
                                       ) : (
-                                        <EyeOffIcon className="w-5 h-5 text-gray-500" />
+                                        <EyeOffIcon className="w-5 h-5" />
                                       )}
                                     </button>
                                   </div>
                                 </FormControl>
-                                <FormMessage />
+                                <FormMessage className="text-destructive" />
                               </FormItem>
                             )}
                           />
-                          <Button className="w-full custom-button">
-                            SignUp
+                          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                            Create Account
                           </Button>
                         </div>
                       </form>
                     </Form>
 
-                    <div className="mt-4">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleGoogleLogIn}
-                      >
-                        Signup with Google
-                      </Button>
-                      <div className="mt-4 text-center text-sm">
-                        Already have an account?{" "}
-                        <button
-                          type="button"
-                          className="underline underline-offset-4"
-                          onClick={() => {
-                            setIsSignUpOpen(false);
-                            setIsLoginOpen(true);
-                          }}
-                        >
-                          Login
-                        </button>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border" />
                       </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full border-input hover:bg-accent hover:text-accent-foreground"
+                      onClick={handleGoogleLogIn}
+                    >
+                      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                        <path
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          fill="#4285F4"
+                        />
+                        <path
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          fill="#34A853"
+                        />
+                        <path
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                          fill="#FBBC05"
+                        />
+                        <path
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                          fill="#EA4335"
+                        />
+                      </svg>
+                      Continue with Google
+                    </Button>
+
+                    <div className="text-center text-sm text-muted-foreground">
+                      Already have an account?{" "}
+                      <button
+                        type="button"
+                        className="font-medium text-primary hover:underline"
+                        onClick={() => {
+                          setIsSignUpOpen(false);
+                          setIsLoginOpen(true);
+                        }}
+                      >
+                        Sign in
+                      </button>
                     </div>
                   </div>
                 </DialogContent>
               </Dialog>
             </>
-          )}
+          </div>
         </div>
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

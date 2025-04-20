@@ -393,72 +393,74 @@ const Test = () => {
           console.error("Failed to load canvas data:", error);
         }
       } else {
-        fabric.FabricImage.fromURL(imageUrl).then(async (img) => {
-          const imageWidth = img.width ?? 1;
-          const imageHeight = img.height ?? 1;
+        fabric.FabricImage.fromURL(imageUrl, { crossOrigin: "anonymous" }).then(
+          async (img) => {
+            const imageWidth = img.width ?? 1;
+            const imageHeight = img.height ?? 1;
 
-          setOriginalImageDimensions({
-            imageWidth: imageWidth,
-            imageHeight: imageHeight,
-          });
+            setOriginalImageDimensions({
+              imageWidth: imageWidth,
+              imageHeight: imageHeight,
+            });
 
-          setFinalImageDimensions({
-            imageWidth: imageWidth,
-            imageHeight: imageHeight,
-          });
+            setFinalImageDimensions({
+              imageWidth: imageWidth,
+              imageHeight: imageHeight,
+            });
 
-          setDownloadImageDimensions({
-            imageHeight: imageHeight,
-            imageWidth: imageWidth,
-          });
+            setDownloadImageDimensions({
+              imageHeight: imageHeight,
+              imageWidth: imageWidth,
+            });
 
-          initCanvas.setDimensions({
-            width: containerWidth,
-            height: containerHeight,
-          });
+            initCanvas.setDimensions({
+              width: containerWidth,
+              height: containerHeight,
+            });
 
-          // Calculate zoom to fit image in canvas while maintaining aspect ratio
-          const scaleX = containerWidth / imageWidth;
-          const scaleY = containerHeight / imageHeight;
-          const zoom = Math.min(scaleX, scaleY);
+            // Calculate zoom to fit image in canvas while maintaining aspect ratio
+            const scaleX = containerWidth / imageWidth;
+            const scaleY = containerHeight / imageHeight;
+            const zoom = Math.min(scaleX, scaleY);
 
-          // Apply zoom to canvas
-          initCanvas.setZoom(zoom);
-          setZoomValue(zoom);
+            // Apply zoom to canvas
+            initCanvas.setZoom(zoom);
+            setZoomValue(zoom);
 
-          // Calculate the viewport transform to center the image
-          const vp = initCanvas.viewportTransform!;
-          vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
-          vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
-          initCanvas.setViewportTransform(vp);
+            // Calculate the viewport transform to center the image
+            const vp = initCanvas.viewportTransform!;
+            vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+            vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+            initCanvas.setViewportTransform(vp);
 
-          img.set({
-            left: imageWidth / 2,
-            top: imageHeight / 2,
-            selectable: false,
-            hoverCursor: "default",
-            originX: "center",
-            originY: "center",
-          });
+            img.set({
+              left: imageWidth / 2,
+              top: imageHeight / 2,
+              selectable: false,
+              hoverCursor: "default",
+              originX: "center",
+              originY: "center",
+            });
 
-          initCanvas.add(img);
-          initCanvas.renderAll();
-          currentImageRef.current = img; // Set the ref directly
-          setFlipX(img.flipX);
-          setFlipY(img.flipY);
+            initCanvas.add(img);
+            initCanvas.renderAll();
+            currentImageRef.current = img; // Set the ref directly
+            setFlipX(img.flipX);
+            setFlipY(img.flipY);
 
-          mainCanvasRef.current = initCanvas;
-          // await backupImage();
-          setSidebarName("Arrange");
+            mainCanvasRef.current = initCanvas;
+            // await backupImage();
+            setSidebarName("Arrange");
 
-          //@ts-ignore
-          // unsubscribeRef.current = subscribeToAdjustStore(
-          //   initCanvas,
-          //   img,
-          //   currentFiltersRef,
-          //   setCurrentFilters
-          // );
-        });
+            //@ts-ignore
+            // unsubscribeRef.current = subscribeToAdjustStore(
+            //   initCanvas,
+            //   img,
+            //   currentFiltersRef,
+            //   setCurrentFilters
+            // );
+          }
+        );
       }
 
       initCanvas.on("mouse:wheel", function (opt) {

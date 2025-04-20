@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-import NavbarDemo from "@/components/Navbar2";
+import Navbar from "@/components/Navbar";
 import NewProjectBox from "@/components/NewProjectBox";
 import { useEffect } from "react";
 
@@ -18,7 +18,7 @@ const Home = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <NavbarDemo />
+      <Navbar />
       <div className="flex flex-grow flex-col justify-center items-center text-center px-6 md:px-12 lg:px-24 py-12">
         <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-300">
           ImageCraft

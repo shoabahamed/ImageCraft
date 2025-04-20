@@ -4,10 +4,8 @@ import Home from "./pages/Home";
 import { Toaster } from "./components/ui/toaster";
 import { useAuthContext } from "./hooks/useAuthContext";
 import Test from "./pages/Test";
-import ComparePage from "./pages/ComparePage";
 import { CanvasObjectsProvider } from "./context/CanvasObjectContext";
 import { LogProvider } from "./context/LogContext";
-import LogsPage from "./pages/LogsPage";
 import LogDashboard from "./pages/LogDashboard";
 import Temp from "./pages/Temp";
 import UserProfilePage from "./pages/Profile";
@@ -48,7 +46,6 @@ export default function App() {
               path="/admin"
               element={
                 user && user.role === "admin" ? <AdminPanel /> : <Home />
-                // user && user.role === "admin" ? <AdminPanel2 /> : <Home />
               }
             />
 

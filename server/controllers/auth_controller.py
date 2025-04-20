@@ -64,8 +64,9 @@ def callback():
             username = id_info['name']
             valid_email = email
             role = "user"
+            image_url = ""
             hashed_password = "gmail_login"
-            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": ""}
+            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": image_url}
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id))
@@ -83,11 +84,12 @@ def callback():
             role = user['role']
             username = user['username']
             user_id = str(user["_id"])
+            image_url = user['image_url']
         
             
-    
+        
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}&userId={user_id}"
+        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}"
         return redirect(redirect_url)
 
     except Exception as e:
@@ -121,7 +123,7 @@ def signup():
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id))
-        response = {"email": valid_email, "token": token, "role": role, "username": username, "userId": str(user.inserted_id)}
+        response = {"email": valid_email, "token": token, "role": role, "username": username, "userId": str(user.inserted_id), "image_url": ""}
 
         # create a specific directory for the user using user id
 
@@ -169,12 +171,14 @@ def login():
         role = str(user['role'])
         username = str(user['username'])
         user_id = str(user["_id"])
+        image_url = user['image_url']
         response = {
             "email": valid_email,
             "token": token,
             "role": role,
             'username': username,
-            "userId": user_id
+            "userId": user_id,
+            "image_url": image_url
         }
 
         return jsonify({"success": True, "message": "Login successful", "data": response}), 200
@@ -208,20 +212,38 @@ def update_profile_image(user_id):
             return jsonify({"success": False, "message": "Invalid token payload"}), 
     
         if current_user_id == user_id:
-            profile_image = request.files.get('profile_image') # retrieving image  
-            filename = "profile_image.png"
-
-            USER_PATH, _, _, _ = get_user_paths(os.getenv("USER_COMMON_PATH"), user_id) 
-            USER_PATH = USER_PATH + filename # the acutal path stored in the computer
-            image_save_path = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id  + "/" +filename # the path used by server to locate the image from database
-        
-            profile_image.save(USER_PATH)
+            # Initialize update dictionary and response data
+            update_data = {}
+            response_data = {"success": True}
             
-            result = users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": {"image_url": image_save_path}})
+            # Handle profile image update if provided
+            profile_image = request.files.get('profile_image')
+            if profile_image:
+                filename = "profile_image.png"
+                USER_PATH, _, _, _ = get_user_paths(os.getenv("USER_COMMON_PATH"), user_id) 
+                USER_PATH = USER_PATH + filename # the actual path stored in the computer
+                image_save_path = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id  + "/" + filename # the path used by server to locate the image from database
+                
+                profile_image.save(USER_PATH)
+                update_data["image_url"] = image_save_path
+                response_data["image_url"] = image_save_path
+                response_data["message"] = "Profile image updated successfully"
             
-            return jsonify({"success": True, "message": f"Image Updated successfully", "image_url": image_save_path}), 200
+            # Handle username update if provided
+            username = request.form.get('username')
+            if username:
+                update_data["username"] = username
+                response_data["username"] = username
+                response_data["message"] = "Username updated successfully" if not profile_image else "Profile updated successfully"
+            
+            # Only update if there's something to update
+            if update_data:
+                result = users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
+                return jsonify(response_data), 200
+            else:
+                return jsonify({"success": False, "message": "No updates provided"}), 400
         else:
-            return jsonify({"success": True, "message": f"You need to sign in first"}), 402
+            return jsonify({"success": False, "message": "You need to sign in first"}), 401
         
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

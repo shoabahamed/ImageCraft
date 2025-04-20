@@ -14,7 +14,7 @@ interface User {
   role: string;
   username: string;
   userId: string;
-  // Add more fields as necessary based on your application
+  imageUrl: string;
 }
 
 // Define the structure of the state
@@ -23,7 +23,10 @@ interface AuthState {
 }
 
 // Define the types of actions for the reducer
-type AuthAction = { type: "LOGIN"; payload: User } | { type: "LOGOUT" };
+type AuthAction =
+  | { type: "LOGIN"; payload: User }
+  | { type: "LOGOUT" }
+  | { type: "UPDATE"; payload: Partial<User> };
 
 // Create the AuthContext with the appropriate types
 export const AuthContext = createContext<{
@@ -39,9 +42,18 @@ export const authReducer = (
 ): AuthState => {
   switch (action.type) {
     case "LOGIN":
+      localStorage.setItem("user", JSON.stringify(action.payload));
       return { user: action.payload };
     case "LOGOUT":
+      localStorage.removeItem("user");
       return { user: null };
+    case "UPDATE":
+      if (state.user) {
+        const updatedUser = { ...state.user, ...action.payload };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        return { user: updatedUser };
+      }
+      return state;
     default:
       return state;
   }

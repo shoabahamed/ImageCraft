@@ -20,54 +20,27 @@ import apiClient from "@/utils/appClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import NoticeSection from "@/components/NoticeSection";
-
-type userInfo = {
-  username: string;
-  email: string;
-  image_url: string;
-};
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function UserProfilePage() {
   const [activeTab, setActiveTab] = useState("projects");
-  const { user } = useAuthContext();
+  const { user, dispatch } = useAuthContext();
   const { toast } = useToast();
   const { userId } = useParams();
-  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
-  const [projectImageDataURL, setProjectImageDataURL] = useState(null);
   const [profileImageDataURL, setProfileImageDataURL] = useState(null);
+  const [username, setUsername] = useState("");
   const [totalProjects, setTotalProjects] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
   const [avgRate, setAverageRate] = useState(0.0);
-  const navigate = useNavigate();
-  const [userInfo, setUserInfo] = useState<null | userInfo>(null);
   const [profileImageOpen, setProfileImageOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Set username when dialog opens
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const response = await apiClient.get(`/user_info/${userId}`, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        setUserInfo(response.data.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchUserInfo();
-  }, [userId]);
-
-  // Generate a default avatar based on username
-  const getDefaultAvatar = (username) => {
-    const name = username || "User";
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      name
-    )}&background=1E40AF&color=fff`;
-  };
+    if (profileImageOpen && user?.username) {
+      setUsername(user.username);
+    }
+  }, [profileImageOpen, user?.username]);
 
   // Handle image drop for profile picture
   const onProfileImageDrop = useCallback((acceptedFiles) => {
@@ -95,7 +68,7 @@ export default function UserProfilePage() {
 
   // Handle profile image upload
   const handleProfileImageUpload = async () => {
-    if (!profileImageDataURL) return;
+    if (!profileImageDataURL && !username) return;
 
     setIsUploading(true);
 
@@ -103,12 +76,19 @@ export default function UserProfilePage() {
       // Create FormData
       const formData = new FormData();
 
-      // Convert dataURL to Blob
-      const response = await fetch(profileImageDataURL);
-      const blob = await response.blob();
+      // Add username to FormData if it's different from current username
+      if (username !== user.username) {
+        formData.append("username", username);
+      }
 
-      // Add file to FormData
-      formData.append("profile_image", blob, "profile_image.jpg");
+      // Convert dataURL to Blob if we have an image
+      if (profileImageDataURL) {
+        const response = await fetch(profileImageDataURL);
+        const blob = await response.blob();
+
+        // Add file to FormData
+        formData.append("profile_image", blob, "profile_image.jpg");
+      }
 
       // Send to backend
       const uploadResponse = await apiClient.post(
@@ -123,14 +103,17 @@ export default function UserProfilePage() {
       );
 
       if (uploadResponse.data.success) {
-        // Update the userInfo state with the new image URL
-        setUserInfo((prev) =>
-          prev ? { ...prev, image_url: uploadResponse.data.image_url } : null
-        );
+        // Update the userInfo state with the new image URL and/or username
+        const userData = {
+          ...user,
+          imageUrl: uploadResponse.data.image_url || user.imageUrl,
+          username: uploadResponse.data.username || user.username,
+        };
+        dispatch({ type: "UPDATE", payload: userData });
 
         toast({
           title: "Success",
-          description: "Profile image updated successfully",
+          description: "Profile updated successfully",
           duration: 3000,
         });
 
@@ -139,11 +122,11 @@ export default function UserProfilePage() {
         setProfileImageOpen(false);
       }
     } catch (error) {
-      console.error("Error uploading profile image:", error);
+      console.error("Error updating profile:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update profile image",
+        description: "Failed to update profile",
         duration: 3000,
       });
     } finally {
@@ -151,42 +134,8 @@ export default function UserProfilePage() {
     }
   };
 
-  //  code for handling image upload for project
-  const onProjectImageDrop = useCallback((acceptedFiles) => {
-    acceptedFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        const binaryStr = reader.result;
-        setProjectImageDataURL(binaryStr);
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: onProjectImageDrop,
-    accept: {
-      "image/jpeg": [".jpg", ".jpeg"],
-      "image/png": [".png"],
-    },
-  });
-
-  const handleImageUpload = (imageUrl: string) => {
-    navigate("/mainpage", { state: { imageUrl } });
-  };
-
-  // Force image refresh by adding timestamp to URL
-  const getImageUrl = (url) => {
-    if (!url) return getDefaultAvatar(userInfo?.username);
-    return url.includes("?")
-      ? `${url}&t=${new Date().getTime()}`
-      : `${url}?t=${new Date().getTime()}`;
-  };
-
   return (
-    <div className="bg-blue-50 min-h-screen">
+    <div className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
       <Navbar />
       <div className="mx-auto max-w-6xl p-4">
         {/* Enhanced Profile Header */}
@@ -199,23 +148,18 @@ export default function UserProfilePage() {
               {/* Avatar - positioned to overlap with banner */}
               <div className="-mt-16 mb-4 md:mb-0 flex justify-center md:justify-start">
                 <div className="relative">
-                  {userInfo && (
-                    <img
-                      src={
-                        userInfo.image_url
-                          ? getImageUrl(userInfo.image_url)
-                          : getDefaultAvatar(userInfo.username)
-                      }
-                      alt={`${userInfo?.username || "User"}'s avatar`}
-                      className="w-32 h-32 rounded-full object-cover bg-blue-100 border-4 border-white"
-                      onError={(e) => {
-                        // Fallback if image fails to load
-                        e.currentTarget.src = getDefaultAvatar(
-                          userInfo?.username
-                        );
-                      }}
+                  <Avatar className="w-32 h-32 rounded-full object-cover bg-blue-100 border-4 border-white">
+                    <AvatarImage
+                      src={user.imageUrl}
+                      alt={user.username}
+                      className="object-cover"
                     />
-                  )}
+
+                    <AvatarFallback className="bg-blue-500 text-white">
+                      {user.username.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
                   <button
                     className="right-2 bottom-12 bg-blue-600 rounded-full p-2 text-white absolute"
                     onClick={() => {
@@ -244,10 +188,10 @@ export default function UserProfilePage() {
               {/* User info and stats */}
               <div className="md:ml-6 flex flex-col text-center md:text-left flex-grow">
                 <h1 className="text-2xl font-bold text-slate-800">
-                  {userInfo?.username || "Loading..."}
+                  {user?.username || "Loading..."}
                 </h1>
                 <p className="text-slate-600 mb-1">
-                  {userInfo?.email || "Loading..."}
+                  {user?.email || "Loading..."}
                 </p>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-2">
                   {/* User stats - updated labels */}
@@ -321,7 +265,6 @@ export default function UserProfilePage() {
           {activeTab === "projects" && (
             <ProjectSection
               userId={userId}
-              setShowLoadingDialog={setShowLoadingDialog}
               setTotalProjects={setTotalProjects}
               setAverageRate={setAverageRate}
               setTotalViews={setTotalViews}
@@ -329,12 +272,7 @@ export default function UserProfilePage() {
           )}
 
           {/* Bookmark Cards */}
-          {activeTab === "bookmarks" && (
-            <BookmarkSection
-              userId={userId}
-              setShowLoadingDialog={setShowLoadingDialog}
-            />
-          )}
+          {activeTab === "bookmarks" && <BookmarkSection userId={userId} />}
 
           {/* Reports Cards - No Create Project Button */}
           {activeTab === "reports" && <ReportSection userId={userId} />}
@@ -349,17 +287,31 @@ export default function UserProfilePage() {
         <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-semibold text-gray-900 text-center">
-              Update Profile Picture
+              Update Profile
             </DialogTitle>
             <DialogDescription className="text-center text-gray-600">
-              Upload a new profile picture. Square images work best.
+              Update your profile information and picture. Square images work
+              best.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-center items-center">
+          {/* Username input field */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="mb-4">
             <div
               {...getProfileRootProps()}
-              className="border-2 border-dashed border-blue-400 w-full max-w-sm p-6 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50"
+              className="border-2 border-dashed border-blue-400 w-full px-6 py-8 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50"
             >
               <input {...getProfileInputProps()} />
               {profileImageDataURL ? (
@@ -394,81 +346,23 @@ export default function UserProfilePage() {
               className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
               onClick={() => {
                 setProfileImageDataURL(null);
+                setUsername(user.username);
                 setProfileImageOpen(false);
               }}
               disabled={isUploading}
             >
               Cancel
             </button>
-            {profileImageDataURL && (
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
-                onClick={handleProfileImageUpload}
-                disabled={isUploading}
-              >
-                {isUploading ? "Uploading..." : "Save"}
-              </button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Project Image Upload Dialog */}
-      <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
-        <DialogTrigger asChild>
-          <button className="hidden"></button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-900 text-center">
-              Upload Image
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex justify-center items-center">
-            <div
-              {...getRootProps()}
-              className="border-2 border-dashed border-blue-400 w-full max-w-sm p-6 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50"
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+              onClick={handleProfileImageUpload}
+              disabled={
+                isUploading ||
+                (!profileImageDataURL && username === user.username)
+              }
             >
-              <input {...getInputProps()} />
-              {projectImageDataURL ? (
-                <img
-                  src={projectImageDataURL}
-                  alt="Uploaded Preview"
-                  className="w-full h-auto rounded-lg shadow-md"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    height="50"
-                    width="50"
-                    className="text-blue-500"
-                  >
-                    <path d="M1 14.5C1 12.1716 2.22429 10.1291 4.06426 8.9812C4.56469 5.044 7.92686 2 12 2C16.0731 2 19.4353 5.044 19.9357 8.9812C21.7757 10.1291 23 12.1716 23 14.5C23 17.9216 20.3562 20.7257 17 20.9811L7 21C3.64378 20.7257 1 17.9216 1 14.5ZM16.8483 18.9868C19.1817 18.8093 21 16.8561 21 14.5C21 12.927 20.1884 11.4962 18.8771 10.6781L18.0714 10.1754L17.9517 9.23338C17.5735 6.25803 15.0288 4 12 4C8.97116 4 6.42647 6.25803 6.0483 9.23338L5.92856 10.1754L5.12288 10.6781C3.81156 11.4962 3 12.927 3 14.5C3 16.8561 4.81833 18.8093 7.1517 18.9868L7.325 19H16.675L16.8483 18.9868ZM13 13V17H11V13H8L12 8L16 13H13Z" />
-                  </svg>
-                  <p className="mt-2 text-sm">
-                    {isDragActive
-                      ? "Drop the files here..."
-                      : "Drag & drop an image here, or click to select one"}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6 flex justify-center">
-            {projectImageDataURL && (
-              <button
-                className="custom-button w-32"
-                onClick={() => {
-                  handleImageUpload(projectImageDataURL);
-                }}
-              >
-                Upload
-              </button>
-            )}
+              {isUploading ? "Uploading..." : "Save"}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

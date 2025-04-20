@@ -79,7 +79,6 @@ const UsersSection = () => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${adminUser?.token}`,
-            Role: adminUser?.role,
           },
         });
         setUsers(response.data.data);
@@ -119,7 +118,6 @@ const UsersSection = () => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${adminUser?.token}`,
-          Role: adminUser?.role,
         },
       });
       setUsers(users.filter((user) => user.user_id !== user_id));
@@ -158,7 +156,6 @@ const UsersSection = () => {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${adminUser?.token}`,
-              Role: adminUser?.role,
             },
           }
         );

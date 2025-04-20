@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, ImagePlus, AlertCircle } from "lucide-react";
+import { User, ImagePlus, AlertCircle, Users } from "lucide-react";
 import UsersSection from "@/components/UsersSection";
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import StyleImageSection from "@/components/StyleImageSection";
 import AdminReportSection from "@/components/AdminReportSection";
 import { Link } from "react-router-dom";
+import AdminUsers from "@/components/AdminUsers";
 
 type userInfo = {
   username: string;
@@ -69,9 +70,19 @@ export default function AdminPanel() {
       {/* Main Content */}
       <main className="container mx-auto p-4">
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-8">
+          <TabsList
+            className={`grid ${
+              user.role === "admin" ? "grid-cols-3" : "grid-cols-4"
+            } mb-8`}
+          >
+            {user.role === "super admin" && (
+              <TabsTrigger value="admins" className="flex items-center gap-2">
+                <User size={18} /> Admins
+              </TabsTrigger>
+            )}
+
             <TabsTrigger value="users" className="flex items-center gap-2">
-              <User size={18} /> Users
+              <Users size={18} /> Users
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <AlertCircle size={18} /> Reports
@@ -80,6 +91,13 @@ export default function AdminPanel() {
               <ImagePlus size={18} /> Assets
             </TabsTrigger>
           </TabsList>
+
+          {/* Admin Users Tab */}
+          {user.role === "super admin" && (
+            <TabsContent value="admins">
+              <AdminUsers />
+            </TabsContent>
+          )}
 
           {/* Users Tab */}
           <TabsContent value="users">

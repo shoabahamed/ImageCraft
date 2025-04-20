@@ -45,7 +45,7 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                user && user.role === "admin" ? <AdminPanel /> : <Home />
+                user && user.role.includes("admin") ? <AdminPanel /> : <Home />
               }
             />
 

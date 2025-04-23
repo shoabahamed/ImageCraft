@@ -278,26 +278,26 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen p-6">
       <div className="flex justify-between items-center mb-6">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
           <Input
             placeholder="Search admins by name, email or ID..."
-            className="pl-10"
+            className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <Dialog open={isAddAdminOpen} onOpenChange={setIsAddAdminOpen}>
           <DialogTrigger asChild>
-            <Button className="ml-4 bg-blue-600 hover:bg-blue-700">
+            <Button className="ml-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white">
               <UserPlus size={16} className="mr-2" /> Add Admin
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
+              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Create New Admin
               </DialogTitle>
             </DialogHeader>
@@ -306,42 +306,44 @@ const AdminUsers = () => {
                 onSubmit={adminForm.handleSubmit(createAdmin)}
                 className="space-y-5 mt-4"
               >
+                {/* Form fields with updated styling */}
                 <FormField
                   control={adminForm.control}
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Username
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Enter username"
-                          className="border-gray-300 focus:border-blue-500"
+                          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500 text-xs" />
+                      <FormMessage className="text-red-500 dark:text-red-400 text-xs" />
                     </FormItem>
                   )}
                 />
+                {/* ...repeat similar styling for other form fields... */}
                 <FormField
                   control={adminForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Email
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="Enter email"
-                          className="border-gray-300 focus:border-blue-500"
+                          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500 text-xs" />
+                      <FormMessage className="text-red-500 dark:text-red-400 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -350,18 +352,18 @@ const AdminUsers = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Password
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Enter password"
-                          className="border-gray-300 focus:border-blue-500"
+                          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500 text-xs" />
+                      <FormMessage className="text-red-500 dark:text-red-400 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -370,7 +372,7 @@ const AdminUsers = () => {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Admin Role
                       </FormLabel>
                       <Select
@@ -389,7 +391,7 @@ const AdminUsers = () => {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage className="text-red-500 text-xs" />
+                      <FormMessage className="text-red-500 dark:text-red-400 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -398,13 +400,13 @@ const AdminUsers = () => {
                     type="button"
                     variant="outline"
                     onClick={() => setIsAddAdminOpen(false)}
-                    className="mr-2"
+                    className="mr-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white"
                   >
                     Create Admin
                   </Button>
@@ -420,14 +422,14 @@ const AdminUsers = () => {
           {filteredAdmins.slice(startIndex, endIndex).map((admin) => (
             <Card
               key={admin.user_id}
-              className="transition-shadow hover:shadow-md"
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-md"
             >
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <Avatar>
+                    <Avatar className="border-2 border-blue-100 dark:border-blue-900">
                       <AvatarImage src={admin.image_url} />
-                      <AvatarFallback className="bg-blue-200 text-blue-700">
+                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                         {admin.username
                           .split(" ")
                           .map((n) => n[0])
@@ -435,18 +437,20 @@ const AdminUsers = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
+                      <CardTitle className="text-lg text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         {admin.username}
-                        <Badge className="ml-1 bg-purple-100 text-purple-800 border-purple-200">
+                        <Badge className="ml-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800">
                           {admin.role}
                         </Badge>
                       </CardTitle>
-                      <CardDescription>{admin.email}</CardDescription>
+                      <CardDescription className="text-gray-500 dark:text-gray-400">
+                        {admin.email}
+                      </CardDescription>
                     </div>
                   </div>
                   <Badge
                     variant="outline"
-                    className="bg-blue-50 text-[10px] lg-text-[14px]"
+                    className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 text-[10px] lg:text-[10px]"
                   >
                     ID: {admin.user_id}
                   </Badge>
@@ -458,38 +462,35 @@ const AdminUsers = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-blue-600"
+                      className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       onClick={() => setCurrentUser(admin)}
                     >
                       <MessageSquare size={16} className="mr-1" /> Message
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                     <DialogHeader>
-                      <DialogTitle>
+                      <DialogTitle className="text-gray-900 dark:text-gray-100">
                         Send Message to {currentUser?.username}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="pt-2 pb-0">
+                    <div className="space-y-4 pt-4">
                       <Input
-                        placeholder="Type your title ..."
-                        className=""
+                        placeholder="Type your title..."
+                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                         value={messageTitle}
                         onChange={(e) => setMessageTitle(e.target.value)}
                       />
-                    </div>
-
-                    <div className="pb-4 pt-2">
                       <Textarea
                         placeholder="Type your message here..."
-                        className="min-h-32"
+                        className="min-h-32 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                         value={messageContent}
                         onChange={(e) => setMessageContent(e.target.value)}
                       />
                     </div>
                     <DialogFooter>
                       <Button
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white"
                         onClick={sendMessage}
                       >
                         <Send size={16} className="mr-2" /> Send Message
@@ -500,7 +501,7 @@ const AdminUsers = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-blue-600"
+                  className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   onClick={() => navigate(`/profile/${admin.user_id}`)}
                 >
                   <Eye size={16} className="mr-1" /> Profile
@@ -508,7 +509,7 @@ const AdminUsers = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-red-600"
+                  className="text-red-600 dark:text-red-400 border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                   onClick={() => deleteAdmin(admin.user_id)}
                 >
                   <Trash2 size={16} className="mr-1" /> Delete
@@ -517,6 +518,18 @@ const AdminUsers = () => {
             </Card>
           ))}
         </div>
+
+        {/* Empty State */}
+        {filteredAdmins.length === 0 && (
+          <div className="text-center py-12">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+              <p className="text-gray-500 dark:text-gray-400">
+                No admins found
+              </p>
+            </div>
+          </div>
+        )}
+
         <Pagination className="flex justify-end p-7">
           <PaginationContent>
             <PaginationItem>

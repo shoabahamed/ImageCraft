@@ -22,18 +22,14 @@ type AdjustSidebarProps = {
   canvas: Canvas;
   image: FabricImage;
   databaseFiltersName: string[] | null;
-  setDatabaseFiltersName: (value: string[] | null) => void;
   databaseFiltersObject: object[] | null;
-  setDatabaseFiltersObject: (value: object[] | null) => void;
 };
 
 const AdjustSidebar = ({
   canvas,
   image,
   databaseFiltersName,
-  setDatabaseFiltersName,
   databaseFiltersObject,
-  setDatabaseFiltersObject,
 }: AdjustSidebarProps) => {
   const { addLog } = useLogContext(); // Use log context
 

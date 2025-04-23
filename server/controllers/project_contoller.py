@@ -210,7 +210,7 @@ def get_bookmark_projects(user_id):
             project_ids = [project_id for project_id in bookmarks]
 
             # Find all bookmarked projects
-            projects_cursor = projects_collection.find({"project_id": {"$in": project_ids}}, {'project_data':0, 'project_logs':0, 'granted_logs':0, 'original_image_shape':0, 'final_image_shape': 0})
+            projects_cursor = projects_collection.find({"project_id": {"$in": project_ids}})
                     
 
             # Convert the cursor to a list of dictionaries
@@ -222,6 +222,7 @@ def get_bookmark_projects(user_id):
                 project['bookmarked'] = True
                 project["total_rating"] = int(project['total_rating'])
                 project['rating_count'] = int(project['rating_count'])
+                project['project_logs'] = []
 
         else:
             projects = []
@@ -250,22 +251,7 @@ def get_all_projects():
     
 
     # Query the database for projects, excluding the `_id` field
-    projects_cursor = projects_collection.find({"is_public": "true"}, {
-            "_id": 1,
-            "user_id": 1,
-            "username": 1,
-            "project_id": 1,
-            "is_public":1,
-            "original_image_url": 1,
-            "canvas_image_url": 1,
-            "total_rating": 1,
-            "rating_count": 1,
-            "total_views": 1,
-            "total_bookmark": 1,
-            "updated_at" : 1,
-            "created_at": 1,
-            "project_name": 1
-        })
+    projects_cursor = projects_collection.find({"is_public": "true"})
     
     # Convert the cursor to a list of dictionaries
     projects = list(projects_cursor)
@@ -280,6 +266,8 @@ def get_all_projects():
 
         project["total_rating"] = int(project['total_rating'])
         project['rating_count'] = int(project['rating_count'])
+
+        project['project_logs'] = []
 
 
 

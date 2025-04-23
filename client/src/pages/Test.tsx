@@ -2,7 +2,7 @@ import IconComponent from "@/components/icon-component";
 
 import { Diamond, Home } from "lucide-react";
 import { Crop, RotateCwSquare, ListPlus, Type, Cpu } from "lucide-react";
-import { useEffect, useRef, useState, CSSProperties } from "react";
+import { useEffect, useRef, useState, CSSProperties, useCallback } from "react";
 
 import { filters } from "fabric";
 import * as fabric from "fabric";
@@ -33,6 +33,7 @@ import { BBrightness } from "@/utils/BlueBrightnessFilter";
 import { GBrightness } from "@/utils/GreenBrightnessValue";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
 import { useLogContext } from "@/hooks/useLogContext";
+import useUndoRedo from "@/hooks/useUndoRedo";
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -60,14 +61,13 @@ const Test = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
   const currentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
-  const [databaseFiltersName, setDatabaseFiltersName] = useState<
-    string[] | null
-  >(null);
-  const [databaseFiltersObject, setDatabaseFiltersObject] = useState<
-    object[] | null
-  >(null);
+
+  const databaseFiltersNameRef = useRef<null | string[]>(null);
+  const oldFiltersNameRef = useRef<null | string[]>(null);
+  const databaseFiltersObjectRef = useRef<null | object[]>(null);
+  const [filtersUI, setFiltersUI] = useState(false);
+
   const backupCurrentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
-  const unsubscribeRef = useRef<() => void>();
 
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -85,6 +85,7 @@ const Test = () => {
     setFinalImageDimensions,
     setLoadedFromSaved,
     setZoomValue,
+    originalImageDimensions,
     finalImageDimensions,
     downloadImageDimensions,
     setDownloadImageDimensions,
@@ -174,8 +175,17 @@ const Test = () => {
   const setBlurValue = useAdjustStore((state) => state.setBlurValue);
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
-
+  const resetFilters = useAdjustStore((state) => state.resetFilters);
   const dbLoadingRef = useRef(false);
+
+  const [
+    currentHistoryIndex,
+    currentSnapshot,
+    setHistoryValue,
+    undo,
+    redo,
+    isUndoRedoAction,
+  ] = useUndoRedo(10);
 
   // this function runs whenever the window size changes
   const handleContainerResize = () => {
@@ -247,8 +257,6 @@ const Test = () => {
 
         const filterNames = JSON.parse(localStorage.getItem("filter_names")!);
         const project_logs = JSON.parse(localStorage.getItem("project_logs"));
-
-        console.log(filterNames);
 
         const projectName = localStorage.getItem("project_name");
 
@@ -346,17 +354,10 @@ const Test = () => {
                 originY: "center",
               });
 
-              //@ts-ignore
-              // unsubscribeRef.current = subscribeToAdjustStore(
-              //   initCanvas,
-              //   imageObject,
-              //   currentFiltersRef,
-              //   setCurrentFilters
-              // );
-
-              setDatabaseFiltersName(filterNames);
-              setDatabaseFiltersObject(canvasJSON.objects[0].filters);
-              console.log(canvasJSON.objects[0].filters);
+              databaseFiltersNameRef.current = filterNames;
+              databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
+              oldFiltersNameRef.current = filterNames;
+              setFiltersUI(!filtersUI);
             }
 
             if (frameObject) {
@@ -374,12 +375,15 @@ const Test = () => {
 
             initCanvas.renderAll();
 
+            if (localStorage.getItem("canvasId")) {
+              setShowUpdateButton(true);
+            }
+
             canvasIdRef.current = localStorage.getItem("canvasId")!;
             localStorage.removeItem("project_data");
             localStorage.removeItem("CanvasId");
 
             setProjectName(projectName);
-            setShowUpdateButton(true);
 
             setLoadedFromSaved(true);
 
@@ -433,6 +437,7 @@ const Test = () => {
             vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
             initCanvas.setViewportTransform(vp);
 
+            // initCanvas.viewportCenterObject(img);
             img.set({
               left: imageWidth / 2,
               top: imageHeight / 2,
@@ -449,16 +454,29 @@ const Test = () => {
             setFlipY(img.flipY);
 
             mainCanvasRef.current = initCanvas;
-            // await backupImage();
             setSidebarName("Arrange");
 
-            //@ts-ignore
-            // unsubscribeRef.current = subscribeToAdjustStore(
-            //   initCanvas,
-            //   img,
-            //   currentFiltersRef,
-            //   setCurrentFilters
-            // );
+            const canvasData = initCanvas.toObject(["name", "isUpper", "id"]);
+
+            const allData = {
+              project_data: canvasData,
+              final_image_shape: {
+                imageHeight: currentImageRef.current.height,
+                imageWidth: currentImageRef.current.width,
+              },
+              original_image_shape: {
+                imageHeight: currentImageRef.current.height,
+                imageWidth: currentImageRef.current.width,
+              },
+              download_image_shape: {
+                imageHeight: currentImageRef.current.height,
+                imageWidth: currentImageRef.current.width,
+              },
+              filter_names: [],
+              viewportTransform: initCanvas.viewportTransform,
+            };
+
+            setHistoryValue(allData);
           }
         );
       }
@@ -491,14 +509,236 @@ const Test = () => {
           opt.e.preventDefault();
           opt.e.stopPropagation();
         });
+
+        initCanvas.off("object:modified", handleObjectModified);
       };
     }
   }, []);
 
+  // the pieces of code handles undo and redo functionality
+  const handleObjectModified = useCallback(() => {
+    const canvasData = mainCanvasRef.current.toObject([
+      "name",
+      "isUpper",
+      "id",
+    ]);
+
+    const filterNames =
+      currentFiltersRef.current?.map((filter) => filter.filterName) || [];
+
+    const allData = {
+      project_data: canvasData,
+      final_image_shape: finalImageDimensions,
+      original_image_shape: originalImageDimensions,
+      download_image_shape: downloadImageDimensions,
+      filter_names: filterNames,
+      viewportTransform: mainCanvasRef.current.viewportTransform,
+    };
+
+    setHistoryValue(allData);
+  }, [
+    mainCanvasRef,
+    finalImageDimensions,
+    originalImageDimensions,
+    downloadImageDimensions,
+    setHistoryValue,
+  ]);
+
+  useEffect(() => {
+    if (!mainCanvasRef.current) return;
+
+    const canvas = mainCanvasRef.current;
+    canvas.on("object:modified", handleObjectModified);
+
+    return () => {
+      canvas.off("object:modified", handleObjectModified);
+    };
+  }, [handleObjectModified]);
+
+  useEffect(() => {
+    if (!isUndoRedoAction.current) return;
+
+    const canvasJSON = currentSnapshot.project_data;
+    const finalImageShape: { imageWidth: number; imageHeight: number } =
+      currentSnapshot.final_image_shape;
+    const downloadImageShape: { imageWidth: number; imageHeight: number } =
+      currentSnapshot.download_image_shape;
+    const originalImageShape: { imageWidth: number; imageHeight: number } =
+      currentSnapshot.original_image_shape;
+    const filterNames = currentSnapshot.filter_names;
+
+    console.log(currentHistoryIndex, "history index");
+
+    const oldCanvas = mainCanvasRef.current;
+
+    // 1. Preserve container reference
+    const container = oldCanvas.wrapperEl?.parentNode;
+
+    // 2. Get raw HTML canvas element
+    const htmlCanvas = oldCanvas.lowerCanvasEl;
+
+    // 3. Dispose old instance PROPERLY
+    oldCanvas.dispose();
+
+    // 4. Create new canvas on SAME DOM element
+    const newCanvas = new fabric.Canvas(htmlCanvas, {
+      width: oldCanvas.getWidth(),
+      height: oldCanvas.getHeight(),
+      backgroundColor: oldCanvas.backgroundColor,
+    });
+
+    newCanvas.setViewportTransform(currentSnapshot.viewportTransform);
+
+    // 5. Ensure DOM attachment
+    if (container && !container.contains(htmlCanvas)) {
+      container.appendChild(newCanvas.wrapperEl);
+    }
+
+    const oldFilterNames =
+      currentFiltersRef.current?.map((filter) => filter.filterName) || [];
+
+    oldFiltersNameRef.current = oldFilterNames;
+
+    try {
+      const ensureSingleCallback = (canvas: fabric.Canvas) => {
+        const objects = canvas.getObjects();
+        const totalObjects = canvasJSON.objects?.length || 0;
+
+        return new Promise<void>((resolve) => {
+          if (objects.length === totalObjects) {
+            // All objects are loaded
+            resolve();
+          } else {
+            // Listen for objects being added to the canvas
+            const checkIfComplete = () => {
+              if (canvas.getObjects().length === totalObjects) {
+                canvas.off("object:added", checkIfComplete); // Remove listener
+                resolve();
+              }
+            };
+
+            canvas.on("object:added", checkIfComplete);
+          }
+        });
+      };
+      newCanvas.loadFromJSON(canvasJSON, async () => {
+        await ensureSingleCallback(newCanvas);
+
+        const imageObject = newCanvas
+          ?.getObjects()
+          .find((obj: fabric.Object) => obj.type.toLowerCase() === "image");
+
+        const frameObject = newCanvas
+          ?.getObjects() // @ts-ignore
+          .find((obj) => obj.name?.startsWith("Frame"));
+
+        // 4. Restore viewport FIRST
+
+        if (imageObject) {
+          setOriginalImageDimensions({
+            imageWidth: originalImageShape.imageWidth,
+            imageHeight: originalImageShape.imageHeight,
+          });
+
+          setDownloadImageDimensions({
+            imageWidth: downloadImageShape.imageWidth,
+            imageHeight: downloadImageShape.imageHeight,
+          });
+
+          setFinalImageDimensions({
+            imageWidth: finalImageShape.imageWidth,
+            imageHeight: finalImageShape.imageHeight,
+          });
+
+          setImageRotation(imageObject.angle);
+          setFlipX(imageObject.flipX);
+          setFlipY(imageObject.flipY);
+
+          imageObject.set({
+            left: imageObject.width / 2,
+            top: imageObject.height / 2,
+            selectable: false,
+            hoverCursor: "default",
+            originX: "center",
+            originY: "center",
+          });
+
+          dbLoadingRef.current = true;
+
+          databaseFiltersNameRef.current = filterNames;
+          databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
+          setFiltersUI(!filtersUI);
+        }
+
+        if (frameObject) {
+          imageObject.clipPath = null;
+          frameObject.absolutePositioned = true;
+          // selectedObject.absolutePositioned = true;
+          imageObject.clipPath = frameObject;
+        }
+        console.log("load complete");
+        // @ts-ignore
+        currentImageRef.current = imageObject; // Store the Fabric.js image object reference
+        mainCanvasRef.current = newCanvas; // Store the Fabric.js canvas reference
+
+        newCanvas.requestRenderAll();
+      });
+    } catch (error) {
+      console.error("Failed to load canvas data:", error);
+    }
+
+    newCanvas.on("mouse:wheel", function (opt) {
+      const delta = opt.e.deltaY;
+      let zoom = newCanvas.getZoom();
+      zoom *= 0.999 ** delta;
+      if (zoom > 20) zoom = 20;
+      if (zoom < 0.01) zoom = 0.01;
+      newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      setZoomValue(zoom);
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+    });
+
+    // newCanvas.on("object:modified", handleObjectModified);
+    newCanvas.on("mouse:wheel", function (opt) {
+      const delta = opt.e.deltaY;
+      let zoom = newCanvas.getZoom();
+      zoom *= 0.999 ** delta;
+      if (zoom > 20) zoom = 20;
+      if (zoom < 0.01) zoom = 0.01;
+      newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      setZoomValue(zoom);
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+    });
+
+    isUndoRedoAction.current = false;
+
+    return () => {
+      // newCanvas.dispose();
+
+      newCanvas.off("mouse:wheel", function (opt) {
+        const delta = opt.e.deltaY;
+        let zoom = newCanvas.getZoom();
+        zoom *= 0.999 ** delta;
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.01) zoom = 0.01;
+        newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+        setZoomValue(zoom);
+        opt.e.preventDefault();
+        opt.e.stopPropagation();
+      });
+
+      // newCanvas.off("object:modified", handleObjectModified);
+    };
+  }, [currentHistoryIndex]);
+
+  //  the code below is responsible for handling all kinds of filters
   useEffect(() => {
     if (currentImageRef.current && mainCanvasRef.current) {
       if (dbLoadingRef.current) return;
       const filtersList = [...(currentFilters || [])];
+
       console.log("old", filtersList);
       updateOrInsert(
         filtersList,
@@ -619,9 +859,13 @@ const Test = () => {
 
       currentImageRef.current.applyFilters();
       currentImageRef.current.set("opacity", opacityValue);
-      mainCanvasRef.current.renderAll();
+
+      mainCanvasRef.current.requestRenderAll();
 
       setCurrentFilters(filtersList);
+      currentFiltersRef.current = filtersList;
+
+      mainCanvasRef.current.fire("object:modified");
     }
   }, [
     opacityValue,
@@ -649,198 +893,293 @@ const Test = () => {
 
   // this only runs if we load a project from the database else it does not do anything
   useEffect(() => {
+    console.log(
+      "loading from database",
+      databaseFiltersNameRef.current,
+      databaseFiltersObjectRef.current,
+      oldFiltersNameRef.current
+    );
     const loadDatabaseFilters = async () => {
-      if (!databaseFiltersName || !databaseFiltersObject) return;
+      if (!databaseFiltersNameRef.current || !databaseFiltersObjectRef.current)
+        return;
+
+      // Get new and old filter names (default to empty array)
+      const databaseFiltersName = databaseFiltersNameRef.current;
+      const databaseFiltersObject = databaseFiltersObjectRef.current;
+      const oldFilters = oldFiltersNameRef.current || [];
 
       dbLoadingRef.current = true;
-      const filtersList = [];
+      const filtersList: any[] = [];
 
-      for (let idx = 0; idx < databaseFiltersName.length; idx++) {
-        const filterName = databaseFiltersName[idx];
-        const filterData = databaseFiltersObject[idx];
+      // resetFilters();
+
+      for (let idx = 0; idx < oldFilters.length; idx++) {
+        const filterName = oldFilters[idx];
+        let filterData: any = null;
+        // Only apply the filter if it exists in both the new and old lists.
+
+        let shouldApply = false;
+        if (
+          databaseFiltersName.includes(filterName) ||
+          oldFilters.length === 0
+        ) {
+          shouldApply = true;
+          console.log("should apply", filterName);
+          filterData = databaseFiltersObject[idx];
+        } else {
+          console.log("should not  apply", filterName);
+        }
 
         switch (filterName) {
           case "grayscale":
-            setEnableGrayScale(true);
-            updateOrInsert(
-              filtersList,
-              "grayscale",
-              new filters.Grayscale(),
-              true
-            );
+            if (shouldApply) {
+              setEnableGrayScale(true);
+              updateOrInsert(
+                filtersList,
+                "grayscale",
+                new filters.Grayscale(),
+                true
+              );
+            } else {
+              setEnableGrayScale(false);
+            }
             break;
           case "sepia":
-            setEnableSepia(true);
-            updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
+            if (shouldApply) {
+              setEnableSepia(true);
+              updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
+            } else {
+              setEnableSepia(false);
+            }
             break;
           case "vintage":
-            updateOrInsert(filtersList, "vintage", new filters.Vintage(), true);
-            setEnableVintage(true);
+            if (shouldApply) {
+              setEnableVintage(true);
+              updateOrInsert(
+                filtersList,
+                "vintage",
+                new filters.Vintage(),
+                true
+              );
+            } else {
+              setEnableVintage(false);
+            }
             break;
           case "kodachrome":
-            setEnableKodachrome(true);
-            updateOrInsert(
-              filtersList,
-              "kodachrome",
-              new filters.Kodachrome(),
-              true
-            );
-
+            if (shouldApply) {
+              setEnableKodachrome(true);
+              updateOrInsert(
+                filtersList,
+                "kodachrome",
+                new filters.Kodachrome(),
+                true
+              );
+            } else {
+              setEnableKodachrome(false);
+            }
             break;
           case "technicolor":
-            setEnableTechnicolor(true);
-            updateOrInsert(
-              filtersList,
-              "technicolor",
-              new filters.Technicolor(),
-              true
-            );
+            if (shouldApply) {
+              setEnableTechnicolor(true);
+              updateOrInsert(
+                filtersList,
+                "technicolor",
+                new filters.Technicolor(),
+                true
+              );
+            } else {
+              setEnableTechnicolor(false);
+            }
             break;
           case "sharpen":
-            setEnableSharpen(true);
-            updateOrInsert(
-              filtersList,
-              "sharpen",
-              new filters.Convolute({
-                matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
-                opaque: false,
-              }),
-              true
-            );
-
+            if (shouldApply) {
+              setEnableSharpen(true);
+              updateOrInsert(
+                filtersList,
+                "sharpen",
+                new filters.Convolute({
+                  matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
+                  opaque: false,
+                }),
+                true
+              );
+            } else {
+              setEnableSharpen(false);
+            }
             break;
           case "invert":
-            setEnableInvert(true);
-            updateOrInsert(
-              filtersList,
-              "invert",
-              new filters.Invert({ alpha: false }),
-              true
-            );
+            if (shouldApply) {
+              setEnableInvert(true);
+              updateOrInsert(
+                filtersList,
+                "invert",
+                new filters.Invert({ alpha: false }),
+                true
+              );
+            } else {
+              setEnableInvert(false);
+            }
             break;
           case "gbrightness":
-            setGreenBrightnessValue(filterData.GBrightness);
-            updateOrInsert(
-              filtersList,
-              "gbrightness",
-              new GBrightness({ GBrightness: filterData.GBrightness }),
-              true
-            );
+            if (shouldApply) {
+              setGreenBrightnessValue(filterData.GBrightness);
+              updateOrInsert(
+                filtersList,
+                "gbrightness",
+                new GBrightness({ GBrightness: filterData.GBrightness }),
+                true
+              );
+            } else {
+              setGreenBrightnessValue(0);
+            }
             break;
           case "bbrightness":
-            setBlueBrightnessValue(filterData.BBrightness);
-            updateOrInsert(
-              filtersList,
-              "bbrightness",
-              new BBrightness({ BBrightness: filterData.BBrightness }),
-              true
-            );
+            if (shouldApply) {
+              setBlueBrightnessValue(filterData.BBrightness);
+              updateOrInsert(
+                filtersList,
+                "bbrightness",
+                new BBrightness({ BBrightness: filterData.BBrightness }),
+                true
+              );
+            } else {
+              setBlueBrightnessValue(0);
+            }
             break;
           case "rbrightness":
-            setRedBrightnessValue(filterData.RBrightness);
-            updateOrInsert(
-              filtersList,
-              "rbrightness",
-              new RBrightness({ RBrightness: filterData.RBrightness }),
-              true
-            );
+            if (shouldApply) {
+              setRedBrightnessValue(filterData.RBrightness);
+              updateOrInsert(
+                filtersList,
+                "rbrightness",
+                new RBrightness({ RBrightness: filterData.RBrightness }),
+                true
+              );
+            } else {
+              setRedBrightnessValue(0);
+            }
             break;
           case "gamma":
-            setGammaRedValue(filterData.gamma[0]);
-            setGammaGreenValue(filterData.gamma[1]);
-            setGammaBlueValue(filterData.gamma[2]);
-            updateOrInsert(
-              filtersList,
-              "gamma",
-              new filters.Gamma({
-                gamma: [
-                  filterData.gamma[0],
-                  filterData.gamma[1],
-                  filterData.gamma[2],
-                ],
-              }),
-              true
-            );
+            if (shouldApply) {
+              setGammaRedValue(filterData.gamma[0]);
+              setGammaGreenValue(filterData.gamma[1]);
+              setGammaBlueValue(filterData.gamma[2]);
+              updateOrInsert(
+                filtersList,
+                "gamma",
+                new filters.Gamma({
+                  gamma: [
+                    filterData.gamma[0],
+                    filterData.gamma[1],
+                    filterData.gamma[2],
+                  ],
+                }),
+                true
+              );
+            } else {
+              setGammaRedValue(1);
+              setGammaGreenValue(1);
+              setGammaBlueValue(1);
+            }
             break;
           case "contrast":
-            setContrastValue(filterData.contrast);
-            updateOrInsert(
-              filtersList,
-              "contrast",
-              new filters.Contrast({ contrast: filterData.contrast }),
-              true
-            );
-
+            if (shouldApply) {
+              setContrastValue(filterData.contrast);
+              updateOrInsert(
+                filtersList,
+                "contrast",
+                new filters.Contrast({ contrast: filterData.contrast }),
+                true
+              );
+            } else {
+              setContrastValue(0);
+            }
             break;
           case "saturation":
-            setSaturationValue(filterData.saturation);
-            updateOrInsert(
-              filtersList,
-              "saturation",
-              new filters.Saturation({ saturation: filterData.saturation }),
-              true
-            );
+            if (shouldApply) {
+              setSaturationValue(filterData.saturation);
+              updateOrInsert(
+                filtersList,
+                "saturation",
+                new filters.Saturation({ saturation: filterData.saturation }),
+                true
+              );
+            } else {
+              setSaturationValue(0);
+            }
             break;
           case "vibrance":
-            setVibranceValue(filterData.vibrance);
-            updateOrInsert(
-              filtersList,
-              "vibrance",
-              new filters.Vibrance({ vibrance: filterData.vibrance }),
-              true
-            );
-
+            if (shouldApply) {
+              setVibranceValue(filterData.vibrance);
+              updateOrInsert(
+                filtersList,
+                "vibrance",
+                new filters.Vibrance({ vibrance: filterData.vibrance }),
+                true
+              );
+            }
             break;
           case "blur":
-            setBlurValue(filterData.blur);
-            updateOrInsert(
-              filtersList,
-              "blur",
-              new filters.Blur({ blur: filterData.blur }),
-              true
-            );
+            if (shouldApply) {
+              setBlurValue(filterData.blur);
+              updateOrInsert(
+                filtersList,
+                "blur",
+                new filters.Blur({ blur: filterData.blur }),
+                true
+              );
+            } else {
+              setBlurValue(0);
+            }
             break;
           case "hueRotation":
-            setHueValue(filterData.rotation);
-            updateOrInsert(
-              filtersList,
-              "hueRotation",
-              new filters.HueRotation({ rotation: filterData.rotation }),
-              true
-            );
-
+            if (shouldApply) {
+              setHueValue(filterData.rotation);
+              updateOrInsert(
+                filtersList,
+                "hueRotation",
+                new filters.HueRotation({ rotation: filterData.rotation }),
+                true
+              );
+            } else {
+              setHueValue(0);
+            }
             break;
           case "noise":
-            setNoiseValue(filterData.noise);
-            updateOrInsert(
-              filtersList,
-              "noise",
-              new filters.Noise({ noise: filterData.noise }),
-              true
-            );
+            if (shouldApply) {
+              setNoiseValue(filterData.noise);
+              updateOrInsert(
+                filtersList,
+                "noise",
+                new filters.Noise({ noise: filterData.noise }),
+                true
+              );
+            } else {
+              setNoiseValue(0);
+            }
             break;
           case "pixelate":
-            setPixelateValue(filterData.blocksize);
-            updateOrInsert(
-              filtersList,
-              "pixelate",
-              new filters.Pixelate({ blocksize: filterData.blocksize }),
-              pixelateValue !== 0
-            );
+            if (shouldApply) {
+              setPixelateValue(filterData.blocksize);
+              updateOrInsert(
+                filtersList,
+                "pixelate",
+                new filters.Pixelate({ blocksize: filterData.blocksize }),
+                pixelateValue !== 0
+              );
+            } else {
+              setPixelateValue(0);
+            }
+
             break;
         }
       }
-
       setCurrentFilters(filtersList);
     };
 
     loadDatabaseFilters();
     dbLoadingRef.current = false;
-    return () => {
-      setDatabaseFiltersName(null);
-      setDatabaseFiltersObject(null);
-    };
-  }, [databaseFiltersName, databaseFiltersObject]);
+  }, [filtersUI]);
 
   return (
     <div className="h-screen max-w-screen flex flex-col">
@@ -970,10 +1309,8 @@ const Test = () => {
                   <AdjustSidebar
                     canvas={mainCanvasRef.current!}
                     image={currentImageRef.current!}
-                    databaseFiltersName={databaseFiltersName}
-                    setDatabaseFiltersName={setDatabaseFiltersName}
-                    databaseFiltersObject={databaseFiltersObject}
-                    setDatabaseFiltersObject={setDatabaseFiltersObject}
+                    databaseFiltersName={databaseFiltersNameRef.current}
+                    databaseFiltersObject={databaseFiltersObjectRef.current}
                   />
                 </div>
               </div>

@@ -38,6 +38,7 @@ import {
   urlToBase64,
 } from "@/utils/commonFunctions";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
+import NewProjectBox from "./NewProjectBox";
 
 // TODO: saving canvas when style transfer has been done
 // TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
@@ -487,11 +488,7 @@ const Footer = ({
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
         />
-        <IconComponent
-          icon={<Upload />}
-          iconName={"Upload New"}
-          handleClick={() => setShowLoadingDialog(true)}
-        />
+        <NewProjectBox useButton={false} />
       </div>
 
       <div className="flex items-center">

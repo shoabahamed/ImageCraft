@@ -28,6 +28,7 @@ import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import SubmitRating from "./SubmitRating";
 import NewProjectBox from "./NewProjectBox";
+import { ProjectDownloadDialog } from "./ProjectDownloadDialog";
 
 interface Project {
   _id: string;
@@ -35,6 +36,8 @@ interface Project {
   is_public: string;
   project_id: string;
   username: string;
+  project_data: object;
+  project_logs: object;
   original_image_url: string;
   canvas_image_url: string;
   bookmarked: boolean;
@@ -42,7 +45,11 @@ interface Project {
   total_rating: number;
   total_views: number;
   total_bookmark: number;
+  original_image_shape: { width: number; height: number };
+  final_image_shape: { width: number; height: number };
+  download_image_shape: { width: number; height: number };
   project_name: string;
+  filter_names: string[] | [];
   created_at: Date;
   updated_at: Date;
 }
@@ -70,6 +77,10 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
     null
   );
   const [reportData, setReportData] = useState({ title: "", description: "" });
+
+  // Add these new states after other state declarations
+  const [openDownload, setOpenDownload] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   // Calculate average rating
   const calculateRating = (total: number, count: number) => {
@@ -154,28 +165,29 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
   }, [currentPageNo]);
 
   // Handle download image
-  const downloadImage = async (url: string, projectId: string) => {
-    // Open image in a new tab
-    const newTab = window.open(url, "_blank");
-    if (!newTab) {
-      toast({
-        description: "Failed to open the image in a new tab.",
-        duration: 3000,
-      });
-      return;
-    }
-
+  const downloadImage = async (url: string, project: Project) => {
+    setSelectedProject(project);
+    setOpenDownload(true);
     try {
-      // Send request to update total views in the backend
+      // Update view count
       await apiClient.post(
         "/projects/update_views",
-        { project_id: projectId },
+        { project_id: project.project_id },
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user?.token}`,
           },
         }
+      );
+
+      // Update local state to reflect new view count
+      setProjects(
+        projects.map((p) =>
+          p.project_id === project.project_id
+            ? { ...p, total_views: p.total_views + 1 }
+            : p
+        )
       );
     } catch (error) {
       console.error("Error updating views:", error);
@@ -314,16 +326,17 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
 
   return (
     <div className="w-full flex flex-col space-y-4">
+      {/* Search and New Project Section */}
       <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="relative w-full sm:w-64 flex justify-between items-center">
           <input
             type="text"
-            placeholder={`Search Projects...`}
+            placeholder="Search Projects..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-gray-300 pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            className="w-full rounded-md border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           />
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -343,11 +356,12 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
         <NewProjectBox />
       </div>
 
+      {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.slice(startIndex, endIndex).map((project) => (
           <div
             key={project.project_id}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700"
           >
             {/* Project Image */}
             <div className="w-full relative">
@@ -357,10 +371,8 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
                 className="w-full h-48 object-cover"
               />
               <ArrowDownToLine
-                className="absolute top-2 right-2 z-10 w-6 h-6 p-1 bg-white bg-opacity-75 rounded-full text-blue-700 cursor-pointer hover:bg-opacity-100 transition-all"
-                onClick={() =>
-                  downloadImage(project.canvas_image_url, project.project_id)
-                }
+                className="absolute top-2 right-2 z-10 w-6 h-6 p-1 bg-white dark:bg-gray-800 bg-opacity-75 rounded-full text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-opacity-100 transition-all"
+                onClick={() => downloadImage(project.canvas_image_url, project)}
               />
             </div>
 
@@ -368,27 +380,27 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
             <div className="p-4">
               {/* Title and Rating */}
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg text-blue-800">
+                <h3 className="font-bold text-lg text-blue-800 dark:text-blue-300">
                   {project.project_name}
                 </h3>
                 <div className="flex items-center space-x-1">
-                  <div className="flex items-center bg-yellow-50 rounded-md px-1.5 py-0.5">
+                  <div className="flex items-center bg-yellow-50 dark:bg-yellow-900/30 rounded-md px-1.5 py-0.5">
                     <svg
-                      className="w-3.5 h-3.5 text-yellow-500 mr-0.5"
+                      className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400 mr-0.5"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
-                    <span className="text-xs font-medium text-gray-800">
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
                       {calculateRating(
                         project.total_rating,
                         project.rating_count
                       )}
                     </span>
                   </div>
-                  <div className="flex items-center bg-gray-100 rounded-md px-1.5 py-0.5">
-                    <span className="text-xs font-medium text-gray-600">
+                  <div className="flex items-center bg-gray-100 dark:bg-gray-800/50 rounded-md px-1.5 py-0.5">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                       {project.rating_count}{" "}
                       {project.rating_count === 1 ? "review" : "reviews"}
                     </span>
@@ -397,11 +409,11 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
               </div>
 
               {/* Creator and Date */}
-              <div className="flex items-center text-sm text-gray-500 mb-3">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                 By
                 <Link
                   to={`/profile/${project.user_id}`}
-                  className="pl-1 underline text-blue-500 italic"
+                  className="pl-1 text-blue-500 dark:text-blue-400 hover:underline italic"
                 >
                   {project.username}
                 </Link>
@@ -416,9 +428,9 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
               </div>
 
               {/* Stats and Actions */}
-              <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+              <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
                 {/* Views */}
-                <div className="flex items-center text-sm text-gray-500">
+                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -444,31 +456,37 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
                 {/* Rate, Bookmark & Report buttons */}
                 <div className="flex space-x-2">
                   <button
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                     onClick={() => {
                       setOpenRate(true);
                       setSelectedProjectId(project.project_id);
                       setSelectedProjectUserId(project.user_id);
                     }}
                   >
-                    <Star className={`w-4 h-4 ${"fill-yellow-500"}`} />
+                    <Star
+                      className={`w-4 h-4 ${
+                        project.rating_count > 0
+                          ? "fill-yellow-500 dark:fill-yellow-400"
+                          : ""
+                      }`}
+                    />
                   </button>
 
                   {/* Bookmark button */}
                   <button
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                     onClick={() =>
                       handleBookmark(project.project_id, project.bookmarked)
                     }
                   >
                     <Bookmark
                       className={`w-4 h-4 ${
-                        project.bookmarked ? "fill-current " : "fill-none"
+                        project.bookmarked ? "fill-current" : "fill-none"
                       }`}
                     />
                   </button>
                   <button
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                     onClick={() => {
                       setOpenReport(true);
                       setSelectedProjectId(project.project_id);
@@ -487,9 +505,9 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
       {/* Empty State */}
       {filteredProjects.length === 0 && (
         <div className="text-center py-12">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md mx-auto">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -501,12 +519,11 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
               />
             </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900">
-              No projects found
+            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+              No bookmarked projects found
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search or filters to find what you're looking
-              for.
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Try bookmarking some projects to see them here.
             </p>
           </div>
         </div>
@@ -639,6 +656,12 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
           </form>
         </DialogContent>
       </Dialog>
+      {/* download modal */}
+      <ProjectDownloadDialog
+        project={selectedProject}
+        open={openDownload}
+        onOpenChange={setOpenDownload}
+      />
     </div>
   );
 };

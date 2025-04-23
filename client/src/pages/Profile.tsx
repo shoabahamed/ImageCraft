@@ -135,35 +135,34 @@ export default function UserProfilePage() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div className=" bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
       <Navbar />
       <div className="mx-auto max-w-6xl p-4">
         {/* Enhanced Profile Header */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          {/* Banner */}
-          <div className="h-32 bg-blue-600"></div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-6 border border-blue-100 dark:border-gray-700">
+          {/* Banner with gradient */}
+          <div className="h-32 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700"></div>
 
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-6 dark:text-gray-100">
             <div className="flex flex-col md:flex-row">
-              {/* Avatar - positioned to overlap with banner */}
+              {/* Avatar with enhanced border */}
               <div className="-mt-16 mb-4 md:mb-0 flex justify-center md:justify-start">
                 <div className="relative">
-                  <Avatar className="w-32 h-32 rounded-full object-cover bg-blue-100 border-4 border-white">
+                  <Avatar className="w-32 h-32 rounded-full object-cover bg-blue-100 border-4 border-white dark:border-gray-800 shadow-lg">
                     <AvatarImage
                       src={user.imageUrl}
                       alt={user.username}
                       className="object-cover"
                     />
-
-                    <AvatarFallback className="bg-blue-500 text-white">
+                    <AvatarFallback className="bg-blue-600 text-white">
                       {user.username.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   {user.userId == userId && (
                     <button
-                      className="right-2 bottom-12 bg-blue-600 rounded-full p-2 text-white absolute"
+                      className="right-2 bottom-12 bg-blue-600 hover:bg-blue-700 rounded-full p-2 text-white absolute transition-colors duration-200 shadow-lg"
                       onClick={() => {
-                        setProfileImageDataURL(null); // Clear previous data
+                        setProfileImageDataURL(null);
                         setProfileImageOpen(true);
                       }}
                     >
@@ -186,28 +185,39 @@ export default function UserProfilePage() {
                 </div>
               </div>
 
-              {/* User info and stats */}
+              {/* User info with enhanced typography */}
               <div className="md:ml-6 flex flex-col text-center md:text-left flex-grow">
-                <h1 className="text-2xl font-bold text-slate-800">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {user?.username || "Loading..."}
                 </h1>
-                <p className="text-slate-600 mb-1">
+                <p className="text-gray-600 dark:text-gray-300 mb-1">
                   {user?.email || "Loading..."}
                 </p>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-2">
-                  {/* User stats - updated labels */}
                   <div className="flex justify-center md:justify-end space-x-6 mt-4 md:mt-0">
                     <div className="text-center">
-                      <p className="font-bold text-blue-600">{totalProjects}</p>
-                      <p className="text-xs text-slate-500">Projects</p>
+                      <p className="font-bold text-blue-600 dark:text-blue-400">
+                        {totalProjects}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Projects
+                      </p>
                     </div>
                     <div className="text-center">
-                      <p className="font-bold text-blue-600">{totalViews}</p>
-                      <p className="text-xs text-slate-500">Views</p>
+                      <p className="font-bold text-blue-600 dark:text-blue-400">
+                        {totalViews}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Views
+                      </p>
                     </div>
                     <div className="text-center">
-                      <p className="font-bold text-blue-600">{avgRate}</p>
-                      <p className="text-xs text-slate-500">Average Rating</p>
+                      <p className="font-bold text-blue-600 dark:text-blue-400">
+                        {avgRate}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Average Rating
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -216,43 +226,44 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 mb-6">
+        {/* Updated Tab Navigation */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+          {/* Update each tab button with similar styling pattern */}
           <button
-            className={`py-2 px-4 font-medium ${
+            className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "projects"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-blue-500"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
             }`}
             onClick={() => setActiveTab("projects")}
           >
             Projects
           </button>
           <button
-            className={`py-2 px-4 font-medium ${
+            className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "bookmarks"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-blue-500"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
             }`}
             onClick={() => setActiveTab("bookmarks")}
           >
             Bookmarks
           </button>
           <button
-            className={`py-2 px-4 font-medium ${
+            className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "reports"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-blue-500"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
             }`}
             onClick={() => setActiveTab("reports")}
           >
             Reports
           </button>
           <button
-            className={`py-2 px-4 font-medium ${
+            className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "notices"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-blue-500"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
             }`}
             onClick={() => setActiveTab("notices")}
           >

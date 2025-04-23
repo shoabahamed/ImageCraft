@@ -114,12 +114,12 @@ const NoticeSection = ({ userId }: { userId: string }) => {
   return (
     <div className="w-full flex flex-col space-y-4">
       {notices.length === 0 ? (
-        <div className="w-full p-8 flex flex-col items-center justify-center text-center">
-          <Bell className="h-8 w-8 text-blue-400 mb-2" />
-          <h1 className="text-xl font-medium text-gray-700">
+        <div className="w-full p-8 flex flex-col items-center justify-center text-center rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-700/50">
+          <Bell className="h-8 w-8 text-blue-500 dark:text-blue-400 mb-2" />
+          <h1 className="text-xl font-medium text-gray-700 dark:text-gray-200">
             No notices available
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
             You don't have any notifications at this time
           </p>
         </div>
@@ -128,21 +128,21 @@ const NoticeSection = ({ userId }: { userId: string }) => {
           {notices.slice(startIndex, endIndex).map((notice, index) => (
             <div
               key={`${notice.user_id}-${index}`}
-              className="bg-white rounded-lg overflow-hidden shadow-sm border border-blue-100 hover:shadow-md transition-shadow"
+              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg overflow-hidden shadow-sm border border-blue-100/50 dark:border-gray-700/50 hover:shadow-md transition-all hover:scale-[1.01]"
             >
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 px-4 py-3">
                 <h3 className="font-medium text-white text-lg">
                   {notice.title}
                 </h3>
               </div>
 
               <div className="p-4">
-                <div className="text-gray-700 whitespace-pre-wrap mb-3">
+                <div className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap mb-3">
                   {notice.message}
                 </div>
 
-                <div className="flex items-center text-xs text-gray-500 mt-2 border-t border-gray-100 pt-2">
-                  <Calendar className="h-4 w-4 mr-1 text-blue-500" />
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-2 border-t border-gray-100 dark:border-gray-700/50 pt-2">
+                  <Calendar className="h-4 w-4 mr-1 text-blue-500 dark:text-blue-400" />
                   <span>{formatDate(notice.created_at)}</span>
                 </div>
               </div>

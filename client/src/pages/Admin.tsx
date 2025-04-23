@@ -11,6 +11,7 @@ import StyleImageSection from "@/components/StyleImageSection";
 import AdminReportSection from "@/components/AdminReportSection";
 import { Link } from "react-router-dom";
 import AdminUsers from "@/components/AdminUsers";
+import Navbar from "@/components/Navbar";
 
 type userInfo = {
   username: string;
@@ -42,30 +43,9 @@ export default function AdminPanel() {
   }, [user]);
 
   return (
-    <div className="bg-blue-50 min-h-screen">
+    <div className=" bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
       {/* Header */}
-      <header className="bg-blue-600 text-white p-4 shadow-md">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <div className="text-right mr-2">
-              <p className="font-medium">{userInfo?.username}</p>
-              <p className="text-sm opacity-80">{userInfo?.email}</p>
-            </div>
-            <Link to={`/profile/${user.userId}`}>
-              <Avatar className="h-10 w-10 border-2 border-white">
-                <AvatarImage src={userInfo?.image_url} />
-                <AvatarFallback className="bg-blue-800">
-                  {userInfo?.username
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
       <main className="container mx-auto p-4">

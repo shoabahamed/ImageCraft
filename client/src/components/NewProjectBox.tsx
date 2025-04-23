@@ -11,10 +11,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import IconComponent from "./icon-component";
+import { Upload } from "lucide-react";
 
-const NewProjectBox = (props: { extraStyles?: string }) => {
+const NewProjectBox = (props: {
+  extraStyles?: string;
+  useButton?: boolean;
+}) => {
   const {
     extraStyles = "px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-blue-500/50 transition-all duration-300 dark:bg-blue-500 dark:hover:bg-blue-600",
+    useButton = true,
   } = props;
   const navigate = useNavigate();
   const [dataURL, setDataURL] = useState(null);
@@ -49,15 +55,46 @@ const NewProjectBox = (props: { extraStyles?: string }) => {
     switch (activeTab) {
       case "local":
         data = { type: "local", imageUrl: dataURL };
+        navigate("/mainpage", { state: data });
         break;
       case "url":
         data = { type: "url", imageUrl };
+        navigate("/mainpage", { state: data });
         break;
       case "json":
-        data = { type: "json", jsonData };
+        if (jsonData) {
+          const canvasData = JSON.parse(jsonData);
+          const {
+            project_data,
+            project_logs,
+            project_name,
+            final_image_shape,
+            original_image_shape,
+            download_image_shape,
+            imageUrl,
+            filter_names,
+          } = canvasData;
+          localStorage.setItem("project_data", JSON.stringify(project_data));
+          localStorage.setItem("project_logs", JSON.stringify(project_logs));
+          localStorage.setItem("project_name", project_name);
+
+          localStorage.setItem(
+            "final_image_shape",
+            JSON.stringify(final_image_shape)
+          );
+          localStorage.setItem(
+            "original_image_shape",
+            JSON.stringify(original_image_shape)
+          );
+          localStorage.setItem(
+            "download_image_shape",
+            JSON.stringify(download_image_shape)
+          );
+          localStorage.setItem("filter_names", JSON.stringify(filter_names));
+          navigate("/mainpage", { state: { imageUrl } });
+        }
         break;
     }
-    navigate("/mainpage", { state: data });
   };
 
   const handleUrlChange = (e) => {
@@ -70,12 +107,25 @@ const NewProjectBox = (props: { extraStyles?: string }) => {
 
   return (
     <div>
-      <button
-        onClick={() => setShowLoadingDialog(true)}
-        className={extraStyles}
-      >
-        Start Edit
-      </button>
+      {useButton && (
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => setShowLoadingDialog(true)}
+            className={extraStyles}
+          >
+            Start Edit
+          </button>
+        </div>
+      )}
+
+      {!useButton && (
+        <IconComponent
+          icon={<Upload />}
+          iconName={"Upload New"}
+          handleClick={() => setShowLoadingDialog(true)}
+        />
+      )}
+
       <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
         <DialogTrigger asChild>
           <button className="hidden"></button>

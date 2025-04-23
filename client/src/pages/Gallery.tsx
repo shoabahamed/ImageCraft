@@ -9,6 +9,10 @@ import {
   Filter,
   SlidersHorizontal,
   Bookmark,
+  Download,
+  ChevronRight,
+  Shield,
+  X,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuthContext } from "@/hooks/useAuthContext";
@@ -40,22 +44,48 @@ import { Link, useNavigate } from "react-router-dom";
 import SubmitRating from "@/components/SubmitRating";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import NewProjectBox from "@/components/NewProjectBox";
+import { ProjectDownloadDialog } from "@/components/ProjectDownloadDialog";
 
 interface Project {
   _id: string;
   user_id: string;
-  username: string;
+  is_public: string;
   project_id: string;
-  project_name: string;
+  username: string;
+  project_data: object;
+  project_logs: object;
+  original_image_url: string;
   canvas_image_url: string;
   bookmarked: boolean;
   rating_count: number;
   total_rating: number;
   total_views: number;
   total_bookmark: number;
+  original_image_shape: { width: number; height: number };
+  final_image_shape: { width: number; height: number };
+  download_image_shape: { width: number; height: number };
+  project_name: string;
+  filter_names: string[] | [];
   created_at: Date;
   updated_at: Date;
 }
+
+// interface Project {
+//   _id: string;
+//   user_id: string;
+//   username: string;
+//   project_id: string;
+//   project_name: string;
+//   canvas_image_url: string;
+//   bookmarked: boolean;
+//   rating_count: number;
+//   total_rating: number;
+//   total_views: number;
+//   total_bookmark: number;
+//   created_at: Date;
+//   updated_at: Date;
+// }
 
 export default function Gallery() {
   // State management
@@ -89,9 +119,6 @@ export default function Gallery() {
   const [currentPageNo, setCurrentPageNo] = useState(1);
   const [pages, setPages] = useState<number[]>([1]);
 
-  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
-  const [dataURL, setDataURL] = useState(null);
-
   const sortTypes = [
     "Newest",
     "Highest Rated",
@@ -99,6 +126,10 @@ export default function Gallery() {
     "Alphabetical",
     "Bookmarked",
   ];
+
+  // Add these new states after other state declarations
+  const [openDownload, setOpenDownload] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   // Mock data - replace with actual API call
   useEffect(() => {
@@ -208,28 +239,29 @@ export default function Gallery() {
   };
 
   // Handle download image
-  const downloadImage = async (url: string, projectId: string) => {
-    // Open image in a new tab
-    const newTab = window.open(url, "_blank");
-    if (!newTab) {
-      toast({
-        description: "Failed to open the image in a new tab.",
-        duration: 3000,
-      });
-      return;
-    }
-
+  const downloadImage = async (url: string, project: Project) => {
+    setSelectedProject(project);
+    setOpenDownload(true);
     try {
-      // Send request to update total views in the backend
+      // Update view count
       await apiClient.post(
         "/projects/update_views",
-        { project_id: projectId },
+        { project_id: project.project_id },
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user?.token}`,
           },
         }
+      );
+
+      // Update local state to reflect new view count
+      setProjects(
+        projects.map((p) =>
+          p.project_id === project.project_id
+            ? { ...p, total_views: p.total_views + 1 }
+            : p
+        )
       );
     } catch (error) {
       console.error("Error updating views:", error);
@@ -239,33 +271,6 @@ export default function Gallery() {
   // Toggle sort direction
   const toggleSortDirection = () => {
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-  };
-
-  //  code for handling image upload
-  const onDrop = useCallback((acceptedFiles) => {
-    acceptedFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        const binaryStr = reader.result;
-        setDataURL(binaryStr);
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  const { getRootProps, acceptedFiles, getInputProps, isDragActive } =
-    useDropzone({
-      onDrop,
-      accept: {
-        "image/jpeg": [".jpg", ".jpeg"],
-        "image/png": [".png"],
-      },
-    });
-
-  const handleImageUpload = (imageUrl: string) => {
-    navigate("/mainpage", { state: { imageUrl } });
   };
 
   const changeSortType = (index: number) => {
@@ -431,17 +436,12 @@ export default function Gallery() {
   if (error) return <div>{error}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
       <Navbar />
       {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-700 to-blue-900 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-900 dark:to-blue-800 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 bg-black opacity-20 z-10"></div>
-          <img
-            src="server/static/67f6dd87270e12fecef8ced0/canvas/345c070f-e3af-41f5-a557-9b58e0f15e76.png"
-            alt="Header Background"
-            className="w-full h-full object-cover"
-          />
         </div>
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-center">
@@ -449,35 +449,29 @@ export default function Gallery() {
               <h1 className="text-4xl font-bold text-white mb-2">
                 Creative Showcase
               </h1>
-              <p className="text-blue-100 max-w-lg">
+              <p className="text-blue-100 dark:text-blue-200 max-w-lg">
                 Discover and explore stunning image edits from our creative
                 community
               </p>
             </div>
-            <button
-              className="bg-white text-blue-800 hover:bg-blue-50 py-3 px-6 rounded-lg flex items-center shadow-lg transition-all duration-300 font-medium"
-              onClick={() => setShowLoadingDialog(true)}
-            >
-              <PlusCircle className="mr-2 w-5 h-5" />
-              <span>Create Project</span>
-            </button>
+            <NewProjectBox />
           </div>
 
           {/* Integrated Search Bar */}
           <div className="mt-8 max-w-3xl mx-auto">
-            <div className="relative flex bg-white rounded-full shadow-lg">
+            <div className="relative flex bg-white dark:bg-gray-800 rounded-full shadow-lg">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-blue-600" />
+                <Search className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <input
                 type="text"
-                className="block w-full pl-12 pr-4 py-3 rounded-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="block w-full pl-12 pr-4 py-3 rounded-full text-gray-700 dark:text-gray-200 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 placeholder="Search projects, creators, or techniques..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <button
-                className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-full text-sm font-medium ml-2"
+                className="flex items-center bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white px-6 rounded-full text-sm font-medium ml-2"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <SlidersHorizontal className="w-4 h-4 mr-2" />
@@ -488,27 +482,29 @@ export default function Gallery() {
         </div>
       </div>
 
-      {/* Filter Panel (Collapsible) */}
+      {/* Filter Panel */}
       <div
-        className={`bg-white border-b border-gray-200 transition-all duration-300 ${
+        className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-all duration-300 ${
           showFilters ? "max-h-44" : "max-h-0 overflow-hidden"
         }`}
       >
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap gap-4 items-center">
-            <div className="font-medium text-gray-700">Sort by:</div>
+            <div className="font-medium text-gray-700 dark:text-gray-300">
+              Sort by:
+            </div>
             <div className="flex flex-wrap gap-3">
               {sortTypes.map((option, index) => (
                 <button
                   key={index}
-                  className={`px-4 py-2 rounded-full text-sm ${
+                  className={`px-4 py-2 rounded-full text-sm transition-colors ${
                     (index === 0 && sortBy === "date") ||
                     (index === 1 && sortBy === "rating") ||
                     (index === 2 && sortBy === "views") ||
                     (index === 3 && sortBy === "name") ||
                     (index === 4 && sortBy === "Bookmarked")
-                      ? "bg-blue-100 text-blue-800 font-medium"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-medium"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
                   onClick={() => changeSortType(index)}
                 >
@@ -518,7 +514,7 @@ export default function Gallery() {
             </div>
             <div className="ml-auto">
               <button
-                className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 onClick={toggleSortDirection}
               >
                 <ArrowUpDown className="h-4 w-4 mr-2" />
@@ -533,7 +529,7 @@ export default function Gallery() {
       <div className="container mx-auto px-4 py-8">
         {/* Results Count */}
         <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-medium text-gray-800">
+          <h2 className="text-xl font-medium text-gray-800 dark:text-gray-200">
             {filteredProjects.length && searchQuery.length > 0
               ? `${filteredProjects.length} projects found`
               : ""}
@@ -545,48 +541,47 @@ export default function Gallery() {
           {filteredProjects.slice(startIndex, endIndex).map((project) => (
             <div
               key={project.project_id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700"
             >
               {/* Project Image */}
-              <div className="w-full relative">
+              <div className="relative w-full">
                 <img
                   src={project.canvas_image_url}
                   alt={project.project_name}
                   className="w-full h-48 object-cover"
                 />
                 <ArrowDownToLine
-                  className="absolute top-2 right-2 z-10 w-6 h-6 p-1 bg-white bg-opacity-75 rounded-full text-blue-700 cursor-pointer hover:bg-opacity-100 transition-all"
+                  className="absolute top-2 right-2 z-10 w-6 h-6 p-1 bg-white dark:bg-gray-800 bg-opacity-75 rounded-full text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-opacity-100 transition-all"
                   onClick={() =>
-                    downloadImage(project.canvas_image_url, project.project_id)
+                    downloadImage(project.canvas_image_url, project)
                   }
                 />
               </div>
 
               {/* Project Content */}
               <div className="p-4">
-                {/* Title and Rating */}
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-blue-800">
+                  <h3 className="font-bold text-lg text-blue-800 dark:text-blue-300">
                     {project.project_name}
                   </h3>
                   <div className="flex items-center space-x-1">
-                    <div className="flex items-center bg-yellow-50 rounded-md px-1.5 py-0.5">
+                    <div className="flex items-center bg-yellow-50 dark:bg-yellow-900/30 rounded-md px-1.5 py-0.5">
                       <svg
-                        className="w-3.5 h-3.5 text-yellow-500 mr-0.5"
+                        className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400 mr-0.5"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      <span className="text-xs font-medium text-gray-800">
+                      <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
                         {calculateRating(
                           project.total_rating,
                           project.rating_count
                         )}
                       </span>
                     </div>
-                    <div className="flex items-center bg-gray-100 rounded-md px-1.5 py-0.5">
-                      <span className="text-xs font-medium text-gray-600">
+                    <div className="flex items-center bg-gray-100 dark:bg-gray-800/50 rounded-md px-1.5 py-0.5">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                         {project.rating_count}{" "}
                         {project.rating_count === 1 ? "review" : "reviews"}
                       </span>
@@ -595,28 +590,21 @@ export default function Gallery() {
                 </div>
 
                 {/* Creator and Date */}
-                <div className="flex items-center text-sm text-gray-500 mb-3">
+                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                   By
                   <Link
                     to={`/profile/${project.user_id}`}
-                    className="pl-1 underline text-blue-500 italic"
+                    className="pl-1 text-blue-500 dark:text-blue-400 hover:underline italic"
                   >
                     {project.username}
                   </Link>
                   <span className="mx-2">•</span>
-                  <span>
-                    {project.updated_at.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
+                  <span>{project.updated_at.toLocaleDateString()}</span>
                 </div>
 
                 {/* Stats and Actions */}
-                <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                  {/* Views */}
-                  <div className="flex items-center text-sm text-gray-500">
+                <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                     <svg
                       className="w-4 h-4 mr-1"
                       fill="none"
@@ -639,34 +627,40 @@ export default function Gallery() {
                     {project.total_views}
                   </div>
 
-                  {/* Rate, Bookmark & Report buttons */}
+                  {/* Action Buttons */}
                   <div className="flex space-x-2">
                     <button
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                       onClick={() => {
                         setOpenRate(true);
                         setSelectedProjectId(project.project_id);
                         setSelectedProjectUserId(project.user_id);
                       }}
                     >
-                      <Star className={`w-4 h-4 ${"fill-yellow-500"}`} />
+                      <Star
+                        className={`w-4 h-4 ${
+                          project.rating_count > 0
+                            ? "fill-yellow-500 dark:fill-yellow-400"
+                            : ""
+                        }`}
+                      />
                     </button>
 
-                    {/* Bookmark button */}
                     <button
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                       onClick={() =>
                         handleBookmark(project.project_id, project.bookmarked)
                       }
                     >
                       <Bookmark
                         className={`w-4 h-4 ${
-                          project.bookmarked ? "fill-current " : "fill-none"
+                          project.bookmarked ? "fill-current" : "fill-none"
                         }`}
                       />
                     </button>
+
                     <button
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                       onClick={() => {
                         setOpenReport(true);
                         setSelectedProjectId(project.project_id);
@@ -685,9 +679,9 @@ export default function Gallery() {
         {/* Empty State */}
         {filteredProjects.length === 0 && (
           <div className="text-center py-12">
-            <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md mx-auto">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -699,150 +693,95 @@ export default function Gallery() {
                   d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                 />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">
+              <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
                 No projects found
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Try adjusting your search or filters to find what you're looking
                 for.
               </p>
             </div>
           </div>
         )}
+
+        {/* Pagination */}
+        <Pagination className="flex justify-end p-7">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                className="cursor-pointer"
+                onClick={() => {
+                  setCurrentPageNo(Math.max(currentPageNo - 1, 1));
+                }}
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+
+            {pages
+              .slice(
+                Math.max(currentPageNo - 2, 0),
+                Math.min(currentPageNo + 1, pages.length)
+              )
+              .map((pageNo) => (
+                <PaginationItem key={pageNo}>
+                  <PaginationLink
+                    onClick={() => setCurrentPageNo(pageNo)}
+                    isActive={pageNo === currentPageNo}
+                    className="cursor-pointer"
+                  >
+                    {pageNo}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                className="cursor-pointer"
+                onClick={() => {
+                  setCurrentPageNo(Math.min(currentPageNo + 1, pages.length));
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
 
-      <Pagination className="flex justify-end p-7">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              className="cursor-pointer"
-              onClick={() => {
-                setCurrentPageNo(Math.max(currentPageNo - 1, 1));
-              }}
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-
-          {pages
-            .slice(
-              Math.max(currentPageNo - 2, 0),
-              Math.min(currentPageNo + 1, pages.length)
-            )
-            .map((pageNo) => (
-              <PaginationItem key={pageNo}>
-                <PaginationLink
-                  onClick={() => setCurrentPageNo(pageNo)}
-                  isActive={pageNo === currentPageNo}
-                  className="cursor-pointer"
-                >
-                  {pageNo}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext
-              className="cursor-pointer"
-              onClick={() => {
-                setCurrentPageNo(Math.min(currentPageNo + 1, pages.length));
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-
       {/* Footer */}
-      <footer className="bg-blue-900 text-white py-6">
+      <footer className="bg-blue-900 dark:bg-gray-900 text-white py-6">
         <div className="container mx-auto px-4 text-center">
           <p>&copy; 2025 Creative Showcase. All rights reserved.</p>
         </div>
       </footer>
-      <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
-        <DialogTrigger asChild>
-          <button className="hidden"></button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-900 text-center">
-              Upload Image
-            </DialogTitle>
-          </DialogHeader>
 
-          <div className="flex justify-center items-center">
-            <div
-              {...getRootProps()}
-              className="border-2 border-dashed border-blue-400 w-full max-w-sm p-6 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50"
-            >
-              <input {...getInputProps()} />
-              {dataURL ? (
-                <img
-                  src={dataURL}
-                  alt="Uploaded Preview"
-                  className="w-full h-auto rounded-lg shadow-md"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    height="50"
-                    width="50"
-                    className="text-blue-500"
-                  >
-                    <path d="M1 14.5C1 12.1716 2.22429 10.1291 4.06426 8.9812C4.56469 5.044 7.92686 2 12 2C16.0731 2 19.4353 5.044 19.9357 8.9812C21.7757 10.1291 23 12.1716 23 14.5C23 17.9216 20.3562 20.7257 17 20.9811L7 21C3.64378 20.7257 1 17.9216 1 14.5ZM16.8483 18.9868C19.1817 18.8093 21 16.8561 21 14.5C21 12.927 20.1884 11.4962 18.8771 10.6781L18.0714 10.1754L17.9517 9.23338C17.5735 6.25803 15.0288 4 12 4C8.97116 4 6.42647 6.25803 6.0483 9.23338L5.92856 10.1754L5.12288 10.6781C3.81156 11.4962 3 12.927 3 14.5C3 16.8561 4.81833 18.8093 7.1517 18.9868L7.325 19H16.675L16.8483 18.9868ZM13 13V17H11V13H8L12 8L16 13H13Z" />
-                  </svg>
-                  <p className="mt-2 text-sm">
-                    {isDragActive
-                      ? "Drop the files here..."
-                      : "Drag & drop an image here, or click to select one"}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6 flex justify-center">
-            {dataURL && (
-              <button
-                className="custom-button w-32"
-                onClick={() => {
-                  handleImageUpload(dataURL);
-                }}
-              >
-                Upload
-              </button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ... existing modals ... */}
       {/* Rate Modal */}
       <Dialog open={openRate} onOpenChange={setOpenRate}>
         <DialogTrigger asChild>
           <Button className="hidden"></Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-lg">
+        <DialogContent className="sm:max-w-[500px] p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-800 text-center">
+            <DialogTitle className="text-2xl font-bold text-gray-800 dark:text-gray-100 text-center">
               Rate This Image
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 text-center mt-2">
-              Share your feedback by rating this image! .
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
+              Share your feedback by rating this image!
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-6">
             <div className="flex justify-center">
               <SubmitRating
-                rating={selectedRating} // Default to no rating initially
+                rating={selectedRating}
                 onRatingChange={setSelectedRating}
               />
             </div>
-            <div className="mt-4 flex justify-center text-gray-600 text-sm">
+            <div className="mt-4 flex justify-center text-gray-600 dark:text-gray-400 text-sm">
               {selectedRating
                 ? `You selected ${selectedRating} stars!`
                 : "No rating yet."}
@@ -850,7 +789,7 @@ export default function Gallery() {
           </div>
           <DialogFooter className="mt-6">
             <Button
-              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold py-2 rounded-md transition-colors duration-200"
               onClick={handleSubmitRating}
             >
               Submit Rating
@@ -904,6 +843,14 @@ export default function Gallery() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* download dialog */}
+
+      <ProjectDownloadDialog
+        project={selectedProject}
+        open={openDownload}
+        onOpenChange={setOpenDownload}
+      />
     </div>
   );
 }

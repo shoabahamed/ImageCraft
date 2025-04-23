@@ -178,12 +178,12 @@ const UsersSection = () => {
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen p-6">
       <div className="relative mb-6">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
         <Input
           placeholder="Search users by name, email or ID..."
-          className="pl-10"
+          className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -193,14 +193,14 @@ const UsersSection = () => {
           {filteredUsers.slice(startIndex, endIndex).map((user) => (
             <Card
               key={user.user_id}
-              className="transition-shadow hover:shadow-md"
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-md"
             >
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <Avatar>
+                    <Avatar className="border-2 border-blue-100 dark:border-blue-900">
                       <AvatarImage src={user.image_url} />
-                      <AvatarFallback className="bg-blue-200 text-blue-700">
+                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                         {user.username
                           .split(" ")
                           .map((n) => n[0])
@@ -208,13 +208,17 @@ const UsersSection = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-lg">{user.username}</CardTitle>
-                      <CardDescription>{user.email}</CardDescription>
+                      <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+                        {user.username}
+                      </CardTitle>
+                      <CardDescription className="text-gray-500 dark:text-gray-400">
+                        {user.email}
+                      </CardDescription>
                     </div>
                   </div>
                   <Badge
                     variant="outline"
-                    className="bg-blue-50 text-[10px] lg-text-[14px]"
+                    className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 text-[10px] lg:text-[10px]"
                   >
                     ID: {user.user_id}
                   </Badge>
@@ -226,38 +230,35 @@ const UsersSection = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-blue-600"
+                      className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       onClick={() => setCurrentUser(user)}
                     >
                       <MessageSquare size={16} className="mr-1" /> Message
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                     <DialogHeader>
-                      <DialogTitle>
+                      <DialogTitle className="text-gray-900 dark:text-gray-100">
                         Send Message to {currentUser?.username}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="pt-2 pb-0">
+                    <div className="space-y-4 pt-4">
                       <Input
-                        placeholder="Type your title ..."
-                        className=""
+                        placeholder="Type your title..."
+                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                         value={messageTitle}
                         onChange={(e) => setMessageTitle(e.target.value)}
                       />
-                    </div>
-
-                    <div className="pb-4 pt-2">
                       <Textarea
                         placeholder="Type your message here..."
-                        className="min-h-32"
+                        className="min-h-32 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                         value={messageContent}
                         onChange={(e) => setMessageContent(e.target.value)}
                       />
                     </div>
                     <DialogFooter>
                       <Button
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white"
                         onClick={sendMessage}
                       >
                         <Send size={16} className="mr-2" /> Send Message
@@ -268,7 +269,7 @@ const UsersSection = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-blue-600"
+                  className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   onClick={() => navigate(`/profile/${user.user_id}`)}
                 >
                   <Eye size={16} className="mr-1" /> Profile
@@ -276,7 +277,7 @@ const UsersSection = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-red-600"
+                  className="text-red-600 dark:text-red-400 border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                   onClick={() => deleteUser(user.user_id)}
                 >
                   <Trash2 size={16} className="mr-1" /> Delete
@@ -285,6 +286,16 @@ const UsersSection = () => {
             </Card>
           ))}
         </div>
+
+        {/* Empty State */}
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-12">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+              <p className="text-gray-500 dark:text-gray-400">No users found</p>
+            </div>
+          </div>
+        )}
+
         <Pagination className="flex justify-end p-7">
           <PaginationContent>
             <PaginationItem>

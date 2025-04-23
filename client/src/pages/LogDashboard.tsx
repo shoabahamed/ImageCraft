@@ -36,7 +36,7 @@ import { useEffect, useState } from "react";
 import apiClient from "@/utils/appClient";
 import { useParams } from "react-router-dom";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { get } from "node:http";
+import Navbar from "@/components/Navbar";
 
 // TODO: what to do if the image is very big I do not think the display would look very good
 
@@ -52,6 +52,7 @@ type logType = {
 };
 
 type projectType = {
+  project_id: string;
   project_name: string;
   username: string;
   project_data: string;
@@ -76,40 +77,44 @@ export function ProjectInfo({ project }: { project: projectType }) {
       : "No ratings";
 
   return (
-    <Card className="border-blue-200">
-      <CardHeader>
-        <CardTitle className="text-blue-800">Project Information</CardTitle>
+    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+      <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+        <CardTitle className="text-gray-900 dark:text-gray-100">
+          Project Information
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Project Name:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {project.project_name}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Created By:
               </span>
-              <span className="text-sm text-blue-900">{project.username}</span>
+              <span className="text-sm text-gray-900 dark:text-gray-100">
+                {project.username}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Created At:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {new Date(project.created_at).toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Last Updated:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {new Date(project.updated_at).toLocaleString()}
               </span>
             </div>
@@ -117,45 +122,47 @@ export function ProjectInfo({ project }: { project: projectType }) {
 
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Original Dimensions:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {project.original_image_shape.width} ×{" "}
                 {project.original_image_shape.height}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Final Dimensions:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {project.final_image_shape.width} ×{" "}
                 {project.final_image_shape.height}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm font-medium text-blue-700">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Download Dimensions:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {project.download_image_shape.width} ×{" "}
                 {project.download_image_shape.height}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-blue-700 flex items-center">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center">
                 <EyeIcon className="h-4 w-4 mr-1" /> Views:
               </span>
-              <span className="text-sm text-blue-900">
+              <span className="text-sm text-gray-900 dark:text-gray-100">
                 {project.total_views}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-blue-700 flex items-center">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center">
                 <StarIcon className="h-4 w-4 mr-1" /> Rating:
               </span>
-              <span className="text-sm text-blue-900">{rating}</span>
+              <span className="text-sm text-gray-900 dark:text-gray-100">
+                {rating}
+              </span>
             </div>
           </div>
         </div>
@@ -172,28 +179,30 @@ export function ImageComparison({
   final: string;
 }) {
   return (
-    <Card className="border-blue-200">
-      <CardHeader>
-        <CardTitle className="text-blue-800">Image Comparison</CardTitle>
+    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+      <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+        <CardTitle className="text-gray-900 dark:text-gray-100">
+          Image Comparison
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Tabs defaultValue="side-by-side" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-blue-100">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
             <TabsTrigger
               value="side-by-side"
-              className="text-blue-800 data-[state=active]:bg-blue-200"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 text-gray-600 dark:text-gray-300 data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-100"
             >
               Side by Side
             </TabsTrigger>
             <TabsTrigger
               value="original"
-              className="text-blue-800 data-[state=active]:bg-blue-200"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 text-gray-600 dark:text-gray-300 data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-100"
             >
               Original
             </TabsTrigger>
             <TabsTrigger
               value="final"
-              className="text-blue-800 data-[state=active]:bg-blue-200"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 text-gray-600 dark:text-gray-300 data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-100"
             >
               Final
             </TabsTrigger>
@@ -202,11 +211,11 @@ export function ImageComparison({
           <TabsContent value="side-by-side">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-blue-700">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Original Image
                 </h3>
 
-                <div className="relative aspect-square border border-blue-200 rounded-lg overflow-hidden">
+                <div className="relative aspect-square border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <img
                     src={original}
                     alt="Original image"
@@ -215,10 +224,10 @@ export function ImageComparison({
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-blue-700">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Final Image
                 </h3>
-                <div className="relative aspect-square border border-blue-200 rounded-lg overflow-hidden">
+                <div className="relative aspect-square border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <img
                     src={final}
                     alt="Final image"
@@ -230,7 +239,7 @@ export function ImageComparison({
           </TabsContent>
 
           <TabsContent value="original">
-            <div className="flex justify-center items-center w-full border border-blue-200 rounded-lg overflow-hidden">
+            <div className="flex justify-center items-center w-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
               <img
                 src={original}
                 alt="Original image"
@@ -240,7 +249,7 @@ export function ImageComparison({
           </TabsContent>
 
           <TabsContent value="final">
-            <div className="relative w-full aspect-square border border-blue-200 rounded-lg overflow-hidden">
+            <div className="relative w-full aspect-square border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
               <img src={final} alt="Final image" className="object-contain" />
             </div>
           </TabsContent>
@@ -252,25 +261,27 @@ export function ImageComparison({
 
 export function FiltersDisplay({ filters }: { filters: string[] }) {
   return (
-    <Card className="border-blue-200">
-      <CardHeader>
-        <CardTitle className="text-blue-800">Applied Filters</CardTitle>
+    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+      <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+        <CardTitle className="text-gray-900 dark:text-gray-100">
+          Applied Filters
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         {filters.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {filters.map((filter, index) => (
               <Badge
                 key={index}
                 variant="outline"
-                className="bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200"
+                className="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700"
               >
                 {filter}
               </Badge>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-blue-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             No filters were applied to this project.
           </p>
         )}
@@ -291,51 +302,64 @@ export function LogsSection({ logs }: { logs: logType[] }) {
     count,
   }));
 
+  console.log(chartData);
+
   return (
-    <Card className="border-blue-200 h-full">
-      <CardHeader>
-        <CardTitle className="text-blue-800">Activity Logs</CardTitle>
+    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md h-full">
+      <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+        <CardTitle className="text-gray-900 dark:text-gray-100">
+          Activity Logs
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="event" stroke="#1e40af" />
-              <YAxis stroke="#1e40af" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="event" stroke="#6B7280" />
+              <YAxis stroke="#6B7280" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#f8fafc",
-                  borderColor: "#bfdbfe",
+                  backgroundColor: "rgb(17 24 39)",
+                  borderColor: "#374151",
                   borderRadius: "0.5rem",
                 }}
-                itemStyle={{ color: "#1e40af" }}
-                labelStyle={{ color: "#1e3a8a", fontWeight: "bold" }}
+                itemStyle={{ color: "#E5E7EB" }}
+                labelStyle={{ color: "#F3F4F6" }}
               />
-              <Bar dataKey="count" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="#60A5FA" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           <Table>
-            <TableHeader className="bg-blue-50">
+            <TableHeader className="bg-gray-50 dark:bg-gray-900">
               <TableRow>
-                <TableHead className="text-blue-800">Time</TableHead>
-                <TableHead className="text-blue-800">Event</TableHead>
-                <TableHead className="text-blue-800">Message</TableHead>
+                <TableHead className="text-gray-900 dark:text-gray-100">
+                  Time
+                </TableHead>
+                <TableHead className="text-gray-900 dark:text-gray-100">
+                  Event
+                </TableHead>
+                <TableHead className="text-gray-900 dark:text-gray-100">
+                  Message
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {logs.map((log, index) => (
-                <TableRow key={index} className="hover:bg-blue-50">
-                  <TableCell className="text-sm text-blue-900">
+                <TableRow
+                  key={index}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                >
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-300">
                     {new Date(log.timestamp).toLocaleTimeString()}
                   </TableCell>
-                  <TableCell className="text-sm text-blue-900">
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-300">
                     {log.event}
                   </TableCell>
-                  <TableCell className="text-sm text-blue-900">
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-300">
                     {log.message}
                   </TableCell>
                 </TableRow>
@@ -469,9 +493,11 @@ export function Histograms({
   if (loading) return <h1>Loading</h1>;
 
   return (
-    <Card className="border-blue-200">
+    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
       <CardHeader>
-        <CardTitle className="text-blue-800">Image Histograms</CardTitle>
+        <CardTitle className="text-gray-900 dark:text-gray-100">
+          Image Histograms
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="original" className="w-full">
@@ -637,56 +663,142 @@ export default function LogDashboard() {
     if (user) fetchLogs();
   }, [user]);
 
+  const downloadCanvasData = (
+    project_data: Object,
+    project_logs: Object,
+    original_image_shape: object,
+    final_image_shape: object,
+    download_image_shape: object,
+    filter_names: string[] | [],
+    project_name: string,
+    imageUrl: string
+  ) => {
+    const allData = {
+      project_data: project_data,
+      project_logs: project_logs,
+      project_name: project_name,
+      final_image_shape: final_image_shape,
+      original_image_shape: original_image_shape,
+      download_image_shape: download_image_shape,
+      filter_names: filter_names,
+      imageUrl: imageUrl,
+    };
+
+    // Create JSON blob
+    const blob = new Blob([JSON.stringify(allData, null, 2)], {
+      type: "application/json",
+    });
+
+    // Create temporary anchor
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${project_name}_project_data_${
+      new Date().toISOString().split("T")[0]
+    }.json`;
+    document.body.appendChild(a);
+    a.click();
+
+    // Cleanup
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadLogs = (project_logs: Object) => {
+    // Create JSON blob
+    const blob = new Blob([JSON.stringify(project_logs, null, 2)], {
+      type: "application/json",
+    });
+
+    // Create temporary anchor
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `project_logs_${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+
+    // Cleanup
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <h1>Loading</h1>;
 
   return (
-    <div className="min-h-screen bg-blue-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-blue-800">
-            Project Dashboard
-          </h1>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              className="bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200"
-            >
-              <DownloadIcon className="mr-2 h-4 w-4" />
-              Download Project Data
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200"
-            >
-              <DownloadIcon className="mr-2 h-4 w-4" />
-              Download Logs
-            </Button>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <div className="flex flex-col">
+        <Navbar />
+
+        {/* Header Section with Better Layout */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-900 dark:to-blue-800">
+          <div className="container mx-auto px-6 py-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mx-12">
+              <h1 className="text-3xl font-bold text-white">
+                Project Dashboard
+              </h1>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-colors"
+                  onClick={() =>
+                    downloadCanvasData(
+                      project.project_data,
+                      project.project_logs,
+                      project.original_image_shape,
+                      project.final_image_shape,
+                      project.download_image_shape,
+                      project.filter_names,
+                      project.project_name || "Untitled",
+                      project.original_image_url
+                    )
+                  }
+                >
+                  <DownloadIcon className="mr-2 h-4 w-4" />
+                  Download Project Data
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-colors"
+                  onClick={() => {
+                    downloadLogs(project.project_logs);
+                  }}
+                >
+                  <DownloadIcon className="mr-2 h-4 w-4" />
+                  Download Logs
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <ImageComparison
-              original={project.original_image_url}
-              final={project.canvas_image_url}
-            />
+        {/* Main Content */}
+        <div className="container mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <ImageComparison
+                original={project.original_image_url}
+                final={project.canvas_image_url}
+              />
 
-            <ProjectInfo project={project} />
+              <ProjectInfo project={project} />
 
-            <FiltersDisplay filters={project.filter_names} />
+              <FiltersDisplay filters={project.filter_names} />
+            </div>
+
+            {/* Logs Section */}
+            <div className="space-y-6">
+              <LogsSection logs={project.project_logs} />
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <LogsSection logs={project.project_logs} />
-          </div>
+          <Histograms
+            original={project.original_image_url}
+            final={project.canvas_image_url}
+            originalShape={project.original_image_shape}
+            finalShape={project.final_image_shape}
+          />
         </div>
-
-        <Histograms
-          original={project.original_image_url}
-          final={project.canvas_image_url}
-          originalShape={project.original_image_shape}
-          finalShape={project.final_image_shape}
-        />
       </div>
     </div>
   );

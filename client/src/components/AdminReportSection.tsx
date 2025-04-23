@@ -367,12 +367,21 @@ const AdminReportSection = () => {
   };
 
   return (
-    <Tabs defaultValue="pending" className="w-full">
-      <TabsList className="mb-6">
-        <TabsTrigger value="pending" className="flex items-center gap-2">
+    <Tabs
+      defaultValue="pending"
+      className="w-full bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen p-6"
+    >
+      <TabsList className="mb-6 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <TabsTrigger
+          value="pending"
+          className="flex items-center gap-2 text-gray-700 dark:text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:data-[state=active]:bg-blue-700"
+        >
           <Clock size={16} /> Pending Reports ({pendingReports.length})
         </TabsTrigger>
-        <TabsTrigger value="resolved" className="flex items-center gap-2">
+        <TabsTrigger
+          value="resolved"
+          className="flex items-center gap-2 text-gray-700 dark:text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:data-[state=active]:bg-blue-700"
+        >
           <CheckCircle size={16} /> Resolved Reports ({resolvedReports.length})
         </TabsTrigger>
       </TabsList>
@@ -384,22 +393,22 @@ const AdminReportSection = () => {
             .map((report) => (
               <Card
                 key={report.id}
-                className="transition-shadow hover:shadow-md"
+                className="bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg text-blue-700">
+                      <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
                         {report.title}
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-1">
+                      <CardDescription className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <span>
                           Reported on {report.created_at.toLocaleDateString()}
                         </span>
                         <span className="mx-1">•</span>
                         <Badge
                           variant="outline"
-                          className="bg-yellow-50 text-yellow-700"
+                          className="bg-yellow-100/80 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/50"
                         >
                           Pending
                         </Badge>
@@ -407,13 +416,21 @@ const AdminReportSection = () => {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      >
                         <DropdownMenuItem
                           onClick={() => deleteReport(report.id, "pending")}
+                          className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20"
                         >
                           <Trash2 size={14} className="mr-2" /> Delete Report
                         </DropdownMenuItem>
@@ -424,45 +441,48 @@ const AdminReportSection = () => {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-blue-50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium text-blue-800 mb-1">
+                      <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100/50 dark:border-blue-800/50">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                           Reporter
                         </h4>
-                        <p className="text-sm">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
                           {report.reporter_name}{" "}
-                          <span className="text-[10px]">
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">
                             (ID: {report.reporter_user_id})
                           </span>
                         </p>
                       </div>
-                      <div className="bg-blue-50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium text-blue-800 mb-1">
+                      <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100/50 dark:border-blue-800/50">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                           Project Owner
                         </h4>
-                        <p className="text-sm">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
                           {report.project_user_name}{" "}
-                          <span className="text-[10px]">
-                            (ID: {report.project_user_id}
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            (ID: {report.project_user_id})
                           </span>
-                          )
                         </p>
                       </div>
                     </div>
+
                     <div>
-                      <h4 className="text-sm font-medium mb-1">Description</h4>
-                      <p className="text-sm bg-gray-50 p-3 rounded-md">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                        Description
+                      </h4>
+                      <p className="text-sm bg-gray-50 dark:bg-gray-800/50 p-3 rounded-md border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
                         {report.description}
                       </p>
                     </div>
+
                     <div>
-                      <h4 className="text-sm font-medium mb-1">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                         Admin Response
                       </h4>
-                      <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         {report.has_admin_response === "false" ? (
-                          <div className="flex items-center text-sm text-gray-500">
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                             <svg
-                              className="w-4 h-4 mr-1 text-yellow-500"
+                              className="w-4 h-4 mr-1 text-yellow-500 dark:text-yellow-400"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -477,17 +497,17 @@ const AdminReportSection = () => {
                             <span>Admin has not responded yet</span>
                           </div>
                         ) : (
-                          <div className="bg-blue-50 p-3 rounded-md">
-                            <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                          <div className="bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-md border border-blue-100/50 dark:border-blue-800/50">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                               Admin Response
                             </h4>
                             {report.admin_response?.title && (
-                              <p className="text-sm text-gray-700 mb-2">
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                                 <strong>Title:</strong>{" "}
                                 {report.admin_response.title}
                               </p>
                             )}
-                            <p className="text-sm text-gray-700 mb-2">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                               <strong>Message:</strong>{" "}
                               {report.admin_response?.message || ""}
                               {report.admin_response?.granted_log && (
@@ -596,18 +616,20 @@ const AdminReportSection = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-blue-600"
+                        className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                         onClick={() => setSelectedReportId(report.id)}
                       >
                         <MessageSquare size={16} className="mr-1" /> Reply
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                       <DialogHeader>
-                        <DialogTitle>Reply to Report</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-gray-900 dark:text-gray-100">
+                          Reply to Report
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-600 dark:text-gray-400">
                           Send a message to reporter id{" "}
-                          <span className="text-[10px] font-semibold">
+                          <span className="text-[10px] font-semibold text-gray-900 dark:text-gray-100">
                             {selectedReportId}
                           </span>
                         </DialogDescription>
@@ -644,7 +666,7 @@ const AdminReportSection = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-blue-600"
+                    className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     onClick={() => {
                       navigate(`/log_dashboard/${report.project_id}`);
                     }}
@@ -667,7 +689,7 @@ const AdminReportSection = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-blue-600"
+                    className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     onClick={() => grantLogs(report.id)}
                   >
                     <FileText size={16} className="mr-1" /> Grant Logs
@@ -675,7 +697,7 @@ const AdminReportSection = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600"
+                    className="text-red-600 dark:text-red-400 border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                     onClick={() => deleteProject(report.project_id, report.id)}
                   >
                     <Trash2 size={16} className="mr-1" /> Delete Project
@@ -683,7 +705,7 @@ const AdminReportSection = () => {
                   <Button
                     variant="default"
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white"
                     onClick={() => resolveReport(report.id)}
                   >
                     <CheckCircle size={16} className="mr-1" /> Resolve
@@ -693,12 +715,16 @@ const AdminReportSection = () => {
             ))}
           {pendingReports.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No pending reports</p>
+              <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No pending reports
+                </p>
+              </div>
             </div>
           )}
         </div>
         <Pagination className="flex justify-end p-7">
-          <PaginationContent>
+          <PaginationContent className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-1">
             <PaginationItem>
               <PaginationPrevious
                 className="cursor-pointer"
@@ -752,20 +778,22 @@ const AdminReportSection = () => {
             .map((report) => (
               <Card
                 key={report.id}
-                className="transition-shadow hover:shadow-md opacity-90"
+                className="bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{report.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-1">
+                      <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+                        {report.title}
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <span>
                           Reported on {report.created_at.toLocaleDateString()}
                         </span>
                         <span className="mx-1">•</span>
                         <Badge
                           variant="outline"
-                          className="bg-green-50 text-green-700"
+                          className="bg-green-100/80 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800/50"
                         >
                           Resolved
                         </Badge>
@@ -773,13 +801,21 @@ const AdminReportSection = () => {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      >
                         <DropdownMenuItem
                           onClick={() => deleteReport(report.id, "resolved")}
+                          className="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20"
                         >
                           <Trash2 size={14} className="mr-2" /> Delete Report
                         </DropdownMenuItem>
@@ -790,39 +826,46 @@ const AdminReportSection = () => {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">
+                      <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100/50 dark:border-blue-800/50">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                           Reporter
                         </h4>
-                        <p className="text-sm">
-                          {report.reporter_name} (ID: {report.reporter_user_id})
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {report.reporter_name}{" "}
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            (ID: {report.reporter_user_id})
+                          </span>
                         </p>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">
+                      <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100/50 dark:border-blue-800/50">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                           Project Owner
                         </h4>
-                        <p className="text-sm">
-                          {report.project_user_name} (ID:{" "}
-                          {report.project_user_id})
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {report.project_user_name}{" "}
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            (ID: {report.project_user_id})
+                          </span>
                         </p>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium mb-1">Description</h4>
-                      <p className="text-sm bg-gray-50 p-3 rounded-md">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                        Description
+                      </h4>
+                      <p className="text-sm bg-gray-50 dark:bg-gray-800/50 p-3 rounded-md border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
                         {report.description}
                       </p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium mb-1">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                         Admin Response
                       </h4>
-                      <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         {report.has_admin_response === "false" ? (
-                          <div className="flex items-center text-sm text-gray-500">
+                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                             <svg
-                              className="w-4 h-4 mr-1 text-yellow-500"
+                              className="w-4 h-4 mr-1 text-yellow-500 dark:text-yellow-400"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -837,17 +880,17 @@ const AdminReportSection = () => {
                             <span>Admin has not responded yet</span>
                           </div>
                         ) : (
-                          <div className="bg-blue-50 p-3 rounded-md">
-                            <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                          <div className="bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-md border border-blue-100/50 dark:border-blue-800/50">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                               Admin Response
                             </h4>
                             {report.admin_response?.title && (
-                              <p className="text-sm text-gray-700 mb-2">
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                                 <strong>Title:</strong>{" "}
                                 {report.admin_response.title}
                               </p>
                             )}
-                            <p className="text-sm text-gray-700 mb-2">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                               <strong>Message:</strong>{" "}
                               {report.admin_response?.message || ""}
                               {report.admin_response?.granted_log && (
@@ -855,7 +898,7 @@ const AdminReportSection = () => {
                                   You can find details of logs
                                   <Link
                                     to={`http://localhost:5173/log_dashboard/${report.project_id}`}
-                                    className="px-1 underline text-blue-600 hover:text-blue-800"
+                                    className="px-1 underline text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                                   >
                                     here
                                   </Link>
@@ -863,9 +906,11 @@ const AdminReportSection = () => {
                               )}
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
+                              {/* Action buttons with consistent dark mode styling */}
                               {report.admin_response?.logs && (
-                                <button
-                                  className="inline-flex items-center px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white"
                                   onClick={() =>
                                     downloadAsFile(
                                       report.admin_response?.logs,
@@ -887,7 +932,7 @@ const AdminReportSection = () => {
                                     />
                                   </svg>
                                   Download Logs
-                                </button>
+                                </Button>
                               )}
                               {report.admin_response?.original_image_url && (
                                 <a
@@ -896,7 +941,7 @@ const AdminReportSection = () => {
                                   }
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-blue-600 text-sm font-medium"
+                                  className="inline-flex items-center px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-600/50 text-blue-600 dark:text-blue-400 text-xs font-medium"
                                 >
                                   <svg
                                     className="w-4 h-4 mr-1"
@@ -925,7 +970,7 @@ const AdminReportSection = () => {
                                   href={report.admin_response.canvas_image_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-blue-600 text-sm font-medium"
+                                  className="inline-flex items-center px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-700/50 dark:hover:bg-gray-600/50 text-blue-600 dark:text-blue-400 text-xs font-medium"
                                 >
                                   <svg
                                     className="w-4 h-4 mr-1"
@@ -952,12 +997,18 @@ const AdminReportSection = () => {
                 </CardContent>
               </Card>
             ))}
+
           {resolvedReports.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No resolved reports</p>
+              <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No resolved reports
+                </p>
+              </div>
             </div>
           )}
         </div>
+
         <Pagination className="flex justify-end p-7">
           <PaginationContent>
             <PaginationItem>

@@ -478,30 +478,35 @@ def update_project_view_count():
     try:
         data = request.get_json()
         project_id = data.get('project_id')
+        project_user_id = data.get('project_user_id')
+        user_id = str(g._id) 
 
         if not project_id:
             return jsonify({'message': 'Project Id missing'}), 400
         
-        
-        # Fetch project by project_id from the database
-        project = projects_collection.find_one({"project_id": project_id})
-
-        
-        total_rating = int(project.get("total_views", 0)) + 1
-        
- 
-       
-        # Update the project's visibility
-        result = projects_collection.update_one(
-            {"project_id": project_id},
-            {"$set": {"total_views": str(total_rating)}}
-        )
-
-
-        if result.modified_count == 1:
-            return jsonify({"success": True, "message": f"View Count Updated"}), 200
+        if project_user_id == user_id:
+            return jsonify({"success": True, "message": f"View Count not updated"}), 200
         else:
-            return jsonify({"success": False, "message": "View Count Update Unsucessfull"}), 404
+                
+            # Fetch project by project_id from the database
+            project = projects_collection.find_one({"project_id": project_id})
+
+            
+            total_rating = int(project.get("total_views", 0)) + 1
+            
+    
+        
+            # Update the project's visibility
+            result = projects_collection.update_one(
+                {"project_id": project_id},
+                {"$set": {"total_views": str(total_rating)}}
+            )
+
+
+            if result.modified_count == 1:
+                return jsonify({"success": True, "message": f"View Count Updated"}), 200
+            else:
+                return jsonify({"success": False, "message": "View Count Update Unsucessfull"}), 404
 
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

@@ -157,7 +157,7 @@ export default function Gallery() {
         setFilteredProjects(sortedProjects);
         setPages(calculatePages(sortedProjects.length));
       } catch (err) {
-        setError("Failed to fetch projects");
+        // setError("Failed to fetch projects");
         console.error(err);
       } finally {
         setLoading(false);
@@ -246,7 +246,7 @@ export default function Gallery() {
       // Update view count
       await apiClient.post(
         "/projects/update_views",
-        { project_id: project.project_id },
+        { project_id: project.project_id, project_user_id: project.user_id },
         {
           headers: {
             "Content-Type": "application/json",

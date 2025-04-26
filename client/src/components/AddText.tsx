@@ -28,7 +28,7 @@ import {
   Italic,
 } from "lucide-react";
 
-import { Canvas, Textbox } from "fabric";
+import { Canvas, FabricImage, Textbox } from "fabric";
 import { Textarea } from "./ui/textarea";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
@@ -39,9 +39,10 @@ import useAddTextStore from "@/hooks/appStore/AddTextStore";
 
 type AddTextProps = {
   canvas: Canvas;
+  image: FabricImage;
 };
 
-const AddText = ({ canvas }: AddTextProps) => {
+const AddText = ({ canvas, image }: AddTextProps) => {
   const { selectedObject, setSelectedObject } = useCanvasObjects();
   const { addLog } = useLogContext();
 
@@ -57,6 +58,7 @@ const AddText = ({ canvas }: AddTextProps) => {
   const isItalic = useAddTextStore((state) => state.isItalic);
   const isBold = useAddTextStore((state) => state.isBold);
   const isUnderLine = useAddTextStore((state) => state.isUnderLine);
+  const charSpacing = useAddTextStore((state) => state.charSpacing);
 
   // Unpacking setter functions one by one
   const setTextValue = useAddTextStore((state) => state.setTextValue);
@@ -73,23 +75,31 @@ const AddText = ({ canvas }: AddTextProps) => {
   const setBold = useAddTextStore((state) => state.setBold);
   const setUnderLine = useAddTextStore((state) => state.setUnderLine);
 
+  const setCharSpacing = useAddTextStore((state) => state.setCharSpacing);
+
   // Add text to canvas
   const addText = () => {
     const textId = crypto.randomUUID();
+    const baseFontSize = Math.round(image.width * image.scaleX * 0.05);
+    const charSpacing = Math.round(baseFontSize * 0.2);
+
     const text = new Textbox("Sample Text", {
-      left: 10,
-      top: 10,
+      left: image.left,
+      top: image.top,
       fill: textColorValue,
-      fontSize: textSize,
+      fontSize: baseFontSize,
       fontFamily: textFont,
       opacity: textOpacity,
-
+      charSpacing: charSpacing,
       lineHeight: textLineSpacing,
       textAlign: textAlignValue,
-
+      // lockScalingX: true,
+      // lockScalingY: true,
       underline: isUnderLine,
       fontWeight: isBold ? "bold" : "normal",
       fontStyle: isItalic ? "italic" : "normal",
+      originX: "center",
+      originY: "center",
     });
     text.set("id", textId);
     text.set("isUpper", isUpper);
@@ -97,7 +107,7 @@ const AddText = ({ canvas }: AddTextProps) => {
       selectable: true,
     });
     canvas.add(text);
-    canvas.centerObject(text);
+
     canvas.setActiveObject(text);
     addLog({
       section: "text",
@@ -121,6 +131,7 @@ const AddText = ({ canvas }: AddTextProps) => {
         fontWeight: isBold ? "bold" : "normal",
         fontStyle: isItalic ? "italic" : "normal",
         textAlign: textAlignValue,
+        charSpacing: charSpacing,
       });
       canvas.renderAll();
     }
@@ -163,29 +174,18 @@ const AddText = ({ canvas }: AddTextProps) => {
       const activeObject = canvas.getActiveObject();
       if (activeObject && activeObject.type === "textbox") {
         const textObj = activeObject as Textbox;
-        setSelectedObject(textObj);
-        setTextValue(textObj.text || "");
-        setTextColorValue(textObj.fill as string);
-        setTextSize(textObj.fontSize || 14);
-        setTextFont(textObj.fontFamily || "arial");
-        setTextOpacity(textObj.opacity || 1);
-
-        setTextAlignValue(textObj.textAlign);
-        setTextLineSpacing(textObj.lineHeight);
-
-        setItalic(textObj.fontStyle === "italic" ? true : false);
-        setUnderLine(textObj.underline ? true : false);
-        setBold(textObj.fontWeight === "bold" ? true : false);
-        setUpper(textObj.get("isUpper") || false);
-
-        // setTimeout(() => {
-        //   addLog({
-        //     objType: "text",
-        //     propType: "selection",
-        //     message: `Modified texbox object with ID: ${textObj.get("id")}`,
-        //   });
-        // }, 0);
-        console.log(textObj.angle);
+        setTimeout(() => {
+          addLog({
+            section: "text",
+            tab: "text",
+            event: "update",
+            message: `Modified texbox object position with ID: ${textObj.get(
+              "id"
+            )}`,
+            param: "position",
+            objType: "text",
+          });
+        }, 0);
       } else {
         setSelectedObject(null);
       }
@@ -205,22 +205,6 @@ const AddText = ({ canvas }: AddTextProps) => {
           param: "scale",
           objType: "text",
         });
-
-        const textObj = activeObject as Textbox;
-        setSelectedObject(textObj);
-        setTextValue(textObj.text || "");
-        setTextColorValue(textObj.fill as string);
-        setTextSize(textObj.fontSize || 14);
-        setTextFont(textObj.fontFamily || "arial");
-        setTextOpacity(textObj.opacity || 1);
-
-        setTextAlignValue(textObj.textAlign);
-        setTextLineSpacing(textObj.lineHeight);
-
-        setItalic(textObj.fontStyle === "italic" ? true : false);
-        setUnderLine(textObj.underline ? true : false);
-        setBold(textObj.fontWeight === "bold" ? true : false);
-        setUpper(textObj.get("isUpper") || false);
       } else {
         setSelectedObject(null);
       }
@@ -229,14 +213,36 @@ const AddText = ({ canvas }: AddTextProps) => {
     const handleObjectDeselected = () => {
       setSelectedObject(null);
     };
-    canvas.on("selection:created", handleObjectSelected);
 
+    const handleTextChange = () => {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject && activeObject.type === "textbox") {
+        const textObj = activeObject as Textbox;
+        const oldTextValue = textValue;
+        const newTextValue = textObj.text || "";
+        setTextValue(newTextValue);
+        setTimeout(() => {
+          addLog({
+            section: "text",
+            tab: "text",
+            event: "update",
+            message: `Changed text ${oldTextValue} to ${newTextValue}`,
+            param: "text",
+            objType: "text",
+          });
+        }, 0);
+      }
+    };
+
+    canvas.on("selection:created", handleObjectSelected);
+    canvas.on("text:changed", handleTextChange);
     canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
     canvas.on("selection:cleared", handleObjectDeselected);
 
     return () => {
       canvas.off("selection:created", handleObjectSelected);
+      canvas.off("text:changed", handleTextChange);
       canvas.off("selection:cleared", handleObjectDeselected);
       canvas.off("object:modified", handleObjectModified);
       canvas.off("object:scaling", handleObjectScaled);
@@ -272,6 +278,7 @@ const AddText = ({ canvas }: AddTextProps) => {
     isUnderLine,
     isBold,
     isUpper,
+    charSpacing,
   ]);
 
   const handleFontChange = (value) => {
@@ -400,7 +407,7 @@ const AddText = ({ canvas }: AddTextProps) => {
                   <CustomSlider
                     sliderName="Size"
                     min={4}
-                    max={150}
+                    max={300}
                     defaultValue={textSize}
                     sliderValue={textSize}
                     setSliderValue={setTextSize}
@@ -417,6 +424,17 @@ const AddText = ({ canvas }: AddTextProps) => {
                     sliderValue={textOpacity}
                     setSliderValue={setTextOpacity}
                     logName="Text Opacity"
+                    section={"text"}
+                    tab={"text"}
+                  />
+                  <CustomSlider
+                    sliderName="Char Spacing"
+                    min={4}
+                    max={300}
+                    defaultValue={charSpacing}
+                    sliderValue={charSpacing}
+                    setSliderValue={setCharSpacing}
+                    logName="Text Char spacing"
                     section={"text"}
                     tab={"text"}
                   />

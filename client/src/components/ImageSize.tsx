@@ -5,23 +5,16 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Canvas, FabricImage } from "fabric";
 import { Switch } from "./ui/switch";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { Label } from "./ui/label";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getRotatedBoundingBox } from "@/utils/commonFunctions";
+import { useState } from "react";
 
 type ImageSizeProps = {
   canvas: Canvas;
@@ -34,6 +27,8 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     finalImageDimensions,
     setFinalImageDimensions,
     setDownloadImageDimensions,
+    finalImageDimensionsRef,
+    downloadImageDimensionsRef,
   } = useCanvasObjects();
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
   const { addLog } = useLogContext();
@@ -51,16 +46,25 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       .find((obj) => obj.setCoords());
 
     const bounds = getRotatedBoundingBox(image);
+
+    downloadImageDimensionsRef.current = {
+      imageHeight: bounds.height,
+      imageWidth: bounds.width,
+    };
+
     setDownloadImageDimensions({
       imageHeight: bounds.height,
       imageWidth: bounds.width,
     });
+
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
     canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
+
+    canvas.fire("object:modified");
   };
 
   const handleWidthChange = (e) => {
@@ -80,6 +84,11 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           imageHeight: newHeight,
           imageWidth: newWidth,
         });
+
+        finalImageDimensionsRef.current = {
+          imageHeight: newHeight,
+          imageWidth: newWidth,
+        };
         addLog({
           section: "arrange",
           tab: "image size",
@@ -93,6 +102,10 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           ...finalImageDimensions,
           imageWidth: newWidth,
         });
+        finalImageDimensionsRef.current = {
+          imageHeight: newHeight,
+          imageWidth: newWidth,
+        };
         addLog({
           section: "arrange",
           tab: "image size",
@@ -128,6 +141,10 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           imageHeight: newHeight,
           imageWidth: newWidth,
         });
+        finalImageDimensionsRef.current = {
+          imageHeight: newHeight,
+          imageWidth: newWidth,
+        };
         addLog({
           section: "arrange",
           tab: "image size",
@@ -149,6 +166,10 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
           ...finalImageDimensions,
           imageHeight: newHeight,
         });
+        finalImageDimensionsRef.current = {
+          imageHeight: newHeight,
+          imageWidth: newWidth,
+        };
         scaleX = image.scaleX;
       }
     }
@@ -156,13 +177,6 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     image.scaleX = scaleX;
     image.scaleY = scaleY;
     canvas.renderAll();
-
-    const bounds = getRotatedBoundingBox(image);
-    console.log(bounds);
-    setDownloadImageDimensions({
-      imageHeight: bounds.height,
-      imageWidth: bounds.width,
-    });
 
     handleRenderingFinalDimension();
   };
@@ -172,6 +186,12 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       imageHeight: image.height,
       imageWidth: image.width,
     });
+
+    finalImageDimensionsRef.current = {
+      imageHeight: image.height,
+      imageWidth: image.width,
+    };
+
     addLog({
       section: "arrange",
       tab: "image size",
@@ -200,6 +220,11 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       imageWidth: newWidth,
       imageHeight: newHeight,
     });
+
+    finalImageDimensionsRef.current = {
+      imageWidth: newWidth,
+      imageHeight: newHeight,
+    };
 
     addLog({
       section: "arrange",

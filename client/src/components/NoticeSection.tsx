@@ -77,7 +77,7 @@ const NoticeSection = ({ userId }: { userId: string }) => {
         setNotices(sortedNotices);
         setPages(calculatePages(sortedNotices.length));
       } catch (error) {
-        setError("Failed to fetch notices" + error);
+        // setError("Failed to fetch notices" + error);
         toast({ description: "Failed to load notices", duration: 3000 });
       } finally {
         setLoading(false);

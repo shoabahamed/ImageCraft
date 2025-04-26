@@ -108,7 +108,7 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     // Find the object named "Frame" or starting with "Frame"
     let bounds = getRotatedBoundingBox(image);
 
-    if (frameObject && downloadFrame) {
+    if (frameObject && image.clipPath) {
       bounds = getRotatedBoundingBox(frameObject);
     }
 

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, CSSProperties, useCallback } from "react";
 
 import { filters } from "fabric";
 import * as fabric from "fabric";
-import { useLocation, useNavigate } from "react-router-dom";
+import { data, useLocation, useNavigate } from "react-router-dom";
 import AdjustSidebar from "@/components/AdjustSidebar";
 import AddText from "@/components/AddText";
 import Arrange from "@/components/Arrange";
@@ -55,15 +55,12 @@ const Test = () => {
 
   const currentFilters = useCommonProps((state) => state.currentFilters);
   const currentFiltersRef = useRef(currentFilters);
-  const setFlipX = useArrangeStore((state) => state.setFlipX);
-  const setFlipY = useArrangeStore((state) => state.setFlipY);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
   const currentImageRef = useRef<fabric.FabricImage | null>(null); // Use ref for currentImage
 
   const databaseFiltersNameRef = useRef<null | string[]>(null);
-  const oldFiltersNameRef = useRef<null | string[]>(null);
   const databaseFiltersObjectRef = useRef<null | object[]>(null);
   const [filtersUI, setFiltersUI] = useState(false);
 
@@ -80,21 +77,30 @@ const Test = () => {
 
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
 
-  const {
-    setOriginalImageDimensions,
-    setFinalImageDimensions,
-    setLoadedFromSaved,
-    setZoomValue,
-    originalImageDimensions,
-    finalImageDimensions,
-    downloadImageDimensions,
-    setDownloadImageDimensions,
-    zoomValue,
-  } = useCanvasObjects();
+  const { setLoadedFromSaved, setZoomValue, zoomValue } = useCanvasObjects();
+
+  const [spinnerLoading, setSpinnerLoading] = useState(false);
+
+  //arrange states
 
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
 
-  const [spinnerLoading, setSpinnerLoading] = useState(false);
+  const {
+    originalImageDimensions,
+    finalImageDimensions,
+    disableSavingIntoStackRef,
+    downloadImageDimensions,
+    setOriginalImageDimensions,
+    setFinalImageDimensions,
+    setDownloadImageDimensions,
+    finalImageDimensionsRef,
+    originalImageDimensionsRef,
+    downloadImageDimensionsRef,
+    setSelectedObject,
+  } = useCanvasObjects();
+
+  const setFlipX = useArrangeStore((state) => state.setFlipX);
+  const setFlipY = useArrangeStore((state) => state.setFlipY);
 
   //adjust store values
 
@@ -417,6 +423,21 @@ const Test = () => {
               imageWidth: imageWidth,
             });
 
+            finalImageDimensionsRef.current = {
+              imageHeight: imageHeight,
+              imageWidth: imageWidth,
+            };
+
+            downloadImageDimensionsRef.current = {
+              imageHeight: imageHeight,
+              imageWidth: imageWidth,
+            };
+
+            originalImageDimensionsRef.current = {
+              imageHeight: imageHeight,
+              imageWidth: imageWidth,
+            };
+
             initCanvas.setDimensions({
               width: containerWidth,
               height: containerHeight,
@@ -447,6 +468,8 @@ const Test = () => {
               originY: "center",
             });
 
+            // img.skewX = -3.5;
+
             initCanvas.add(img);
             initCanvas.renderAll();
             currentImageRef.current = img; // Set the ref directly
@@ -474,6 +497,7 @@ const Test = () => {
               },
               filter_names: [],
               viewportTransform: initCanvas.viewportTransform,
+              zoomValue: zoom,
             };
 
             setHistoryValue(allData);
@@ -516,7 +540,38 @@ const Test = () => {
   }, []);
 
   // the pieces of code handles undo and redo functionality
-  const handleObjectModified = useCallback(() => {
+  // const handleObjectModified = useCallback(() => {
+  //   console.log("skdf");
+  //   const canvasData = mainCanvasRef.current.toObject([
+  //     "name",
+  //     "isUpper",
+  //     "id",
+  //   ]);
+
+  //   const filterNames =
+  //     currentFiltersRef.current?.map((filter) => filter.filterName) || [];
+
+  //   const allData = {
+  //     project_data: canvasData,
+  //     final_image_shape: finalImageDimensions,
+  //     original_image_shape: originalImageDimensions,
+  //     download_image_shape: downloadImageDimensions,
+  //     filter_names: filterNames,
+  //     viewportTransform: mainCanvasRef.current.viewportTransform,
+  //   };
+
+  //   setHistoryValue(allData);
+  // }, [
+  //   mainCanvasRef,
+  //   finalImageDimensions,
+  //   originalImageDimensions,
+  //   downloadImageDimensions,
+  //   setHistoryValue,
+  // ]);
+  const handleObjectModified = () => {
+    if (disableSavingIntoStackRef.current) return;
+
+    console.log("object modified from undo redo");
     const canvasData = mainCanvasRef.current.toObject([
       "name",
       "isUpper",
@@ -528,35 +583,37 @@ const Test = () => {
 
     const allData = {
       project_data: canvasData,
-      final_image_shape: finalImageDimensions,
-      original_image_shape: originalImageDimensions,
-      download_image_shape: downloadImageDimensions,
+      final_image_shape: finalImageDimensionsRef.current,
+      original_image_shape: originalImageDimensionsRef.current,
+      download_image_shape: downloadImageDimensionsRef.current,
       filter_names: filterNames,
       viewportTransform: mainCanvasRef.current.viewportTransform,
+      zoomValue: zoomValue,
     };
 
     setHistoryValue(allData);
-  }, [
-    mainCanvasRef,
-    finalImageDimensions,
-    originalImageDimensions,
-    downloadImageDimensions,
-    setHistoryValue,
-  ]);
+  };
 
   useEffect(() => {
     if (!mainCanvasRef.current) return;
 
     const canvas = mainCanvasRef.current;
     canvas.on("object:modified", handleObjectModified);
+    canvas.on("object:added", handleObjectModified);
+    canvas.on("object:removed", handleObjectModified);
 
     return () => {
       canvas.off("object:modified", handleObjectModified);
+      canvas.off("object:added", handleObjectModified);
+      canvas.off("object:removed", handleObjectModified);
     };
   }, [handleObjectModified]);
 
   useEffect(() => {
     if (!isUndoRedoAction.current) return;
+
+    setSpinnerLoading(true);
+    setSelectedObject(null);
 
     const canvasJSON = currentSnapshot.project_data;
     const finalImageShape: { imageWidth: number; imageHeight: number } =
@@ -588,16 +645,12 @@ const Test = () => {
     });
 
     newCanvas.setViewportTransform(currentSnapshot.viewportTransform);
+    setZoomValue(currentSnapshot.zoomValue);
 
     // 5. Ensure DOM attachment
     if (container && !container.contains(htmlCanvas)) {
       container.appendChild(newCanvas.wrapperEl);
     }
-
-    const oldFilterNames =
-      currentFiltersRef.current?.map((filter) => filter.filterName) || [];
-
-    oldFiltersNameRef.current = oldFilterNames;
 
     try {
       const ensureSingleCallback = (canvas: fabric.Canvas) => {
@@ -650,10 +703,26 @@ const Test = () => {
             imageHeight: finalImageShape.imageHeight,
           });
 
+          finalImageDimensionsRef.current = {
+            imageHeight: finalImageShape.imageHeight,
+            imageWidth: finalImageShape.imageWidth,
+          };
+
+          originalImageDimensionsRef.current = {
+            imageHeight: originalImageShape.imageHeight,
+            imageWidth: originalImageShape.imageWidth,
+          };
+
+          downloadImageDimensionsRef.current = {
+            imageHeight: downloadImageShape.imageHeight,
+            imageWidth: downloadImageShape.imageWidth,
+          };
+
           setImageRotation(imageObject.angle);
           setFlipX(imageObject.flipX);
           setFlipY(imageObject.flipY);
 
+          // for some reason you have to set the values again but does not need to done with other objects though
           imageObject.set({
             left: imageObject.width / 2,
             top: imageObject.height / 2,
@@ -664,13 +733,13 @@ const Test = () => {
           });
 
           dbLoadingRef.current = true;
-
           databaseFiltersNameRef.current = filterNames;
           databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
           setFiltersUI(!filtersUI);
         }
 
-        if (frameObject) {
+        console.log(imageObject.clipPath, "clip path");
+        if (frameObject && imageObject.clipPath) {
           imageObject.clipPath = null;
           frameObject.absolutePositioned = true;
           // selectedObject.absolutePositioned = true;
@@ -680,24 +749,10 @@ const Test = () => {
         // @ts-ignore
         currentImageRef.current = imageObject; // Store the Fabric.js image object reference
         mainCanvasRef.current = newCanvas; // Store the Fabric.js canvas reference
-
-        newCanvas.requestRenderAll();
       });
     } catch (error) {
       console.error("Failed to load canvas data:", error);
     }
-
-    newCanvas.on("mouse:wheel", function (opt) {
-      const delta = opt.e.deltaY;
-      let zoom = newCanvas.getZoom();
-      zoom *= 0.999 ** delta;
-      if (zoom > 20) zoom = 20;
-      if (zoom < 0.01) zoom = 0.01;
-      newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-      setZoomValue(zoom);
-      opt.e.preventDefault();
-      opt.e.stopPropagation();
-    });
 
     // newCanvas.on("object:modified", handleObjectModified);
     newCanvas.on("mouse:wheel", function (opt) {
@@ -734,12 +789,13 @@ const Test = () => {
   }, [currentHistoryIndex]);
 
   //  the code below is responsible for handling all kinds of filters
+
   useEffect(() => {
     if (currentImageRef.current && mainCanvasRef.current) {
       if (dbLoadingRef.current) return;
       const filtersList = [...(currentFilters || [])];
 
-      console.log("old", filtersList);
+      console.log("old, running from main", filtersList);
       updateOrInsert(
         filtersList,
         "grayscale",
@@ -896,9 +952,11 @@ const Test = () => {
     console.log(
       "loading from database",
       databaseFiltersNameRef.current,
-      databaseFiltersObjectRef.current,
-      oldFiltersNameRef.current
+      databaseFiltersObjectRef.current
     );
+
+    resetFilters();
+
     const loadDatabaseFilters = async () => {
       if (!databaseFiltersNameRef.current || !databaseFiltersObjectRef.current)
         return;
@@ -906,270 +964,194 @@ const Test = () => {
       // Get new and old filter names (default to empty array)
       const databaseFiltersName = databaseFiltersNameRef.current;
       const databaseFiltersObject = databaseFiltersObjectRef.current;
-      const oldFilters = oldFiltersNameRef.current || [];
 
       dbLoadingRef.current = true;
       const filtersList: any[] = [];
 
       // resetFilters();
 
-      for (let idx = 0; idx < oldFilters.length; idx++) {
-        const filterName = oldFilters[idx];
-        let filterData: any = null;
-        // Only apply the filter if it exists in both the new and old lists.
-
-        let shouldApply = false;
-        if (
-          databaseFiltersName.includes(filterName) ||
-          oldFilters.length === 0
-        ) {
-          shouldApply = true;
-          console.log("should apply", filterName);
-          filterData = databaseFiltersObject[idx];
-        } else {
-          console.log("should not  apply", filterName);
-        }
+      for (let idx = 0; idx < databaseFiltersName.length; idx++) {
+        const filterName = databaseFiltersName[idx];
+        const filterData: any = databaseFiltersObject[idx];
 
         switch (filterName) {
           case "grayscale":
-            if (shouldApply) {
-              setEnableGrayScale(true);
-              updateOrInsert(
-                filtersList,
-                "grayscale",
-                new filters.Grayscale(),
-                true
-              );
-            } else {
-              setEnableGrayScale(false);
-            }
+            setEnableGrayScale(true);
+            updateOrInsert(
+              filtersList,
+              "grayscale",
+              new filters.Grayscale(),
+              true
+            );
             break;
           case "sepia":
-            if (shouldApply) {
-              setEnableSepia(true);
-              updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
-            } else {
-              setEnableSepia(false);
-            }
+            setEnableSepia(true);
+            updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
+
             break;
           case "vintage":
-            if (shouldApply) {
-              setEnableVintage(true);
-              updateOrInsert(
-                filtersList,
-                "vintage",
-                new filters.Vintage(),
-                true
-              );
-            } else {
-              setEnableVintage(false);
-            }
+            setEnableVintage(true);
+            updateOrInsert(filtersList, "vintage", new filters.Vintage(), true);
             break;
           case "kodachrome":
-            if (shouldApply) {
-              setEnableKodachrome(true);
-              updateOrInsert(
-                filtersList,
-                "kodachrome",
-                new filters.Kodachrome(),
-                true
-              );
-            } else {
-              setEnableKodachrome(false);
-            }
+            setEnableKodachrome(true);
+            updateOrInsert(
+              filtersList,
+              "kodachrome",
+              new filters.Kodachrome(),
+              true
+            );
+
             break;
           case "technicolor":
-            if (shouldApply) {
-              setEnableTechnicolor(true);
-              updateOrInsert(
-                filtersList,
-                "technicolor",
-                new filters.Technicolor(),
-                true
-              );
-            } else {
-              setEnableTechnicolor(false);
-            }
+            setEnableTechnicolor(true);
+            updateOrInsert(
+              filtersList,
+              "technicolor",
+              new filters.Technicolor(),
+              true
+            );
+
             break;
           case "sharpen":
-            if (shouldApply) {
-              setEnableSharpen(true);
-              updateOrInsert(
-                filtersList,
-                "sharpen",
-                new filters.Convolute({
-                  matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
-                  opaque: false,
-                }),
-                true
-              );
-            } else {
-              setEnableSharpen(false);
-            }
+            setEnableSharpen(true);
+            updateOrInsert(
+              filtersList,
+              "sharpen",
+              new filters.Convolute({
+                matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
+                opaque: false,
+              }),
+              true
+            );
+
             break;
           case "invert":
-            if (shouldApply) {
-              setEnableInvert(true);
-              updateOrInsert(
-                filtersList,
-                "invert",
-                new filters.Invert({ alpha: false }),
-                true
-              );
-            } else {
-              setEnableInvert(false);
-            }
+            setEnableInvert(true);
+            updateOrInsert(
+              filtersList,
+              "invert",
+              new filters.Invert({ alpha: false }),
+              true
+            );
+
             break;
           case "gbrightness":
-            if (shouldApply) {
-              setGreenBrightnessValue(filterData.GBrightness);
-              updateOrInsert(
-                filtersList,
-                "gbrightness",
-                new GBrightness({ GBrightness: filterData.GBrightness }),
-                true
-              );
-            } else {
-              setGreenBrightnessValue(0);
-            }
+            setGreenBrightnessValue(filterData.GBrightness);
+            updateOrInsert(
+              filtersList,
+              "gbrightness",
+              new GBrightness({ GBrightness: filterData.GBrightness }),
+              true
+            );
+
             break;
           case "bbrightness":
-            if (shouldApply) {
-              setBlueBrightnessValue(filterData.BBrightness);
-              updateOrInsert(
-                filtersList,
-                "bbrightness",
-                new BBrightness({ BBrightness: filterData.BBrightness }),
-                true
-              );
-            } else {
-              setBlueBrightnessValue(0);
-            }
+            setBlueBrightnessValue(filterData.BBrightness);
+            updateOrInsert(
+              filtersList,
+              "bbrightness",
+              new BBrightness({ BBrightness: filterData.BBrightness }),
+              true
+            );
+
             break;
           case "rbrightness":
-            if (shouldApply) {
-              setRedBrightnessValue(filterData.RBrightness);
-              updateOrInsert(
-                filtersList,
-                "rbrightness",
-                new RBrightness({ RBrightness: filterData.RBrightness }),
-                true
-              );
-            } else {
-              setRedBrightnessValue(0);
-            }
+            setRedBrightnessValue(filterData.RBrightness);
+            updateOrInsert(
+              filtersList,
+              "rbrightness",
+              new RBrightness({ RBrightness: filterData.RBrightness }),
+              true
+            );
+
             break;
           case "gamma":
-            if (shouldApply) {
-              setGammaRedValue(filterData.gamma[0]);
-              setGammaGreenValue(filterData.gamma[1]);
-              setGammaBlueValue(filterData.gamma[2]);
-              updateOrInsert(
-                filtersList,
-                "gamma",
-                new filters.Gamma({
-                  gamma: [
-                    filterData.gamma[0],
-                    filterData.gamma[1],
-                    filterData.gamma[2],
-                  ],
-                }),
-                true
-              );
-            } else {
-              setGammaRedValue(1);
-              setGammaGreenValue(1);
-              setGammaBlueValue(1);
-            }
+            setGammaRedValue(filterData.gamma[0]);
+            setGammaGreenValue(filterData.gamma[1]);
+            setGammaBlueValue(filterData.gamma[2]);
+            updateOrInsert(
+              filtersList,
+              "gamma",
+              new filters.Gamma({
+                gamma: [
+                  filterData.gamma[0],
+                  filterData.gamma[1],
+                  filterData.gamma[2],
+                ],
+              }),
+              true
+            );
+
             break;
           case "contrast":
-            if (shouldApply) {
-              setContrastValue(filterData.contrast);
-              updateOrInsert(
-                filtersList,
-                "contrast",
-                new filters.Contrast({ contrast: filterData.contrast }),
-                true
-              );
-            } else {
-              setContrastValue(0);
-            }
+            setContrastValue(filterData.contrast);
+            updateOrInsert(
+              filtersList,
+              "contrast",
+              new filters.Contrast({ contrast: filterData.contrast }),
+              true
+            );
+
             break;
           case "saturation":
-            if (shouldApply) {
-              setSaturationValue(filterData.saturation);
-              updateOrInsert(
-                filtersList,
-                "saturation",
-                new filters.Saturation({ saturation: filterData.saturation }),
-                true
-              );
-            } else {
-              setSaturationValue(0);
-            }
+            setSaturationValue(filterData.saturation);
+            updateOrInsert(
+              filtersList,
+              "saturation",
+              new filters.Saturation({ saturation: filterData.saturation }),
+              true
+            );
+
             break;
           case "vibrance":
-            if (shouldApply) {
-              setVibranceValue(filterData.vibrance);
-              updateOrInsert(
-                filtersList,
-                "vibrance",
-                new filters.Vibrance({ vibrance: filterData.vibrance }),
-                true
-              );
-            }
+            setVibranceValue(filterData.vibrance);
+            updateOrInsert(
+              filtersList,
+              "vibrance",
+              new filters.Vibrance({ vibrance: filterData.vibrance }),
+              true
+            );
+
             break;
           case "blur":
-            if (shouldApply) {
-              setBlurValue(filterData.blur);
-              updateOrInsert(
-                filtersList,
-                "blur",
-                new filters.Blur({ blur: filterData.blur }),
-                true
-              );
-            } else {
-              setBlurValue(0);
-            }
+            setBlurValue(filterData.blur);
+            updateOrInsert(
+              filtersList,
+              "blur",
+              new filters.Blur({ blur: filterData.blur }),
+              true
+            );
+
             break;
           case "hueRotation":
-            if (shouldApply) {
-              setHueValue(filterData.rotation);
-              updateOrInsert(
-                filtersList,
-                "hueRotation",
-                new filters.HueRotation({ rotation: filterData.rotation }),
-                true
-              );
-            } else {
-              setHueValue(0);
-            }
+            setHueValue(filterData.rotation);
+            updateOrInsert(
+              filtersList,
+              "hueRotation",
+              new filters.HueRotation({ rotation: filterData.rotation }),
+              true
+            );
+
             break;
           case "noise":
-            if (shouldApply) {
-              setNoiseValue(filterData.noise);
-              updateOrInsert(
-                filtersList,
-                "noise",
-                new filters.Noise({ noise: filterData.noise }),
-                true
-              );
-            } else {
-              setNoiseValue(0);
-            }
+            setNoiseValue(filterData.noise);
+            updateOrInsert(
+              filtersList,
+              "noise",
+              new filters.Noise({ noise: filterData.noise }),
+              true
+            );
+
             break;
           case "pixelate":
-            if (shouldApply) {
-              setPixelateValue(filterData.blocksize);
-              updateOrInsert(
-                filtersList,
-                "pixelate",
-                new filters.Pixelate({ blocksize: filterData.blocksize }),
-                pixelateValue !== 0
-              );
-            } else {
-              setPixelateValue(0);
-            }
+            setPixelateValue(filterData.blocksize);
+            updateOrInsert(
+              filtersList,
+              "pixelate",
+              new filters.Pixelate({ blocksize: filterData.blocksize }),
+              pixelateValue !== 0
+            );
 
             break;
         }
@@ -1178,7 +1160,11 @@ const Test = () => {
     };
 
     loadDatabaseFilters();
-    dbLoadingRef.current = false;
+    setTimeout(() => {
+      setSpinnerLoading(false);
+      dbLoadingRef.current = false;
+      mainCanvasRef.current.requestRenderAll();
+    }, 500);
   }, [filtersUI]);
 
   return (
@@ -1295,7 +1281,7 @@ const Test = () => {
                   Add Shapes
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                  <AddShape canvas={mainCanvasRef.current!} />
+                  <AddShape canvasRef={mainCanvasRef!} />
                 </div>
               </div>
             )}
@@ -1322,7 +1308,10 @@ const Test = () => {
                   Text
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                  <AddText canvas={mainCanvasRef.current!} />
+                  <AddText
+                    canvas={mainCanvasRef.current!}
+                    image={currentImageRef.current}
+                  />
                 </div>
               </div>
             )}

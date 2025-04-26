@@ -98,37 +98,6 @@ const Footer = ({
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
 
-  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
-  const [dataURL, setDataURL] = useState(null);
-
-  const onDrop = useCallback((acceptedFiles) => {
-    acceptedFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        const binaryStr = reader.result;
-        setDataURL(binaryStr);
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  const { getRootProps, acceptedFiles, getInputProps, isDragActive } =
-    useDropzone({
-      onDrop,
-      accept: {
-        "image/jpeg": [".jpg", ".jpeg"],
-        "image/png": [".png"],
-      },
-    });
-
-  const handleImageUpload = (imageUrl: string) => {
-    setShowLoadingDialog(false);
-    navigate("/mainpage", { state: { imageUrl } });
-    window.location.reload();
-  };
-
   // Function to convert Blob to File
   const convertBlobToFile = (url) => {
     return new Promise((resolve, reject) => {
@@ -315,7 +284,7 @@ const Footer = ({
 
     if (!canvas || !image) return;
 
-    const dataURL = getCanvasDataUrl(canvas, image, downloadFrame);
+    const dataURL = getCanvasDataUrl(canvas, image, false);
 
     if (superResValue !== "none") {
       try {
@@ -506,7 +475,7 @@ const Footer = ({
             handleZoomIn();
           }}
         />
-        <div>{Math.floor(zoomValue * 100)}%</div>
+        <div>{Math.round(zoomValue * 100)}%</div>
         {/* <IconComponent icon={<Undo />} iconName={"Undo"} /> */}
         {/* <IconComponent icon={<Redo />} iconName={"Redo"} />  */}
         <IconComponent
@@ -517,67 +486,14 @@ const Footer = ({
       </div>
 
       <div className="flex flex-none gap-10">
-        <Dialog
-          open={openDownloadOptions}
-          onOpenChange={setOpenDownloadOptions}
+        <button
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-30"
+          onClick={() => {
+            downloadCanvas();
+          }}
         >
-          <DialogTrigger asChild>
-            <button
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-30"
-              onClick={() => {
-                setOpenDownloadOptions(true);
-              }}
-            >
-              Download
-            </button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Download</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col justify-start space-y-8">
-              <div className="flex justify-between items-center mt-4">
-                <Label htmlFor="frame-download">Crop Only</Label>
-                <Switch
-                  id="frame-download"
-                  checked={downloadFrame}
-                  onClick={() => setDownLoadFrame(!downloadFrame)}
-                />
-              </div>
-
-              {/* <div className="flex justify-between items-center mt-4">
-                <Label className="flex-1">Resolution</Label>
-                <div>
-                  <Select
-                    onValueChange={(value) => {
-                      setSuperResValue(value); // Set the value if the user is logged in
-                    }}
-                    defaultValue={superResValue}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a resolution" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="2x" disabled={!user}>
-                        2X
-                      </SelectItem>
-                      <SelectItem value="4x" disabled={!user}>
-                        4X
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div> */}
-            </div>
-
-            <DialogFooter className="mt-6">
-              <button className="custom-button" onClick={downloadCanvas}>
-                Download
-              </button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          Download
+        </button>
 
         <button
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300  px-6 py-3 text-blue-700"
@@ -603,12 +519,9 @@ const Footer = ({
             Delete
           </button>
         )}
-        {/* <div className="relative flex items-center space-x-4">
-          <WebSpeechComponent />
-        </div> */}
       </div>
 
-      <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
+      {/* <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
         <DialogTrigger asChild>
           <button className="hidden"></button>
         </DialogTrigger>
@@ -665,7 +578,7 @@ const Footer = ({
             )}
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 };

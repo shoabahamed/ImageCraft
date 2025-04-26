@@ -11,8 +11,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import IconComponent from "./icon-component";
 import { Upload } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const NewProjectBox = (props: {
   extraStyles?: string;
@@ -55,7 +60,8 @@ const NewProjectBox = (props: {
     switch (activeTab) {
       case "local":
         data = { type: "local", imageUrl: dataURL };
-        navigate("/mainpage", { state: data });
+
+        navigate(`/mainpage`, { state: data });
         break;
       case "url":
         data = { type: "url", imageUrl };
@@ -95,6 +101,8 @@ const NewProjectBox = (props: {
         }
         break;
     }
+
+    window.location.href = `/mainpage`;
   };
 
   const handleUrlChange = (e) => {
@@ -119,11 +127,21 @@ const NewProjectBox = (props: {
       )}
 
       {!useButton && (
-        <IconComponent
-          icon={<Upload />}
-          iconName={"Upload New"}
-          handleClick={() => setShowLoadingDialog(true)}
-        />
+        <button
+          className={`flex cursor-default select-none items-center justify-center rounded-[0.2rem] px-3 py-1.5 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground transition-all duration-300`}
+          onClick={() => setShowLoadingDialog(true)}
+        >
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Upload />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Upload</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </button>
       )}
 
       <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>

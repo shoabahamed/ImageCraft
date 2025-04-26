@@ -33,16 +33,30 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
-  const { setDownloadImageDimensions } = useCanvasObjects();
+  const { setDownloadImageDimensions, downloadImageDimensionsRef } =
+    useCanvasObjects();
 
-  useEffect(() => {
+  const handleFlipX = (flipX: boolean) => {
+    setFlipX(flipX);
+
     image.set({
       flipX: flipX,
+    });
+
+    canvas.renderAll();
+    canvas.fire("object:modified");
+  };
+
+  const handleFlipY = (flipY: boolean) => {
+    setFlipY(flipY);
+
+    image.set({
       flipY: flipY,
     });
 
     canvas.renderAll();
-  }, [flipX, flipY]);
+    canvas.fire("object:modified");
+  };
 
   const handleRenderingFinalDimension = () => {
     const originalViewportTransform = canvas.viewportTransform;
@@ -57,10 +71,17 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       .find((obj) => obj.setCoords());
 
     const bounds = getRotatedBoundingBox(image);
+
     setDownloadImageDimensions({
       imageHeight: bounds.height,
       imageWidth: bounds.width,
     });
+
+    downloadImageDimensionsRef.current = {
+      imageHeight: bounds.height,
+      imageWidth: bounds.width,
+    };
+
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
@@ -86,6 +107,8 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
     canvas.renderAll();
 
     handleRenderingFinalDimension();
+
+    canvas.fire("object:modified");
   };
 
   const handleOrientationReset = () => {
@@ -100,6 +123,17 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
 
     setFlipX(false);
     setFlipY(false);
+
+    image.set({
+      flipX: false,
+      flipY: false,
+    });
+
+    setImageRotation(0);
+    image.angle = 0;
+    canvas.renderAll();
+
+    handleRenderingFinalDimension();
   };
 
   return (
@@ -135,7 +169,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                         objType: "image",
                       });
                     }
-                    setFlipX(!flipX);
+                    handleFlipX(!flipX);
                   }}
                 />
 
@@ -162,7 +196,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                         objType: "image",
                       });
                     }
-                    setFlipX(!flipX);
+                    handleFlipX(!flipX);
                   }}
                 />
 
@@ -189,7 +223,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                         objType: "image",
                       });
                     }
-                    setFlipY(!flipY);
+                    handleFlipY(!flipY);
                   }}
                 />
 
@@ -215,8 +249,9 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                         param: "rotation",
                         objType: "image",
                       });
+
+                      handleFlipY(!flipY);
                     }
-                    setFlipY(!flipY);
                   }}
                 />
               </div>
@@ -227,7 +262,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
                 </div>
 
                 <Slider
-                  defaultValue={[imageRotation]}
+                  value={[imageRotation]}
                   min={0}
                   max={360}
                   step={1}

@@ -52,12 +52,26 @@ def apply_style_transfer():
     org_width, org_height = original_image.width, original_image.height
 
     
-    original_image_transfrom = get_style_transfer_transform()
-    style_image_transform = get_style_transfer_transform(img_size=(org_height, org_width))
+
+    # Determine the resizing logic based on the original image dimensions
+    min_dim = min(org_width, org_height)
+    if min_dim < 512:
+        img_size = None  # No resizing
+    elif min_dim < 1024:
+        img_size = 512  
+    else:
+        img_size = 1024  
+
+
+    original_image_transfrom = get_style_transfer_transform(img_size=img_size)
+    style_image_transform = get_style_transfer_transform(img_size=img_size)
     
     original_image = original_image_transfrom(original_image).unsqueeze(0).to(CFG.device)
     style_image = style_image_transform(style_image).unsqueeze(0).to(CFG.device)
     
+
+    print(original_image.shape, style_image.shape)
+
     with torch.no_grad():
         stylized_img = style_transfer_model.stylize_image(original_image, style_image, alpha=alpha_value).to('cpu')[0]
 

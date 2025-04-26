@@ -137,8 +137,8 @@ const ProjectSection = ({
 
         // console.log(response.data.data.projects);
       } catch (err) {
-        setError("Failed to fetch projects");
-        console.error(err);
+        // setError("Failed to fetch projects");
+
         console.error(err);
       } finally {
         setLoading(false);

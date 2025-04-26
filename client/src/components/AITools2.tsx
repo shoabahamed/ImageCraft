@@ -56,7 +56,8 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const [stylizeRatio, setStylizeRatio] = useState(0.5);
   const currentFilters = useCommonProps((state) => state.currentFilters);
   const resetFilters = useAdjustStore((state) => state.resetFilters);
-  const { setFinalImageDimensions } = useCanvasObjects();
+  const { setFinalImageDimensions, disableSavingIntoStackRef } =
+    useCanvasObjects();
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
 
@@ -148,6 +149,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       );
 
       if (response.status === 200) {
+        disableSavingIntoStackRef.current = true;
         // setUploadedImage("");
         const base64Image = `data:image/png;base64,${response.data.image}`;
         // const base64Image =response.data.image
@@ -255,6 +257,9 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 
       // Refresh canvas
       imageRef.current.setCoords();
+
+      disableSavingIntoStackRef.current = false;
+      canvas.fire("object:modified");
 
       canvas.requestRenderAll();
     });

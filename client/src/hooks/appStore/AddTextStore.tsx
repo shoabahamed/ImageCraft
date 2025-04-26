@@ -13,6 +13,7 @@ interface AddTextStore {
   isItalic: boolean;
   isBold: boolean;
   isUnderLine: boolean;
+  charSpacing: number;
   setTextValue: (value: string) => void;
   setTextColorValue: (value: string) => void;
   setTextFont: (value: string) => void;
@@ -24,6 +25,7 @@ interface AddTextStore {
   setItalic: (value: boolean) => void;
   setBold: (value: boolean) => void;
   setUnderLine: (value: boolean) => void;
+  setCharSpacing: (value: number) => void;
 }
 
 const useAddTextStore = create<AddTextStore>((set) => ({
@@ -38,6 +40,7 @@ const useAddTextStore = create<AddTextStore>((set) => ({
   isItalic: false,
   isBold: false,
   isUnderLine: false,
+  charSpacing: 0,
   setTextValue: (value) => set({ textValue: value }),
   setTextColorValue: (value) => set({ textColorValue: value }),
   setTextFont: (value) => set({ textFont: value }),
@@ -49,6 +52,7 @@ const useAddTextStore = create<AddTextStore>((set) => ({
   setItalic: (value) => set({ isItalic: value }),
   setBold: (value) => set({ isBold: value }),
   setUnderLine: (value) => set({ isUnderLine: value }),
+  setCharSpacing: (value) => set({ charSpacing: value }),
 }));
 
 export default useAddTextStore;

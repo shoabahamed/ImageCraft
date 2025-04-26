@@ -1,4 +1,5 @@
-import { createContext, useState, ReactNode } from "react";
+import { ImageIcon } from "lucide-react";
+import { createContext, useState, ReactNode, useRef } from "react";
 
 // Define the type of the canvas object
 type CanvasObject = any;
@@ -10,6 +11,12 @@ interface finalImageDimensionsType {
   imageWidth: number;
   imageHeight: number;
 }
+
+type AspectRatioType = {
+  ratio: string;
+  value: string;
+  icon: JSX.Element;
+};
 
 // Define the context type
 interface CanvasObjectsContextType {
@@ -25,6 +32,14 @@ interface CanvasObjectsContextType {
   setLoadedFromSaved: (value: boolean) => void;
   zoomValue: number;
   setZoomValue: (value: number) => void;
+
+  originalImageDimensionsRef: React.MutableRefObject<originalImageDimensionsType>;
+  finalImageDimensionsRef: React.MutableRefObject<finalImageDimensionsType>;
+  downloadImageDimensionsRef: React.MutableRefObject<finalImageDimensionsType>;
+
+  selectedRatio: AspectRatioType;
+  setSelectedRatio: (obj: AspectRatioType) => void;
+  disableSavingIntoStackRef: React.MutableRefObject<boolean>;
 }
 
 // Create the context with a default value
@@ -55,9 +70,31 @@ export const CanvasObjectsProvider = ({
   const [downloadImageDimensions, setDownloadImageDimensions] =
     useState<finalImageDimensionsType>({ imageWidth: 0, imageHeight: 0 });
 
+  const originalImageDimensionsRef = useRef<originalImageDimensionsType>({
+    imageWidth: 0,
+    imageHeight: 0,
+  });
+  const finalImageDimensionsRef = useRef<finalImageDimensionsType>({
+    imageWidth: 0,
+    imageHeight: 0,
+  });
+
+  const downloadImageDimensionsRef = useRef<finalImageDimensionsType>({
+    imageWidth: 0,
+    imageHeight: 0,
+  });
+
+  const disableSavingIntoStackRef = useRef<boolean>(false);
+
   const [loadedFromSaved, setLoadedFromSaved] = useState(false);
 
   const [zoomValue, setZoomValue] = useState(1);
+
+  const [selectedRatio, setSelectedRatio] = useState<AspectRatioType>({
+    ratio: "Original",
+    value: "original",
+    icon: <ImageIcon className="w-5 h-5" />,
+  });
 
   return (
     <CanvasObjectsContext.Provider
@@ -74,6 +111,12 @@ export const CanvasObjectsProvider = ({
         setLoadedFromSaved,
         zoomValue,
         setZoomValue,
+        originalImageDimensionsRef,
+        finalImageDimensionsRef,
+        downloadImageDimensionsRef,
+        selectedRatio,
+        setSelectedRatio,
+        disableSavingIntoStackRef,
       }}
     >
       {children}

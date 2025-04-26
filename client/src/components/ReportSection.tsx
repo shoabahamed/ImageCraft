@@ -81,7 +81,7 @@ const ReportSection = ({ userId }: { userId: string }) => {
         setReports(sortedReports);
         setPages(calculatePages(sortedReports.length));
       } catch (error) {
-        setError("Failed to fetch reports" + error);
+        // setError("Failed to fetch reports" + error);
         toast({ description: "Failed to load reports", duration: 3000 });
       } finally {
         setLoading(false);

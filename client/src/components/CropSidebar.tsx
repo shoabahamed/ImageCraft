@@ -9,6 +9,15 @@ import { Input } from "./ui/input";
 import IconComponent from "./icon-component";
 
 import {
+  Image as ImageIcon,
+  Facebook,
+  Instagram,
+  MonitorPlay,
+  InspectionPanel,
+  Twitter,
+} from "lucide-react";
+
+import {
   Square,
   Blend,
   Triangle as IconTriangle,
@@ -25,77 +34,137 @@ type Props = {
   image: FabricImage;
 };
 
+type AspectRatioType = {
+  ratio: string;
+  value: string;
+  icon: JSX.Element;
+};
+
 const CropSidebar = ({ canvas, image }: Props) => {
   const { addLog } = useLogContext();
-  const { selectedObject, setSelectedObject } = useCanvasObjects();
+  const { selectedObject, setSelectedObject, selectedRatio, setSelectedRatio } =
+    useCanvasObjects();
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
 
+  useEffect(() => {
+    const frameObject = canvas
+      .getObjects()
+      .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
+
+    if (frameObject) {
+      canvas.setActiveObject(frameObject);
+      setSelectedObject(frameObject);
+    }
+  }, [canvas, image]);
+
   // Helper function to create shapes
   const getShape = (shapeType: string) => {
+    let width, height, baseSize;
     const stroke_color = "red";
-    const stroke_width = 1;
-    const stroke_array = [5, 5];
+    // const stroke_width = 1;
+    const stroke_array = [10, 10];
     const frameName = `Frame ${
       canvas.getObjects(shapeType).length + 1
     } shapeType`;
 
+    // Get image dimensions
+    const imgWidth = image.getScaledWidth();
+    const imgHeight = image.getScaledHeight();
+
+    const maxWidth = imgWidth * 0.8;
+    const maxHeight = imgHeight * 0.8;
+
+    if (selectedRatio.value === "original") {
+      // Use image's native aspect ratio
+      width = maxWidth;
+      height = maxHeight;
+      baseSize = Math.min(maxWidth, maxHeight);
+    } else {
+      // Parse selected ratio
+      const [ratioW, ratioH] = selectedRatio.value.split(":").map(Number);
+      const targetAspect = ratioW / ratioH;
+      const containerAspect = maxWidth / maxHeight;
+
+      // Calculate dimensions to maintain aspect ratio
+      if (targetAspect >= containerAspect) {
+        width = maxWidth;
+        baseSize = maxWidth;
+        height = width / targetAspect;
+      } else {
+        height = maxHeight;
+        baseSize = maxHeight;
+        width = height * targetAspect;
+      }
+    }
+
     if (shapeType === "circle") {
       return new Circle({
-        top: 100,
-        left: 50,
-        radius: 50,
+        top: image.top,
+        left: image.left,
+        originX: "center",
+        originY: "center",
+        radius: baseSize * 0.5,
         fill: null,
         stroke: stroke_color,
-        strokeWidth: stroke_width,
+        strokeWidth: baseSize * 0.01,
         strokeDashArray: stroke_array,
+
         name: frameName,
       });
     } else if (shapeType === "rect") {
       return new Rect({
-        top: 100,
-        left: 50,
-        width: 100,
-        height: 60,
+        top: image.top,
+        left: image.left,
+        originX: "center",
+        originY: "center",
+        width: width,
+        height: height,
         fill: null,
         stroke: stroke_color,
-        strokeWidth: stroke_width,
+        strokeWidth: baseSize * 0.01,
         strokeDashArray: stroke_array,
         name: frameName,
       });
     } else if (shapeType === "triangle") {
       return new Triangle({
-        left: 10,
-        top: 10,
-        width: 60,
-        height: 60,
+        top: image.top,
+        left: image.left,
+        originX: "center",
+        originY: "center",
+        width: width,
+        height: height,
         fill: null,
         stroke: stroke_color,
-        strokeWidth: stroke_width,
+        strokeWidth: baseSize * 0.01,
         strokeDashArray: stroke_array,
         name: frameName,
       });
     } else if (shapeType === "elipse") {
       return new Ellipse({
-        left: 50,
-        top: 50,
-        rx: 50,
-        ry: 30,
+        top: image.top,
+        left: image.left,
+        originX: "center",
+        originY: "center",
+        rx: width * 0.4,
+        ry: height * 0.4,
         fill: null,
         stroke: stroke_color,
-        strokeWidth: stroke_width,
+        strokeWidth: baseSize * 0.01,
         strokeDashArray: stroke_array,
         name: frameName,
       });
     } else {
       return new Rect({
-        top: 100,
-        left: 50,
-        width: 100,
-        height: 60,
+        top: image.top,
+        left: image.left,
+        originX: "center",
+        originY: "center",
+        width: width,
+        height: height,
         fill: null,
         stroke: stroke_color,
-        strokeWidth: stroke_width,
+        strokeWidth: baseSize * 0.01,
         strokeDashArray: stroke_array,
         name: frameName,
       });
@@ -104,57 +173,59 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
   useEffect(() => {
     const handleObjectCleared = () => {
-      // if (image.clipPath) {
-      //   image.clipPath = null; // Remove the clipping path
-      // }
       setSelectedObject(null);
     };
 
     const handleObjectCreated = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        setSelectedObject(activeObject);
-
-        // if (activeObject.cropRect != undefined) {
-        // const newWidth = Math.floor(
-        //   activeObject.width! * activeObject.scaleX!
-        // );
-        // const newHeight = Math.floor(
-        //   activeObject.height! * activeObject.scaleY!
-        // );
-
-        // setCropWidth(newWidth.toString());
-        // setCropHeight(newHeight.toString());
-        // }
+        addLog({
+          section: "crop&cut",
+          tab: "cut",
+          event: "creation",
+          message: `nee crop obejct created`,
+          objType: activeObject.type,
+        });
       }
     };
 
     const handleObjectModified = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        // const objectName = activeObject.type || "Unknown Object";
-        setSelectedObject(activeObject);
-        // if (activeObject.cropRect != undefined) {
-        // const newWidth = Math.floor(
-        //   activeObject.width! * activeObject.scaleX!
-        // );
-        // const newHeight = Math.floor(
-        //   activeObject.height! * activeObject.scaleY!
-        // );
-
-        // setCropWidth(newWidth.toString());
-        // setCropHeight(newHeight.toString());
-        // }
+        addLog({
+          section: "crop&cut",
+          tab: "cut",
+          event: "update",
+          message: `object modification complete`,
+          param: "postion",
+          objType: activeObject.type,
+        });
       }
     };
 
     const handleObjectScaled = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
         const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
         const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
 
+        const objectType = activeObject.type;
+
+        if (objectType === "circle") {
+          const currentScale = Math.max(
+            activeObject.scaleX,
+            activeObject.scaleY
+          );
+
+          activeObject
+            .set({
+              scaleX: currentScale,
+              scaleY: currentScale,
+            })
+            .setCoords();
+
+          canvas.requestRenderAll();
+        }
         addLog({
           section: "crop&cut",
           tab: "cut",
@@ -163,18 +234,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
           param: "scale",
           objType: activeObject.type,
         });
-
-        setSelectedObject(activeObject);
-        // if (activeObject.cropRect != undefined) {
-        //   const newWidth = Math.floor(
-        //     activeObject.width! * activeObject.scaleX!
-        //   );
-        //   const newHeight = Math.floor(
-        //     activeObject.height! * activeObject.scaleY!
-        //   );
-
-        // setCropWidth(newWidth.toString());
-        // setCropHeight(newHeight.toString());
       }
     };
 
@@ -185,7 +244,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
     return () => {
       if (!image.clipPath) {
-        console.log("sdkfd");
         canvas.getObjects().forEach((obj) => {
           // @ts-ignore
           if (obj.name?.startsWith("Frame")) {
@@ -243,6 +301,85 @@ const CropSidebar = ({ canvas, image }: Props) => {
     });
   };
 
+  const handleAspectRatioChange = (ratio: AspectRatioType) => {
+    setSelectedRatio(ratio);
+
+    const frameObject = canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
+
+    if (!frameObject) return;
+
+    let width, height, baseSize;
+
+    // Get image dimensions
+    const imgWidth = image.getScaledWidth();
+    const imgHeight = image.getScaledHeight();
+
+    const maxWidth = imgWidth * 0.8;
+    const maxHeight = imgHeight * 0.8;
+
+    if (ratio.value === "original") {
+      // Use image's native aspect ratio
+      width = maxWidth;
+      height = maxHeight;
+      baseSize = Math.min(maxWidth, maxHeight);
+    } else {
+      // Parse selected ratio
+      const [ratioW, ratioH] = ratio.value.split(":").map(Number);
+      const targetAspect = ratioW / ratioH;
+      const containerAspect = maxWidth / maxHeight;
+
+      // Calculate dimensions to maintain aspect ratio
+      if (targetAspect >= containerAspect) {
+        width = maxWidth;
+        baseSize = maxWidth;
+        height = width / targetAspect;
+      } else {
+        height = maxHeight;
+        baseSize = maxHeight;
+        width = height * targetAspect;
+      }
+    }
+
+    const shapeType = frameObject.type;
+
+    if (shapeType === "circle") {
+      frameObject.set({
+        radius: width * 0.5,
+        strokeWidth: baseSize * 0.01,
+      });
+    } else if (shapeType === "rect") {
+      frameObject.set({
+        width: width,
+        height: height,
+        strokeWidth: baseSize * 0.01,
+      });
+    } else if (shapeType === "triangle") {
+      frameObject.set({
+        width: width,
+        height: height,
+        strokeWidth: baseSize * 0.01,
+      });
+    } else if (shapeType === "elipse") {
+      frameObject.set({
+        rx: width * 0.4,
+        ry: height * 0.4,
+        strokeWidth: baseSize * 0.01,
+      });
+    }
+
+    frameObject.setCoords(); // Update the object's coordinates
+    canvas.renderAll();
+    canvas.fire("object:modified"); // Trigger the object:modified event
+    addLog({
+      section: "crop&cut",
+      tab: "aspect",
+      event: "update",
+      message: `Changed aspect ratio to ${ratio}`,
+    });
+  };
+
   // Function to apply clipping
   const handleShapeClip = () => {
     const frameObject = canvas
@@ -264,6 +401,8 @@ const CropSidebar = ({ canvas, image }: Props) => {
       image.clipPath = frameObject;
 
       canvas.renderAll();
+
+      canvas.fire("object:modified");
     }
   };
 
@@ -334,7 +473,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
         canvas.renderAll();
 
         setBackgroundImage(fabricBackgroundImage);
-        console.log(canvas.toObject(["name"]));
 
         addLog({
           section: "crop&cut",
@@ -371,48 +509,41 @@ const CropSidebar = ({ canvas, image }: Props) => {
     }
   };
 
+  const ASPECT_RATIOS = [
+    {
+      ratio: "Original",
+      value: "original",
+      icon: <ImageIcon className="w-5 h-5" />,
+    },
+    {
+      ratio: "1:1",
+      value: "1:1",
+      icon: <Square className="w-5 h-5" />,
+    },
+    {
+      ratio: "4:5",
+      value: "4:5",
+      icon: <Instagram className="w-5 h-5" />,
+    },
+    {
+      ratio: "9:16",
+      value: "9:16",
+      icon: <Facebook className="w-5 h-5" />,
+    },
+    {
+      ratio: "16:9",
+      value: "16:9",
+      icon: <MonitorPlay className="w-5 h-5" />,
+    },
+    {
+      ratio: "2:1",
+      value: "2:1",
+      icon: <Twitter className="w-5 h-5" />,
+    },
+  ];
+
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">
-      {/* <div className="w-[90%]">
-      {/* <div className="w-[90%]">
-        <Card>
-          <CardHeader>
-            <CardDescription>Crop</CardDescription>
-          </CardHeader>
-          <CardContent className="w-full">
-            <div className="flex flex-col w-full gap-3 items-center justify-center">
-              <div className="grid grid-cols-2 justify-center items-center">
-                <Label htmlFor="height">Height</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  name="height"
-                  value={cropHeight}
-                  onChange={(e) => setCropHeight(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2  justify-center items-center">
-                <Label htmlFor="width">Width</Label>
-                <Input
-                  id="width"
-                  type="number"
-                  name="width"
-                  value={cropWidth}
-                  onChange={(e) => setCropWidth(e.target.value)}
-                />
-              </div>
-              <Button onClick={addCropHandler} className="w-full">
-                Start Cropping
-              </Button>
-              <Button onClick={addCropHandler} className="w-full">
-                Start Cropping
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div> */}
-      {/* </div>  */}
-
       <div className="w-[90%]">
         <Card>
           <CardHeader>
@@ -448,60 +579,60 @@ const CropSidebar = ({ canvas, image }: Props) => {
           </CardContent>
         </Card>
       </div>
-      {/* <div className="w-[90%]">
+      <div className="w-[90%]">
         <Card>
           <CardHeader>
-            <CardDescription className="text-center">
-              Canvas BackGround
+            <CardDescription className="flex items-center gap-2 text-base font-medium">
+              <InspectionPanel className="w-4 h-4" />
+              Aspect Ratio
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between gap-2">
-                <label
-                  htmlFor="color_picker"
-                  className="text-sm text-slate-400 mt-2"
-                >
-                  Color
-                </label>
-                <Input
-                  className="w-[25%] border-none cursor-pointer rounded"
-                  id="color_picker"
-                  type="color"
-                  value={backgroundColor}
-                  onChange={(e) => {
-                    handleBackGroundColorChange(e);
-                  }}
-                />
-              </div>
-              <div>
-                <Label
-                  htmlFor="background-image"
-                  className="custom-button w-full"
-                >
-                  Add Image
-                </Label>
-                <Input
-                  id="background-image"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleBackGroundImageChange}
-                />
-              </div>
-              <div>
+            <div className="grid grid-cols-3 gap-2">
+              {ASPECT_RATIOS.map((ratio) => (
                 <button
-                  className="custom-button w-full"
-                  onClick={removeBackGroundImage}
+                  key={ratio.value}
+                  onClick={() => handleAspectRatioChange(ratio)}
+                  className={`
+        flex flex-col items-center justify-center p-1 rounded-sm border gap-1
+        transition-all duration-200
+        ${
+          selectedRatio.value === ratio.value
+            ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+        }
+      `}
                 >
-                  Remove Image
+                  <div
+                    className={`
+          p-2 rounded-md
+          ${
+            selectedRatio.value === ratio.value
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-gray-600 dark:text-gray-400"
+          }
+        `}
+                  >
+                    {ratio.icon}
+                  </div>
+                  <span
+                    className={`
+          text-xs font-medium
+          ${
+            selectedRatio.value === ratio.value
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-gray-600 dark:text-gray-400"
+          }
+        `}
+                  >
+                    {ratio.ratio}
+                  </span>
                 </button>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
-      </div> */}
-
+      </div>
       <div className="w-[90%]">
         <Card>
           <CardHeader>

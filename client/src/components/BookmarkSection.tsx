@@ -128,7 +128,7 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
 
         // console.log(response.data.data.projects);
       } catch (err) {
-        setError("Failed to fetch bookmark projects");
+        // setError("Failed to fetch bookmark projects");
         toast({
           description: "Failed to load bookmarked projects" + err,
           duration: 3000,
@@ -172,7 +172,7 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
       // Update view count
       await apiClient.post(
         "/projects/update_views",
-        { project_id: project.project_id },
+        { project_id: project.project_id, project_user_id: project.user_id },
         {
           headers: {
             "Content-Type": "application/json",

@@ -52,6 +52,8 @@ const AdjustSidebar = ({
   const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
   const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
   const enableSharpen = useAdjustStore((state) => state.enableSharpen);
+  const enableWarmFilter = useAdjustStore((state) => state.enableWarmFilter);
+  const enableColdFilter = useAdjustStore((state) => state.enableColdFilter);
 
   const enableInvert = useAdjustStore((state) => state.enableInvert);
 
@@ -92,6 +94,21 @@ const AdjustSidebar = ({
   );
   const setEnableSharpen = useAdjustStore((state) => state.setEnableSharpen);
   const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
+
+  const setEnableEdgeDetection = useAdjustStore(
+    (state) => state.setEnableEdgeDetection
+  );
+  const enableEdgeDetection = useAdjustStore(
+    (state) => state.enableEdgeDetection
+  );
+
+  const setEnableWarmFilter = useAdjustStore(
+    (state) => state.setEnableWarmFilter
+  );
+
+  const setEnableColdFilter = useAdjustStore(
+    (state) => state.setEnableColdFilter
+  );
 
   // Set functions for each value
   const setBrightnessValue = useAdjustStore(
@@ -299,6 +316,63 @@ const AdjustSidebar = ({
             >
               Invert
             </Button>
+            <Button
+              variant={`${enableEdgeDetection ? "default" : "outline"}`}
+              className="w-full text-xs"
+              onClick={() => {
+                const filterName = "edge detection";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableEdgeDetection
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableEdgeDetection(!enableEdgeDetection);
+              }}
+            >
+              Edge
+            </Button>
+
+            <Button
+              variant={`${enableColdFilter ? "default" : "outline"}`}
+              className="w-full text-xs"
+              onClick={() => {
+                const filterName = "cold";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableColdFilter
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableColdFilter(!enableColdFilter);
+              }}
+            >
+              Cold
+            </Button>
+
+            <Button
+              variant={`${enableWarmFilter ? "default" : "outline"}`}
+              className="w-full text-xs"
+              onClick={() => {
+                const filterName = "warm";
+                addLog({
+                  section: "adjust",
+                  tab: "filters",
+                  event: "update",
+                  message: !enableWarmFilter
+                    ? `enabled ${filterName} filter`
+                    : `disabled ${filterName}  filter`,
+                });
+                setEnableWarmFilter(!enableWarmFilter);
+              }}
+            >
+              Warm
+            </Button>
+
             <button className="custom-button" onClick={handleFilterReset}>
               Reset
             </button>

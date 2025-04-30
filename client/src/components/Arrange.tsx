@@ -18,14 +18,25 @@ import ImageSize from "./ImageSize";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 import { Slider } from "./ui/slider";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
-import { getRotatedBoundingBox } from "@/utils/commonFunctions";
+import {
+  base64ToFile,
+  getCanvasDataUrl,
+  getRotatedBoundingBox,
+} from "@/utils/commonFunctions";
+import { useToast } from "@/hooks/use-toast";
+import apiClient from "@/utils/appClient";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 
 type ArrangeProps = {
   canvas: Canvas;
-  image: FabricImage;
+  imageRef: React.RefObject<FabricImage>;
+  setSpinnerLoading: (loading: boolean) => void;
 };
 
-const Arrange = ({ canvas, image }: ArrangeProps) => {
+const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
+  const { toast } = useToast();
+  const { user } = useAuthContext();
   const { addLog } = useLogContext();
   const flipX = useArrangeStore((state) => state.flipX);
   const flipY = useArrangeStore((state) => state.flipY);
@@ -35,11 +46,17 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
   const { setDownloadImageDimensions, downloadImageDimensionsRef } =
     useCanvasObjects();
+  const { setFinalImageDimensions, disableSavingIntoStackRef } =
+    useCanvasObjects();
+
+  const resetFilters = useAdjustStore((state) => state.resetFilters);
+
+  const [backendImage, setBackendImage] = useState<null | string>(null);
 
   const handleFlipX = (flipX: boolean) => {
     setFlipX(flipX);
 
-    image.set({
+    imageRef.current.set({
       flipX: flipX,
     });
 
@@ -50,7 +67,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
   const handleFlipY = (flipY: boolean) => {
     setFlipY(flipY);
 
-    image.set({
+    imageRef.current.set({
       flipY: flipY,
     });
 
@@ -70,7 +87,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
 
-    const bounds = getRotatedBoundingBox(image);
+    const bounds = getRotatedBoundingBox(imageRef.current);
 
     setDownloadImageDimensions({
       imageHeight: bounds.height,
@@ -103,7 +120,7 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
     });
 
     setImageRotation(rotationValue);
-    image.angle = rotationValue;
+    imageRef.current.angle = rotationValue;
     canvas.renderAll();
 
     handleRenderingFinalDimension();
@@ -124,16 +141,119 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
     setFlipX(false);
     setFlipY(false);
 
-    image.set({
+    imageRef.current.set({
       flipX: false,
       flipY: false,
     });
 
     setImageRotation(0);
-    image.angle = 0;
+    imageRef.current.angle = 0;
     canvas.renderAll();
 
     handleRenderingFinalDimension();
+  };
+
+  const replaceImage = (base64Image: string) => {
+    if (!canvas || !imageRef.current) return;
+
+    FabricImage.fromURL(base64Image).then((img) => {
+      if (!img || !imageRef.current) return;
+      // Replace the image content
+
+      imageRef.current.setElement(img.getElement());
+
+      imageRef.current.scaleX = 1;
+      imageRef.current.scaleY = 1;
+
+      imageRef.current.flipX = false;
+      imageRef.current.flipY = false;
+      console.log("dj");
+      setFlipX(false);
+      setFlipY(false);
+      setFinalImageDimensions({
+        imageWidth: img.width,
+        imageHeight: img.height,
+      });
+
+      resetFilters();
+
+      handleRenderingFinalDimension();
+
+      // Refresh canvas
+      imageRef.current.setCoords();
+
+      setTimeout(() => {
+        disableSavingIntoStackRef.current = false;
+        setSpinnerLoading(false);
+        canvas.fire("object:modified");
+        canvas.requestRenderAll();
+      }, 1000);
+    });
+
+    canvas.getObjects().forEach(function (obj) {
+      if (obj.type.toLowerCase() !== "image") {
+        canvas.remove(obj);
+      }
+    });
+    canvas.requestRenderAll();
+  };
+
+  const handleSuperResolution = async (scale: number) => {
+    addLog({
+      section: "arrange",
+      tab: "super-resolution",
+      event: "update",
+      message: `canvas super resolution set to ${scale}x`,
+      param: "super-resolution",
+      objType: "image",
+    });
+
+    try {
+      setSpinnerLoading(true);
+      const formData = new FormData();
+
+      const canvasImageBase64 = getCanvasDataUrl(
+        canvas,
+        imageRef.current,
+        false,
+        true
+      );
+
+      const originalImageFile = base64ToFile(canvasImageBase64, "image");
+      formData.append("originalImage", originalImageFile);
+
+      formData.append("scale", scale.toString());
+
+      const response = await apiClient.post("/image_proc/super_res", formData, {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+
+      if (response.status === 200) {
+        disableSavingIntoStackRef.current = true;
+        // setUploadedImage("");
+        const base64Image = `data:image/png;base64,${response.data.image}`;
+        // const base64Image =response.data.image
+        setBackendImage(base64Image);
+        replaceImage(base64Image);
+        toast({
+          description: "Successfull",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
+      } else {
+        setSpinnerLoading(false);
+        toast({
+          variant: "destructive",
+          description: "Error Encountered inference",
+          className: "bg-green-500 text-gray-900",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error sending image to backend:", error);
+    }
   };
 
   return (
@@ -281,8 +401,35 @@ const Arrange = ({ canvas, image }: ArrangeProps) => {
         </Card>
       </div>
 
+      {imageRef.current && (
+        <div className="w-[90%]">
+          <ImageSize canvas={canvas} image={imageRef.current} />
+        </div>
+      )}
+
       <div className="w-[90%]">
-        <ImageSize canvas={canvas} image={image} />
+        <Card>
+          <CardHeader>
+            <CardDescription>Super Resolution</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              <button
+                className="custom-button"
+                onClick={() => handleSuperResolution(2)}
+              >
+                2X Using AI
+              </button>
+
+              <button
+                className="custom-button"
+                onClick={() => handleSuperResolution(2)}
+              >
+                4X Using AI
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

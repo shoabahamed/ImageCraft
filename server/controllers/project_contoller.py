@@ -14,6 +14,7 @@ from model_config import CFG
 from utils.preprocessing import  get_similar_image_transform
 import datetime
 from utils.common import get_user_paths
+from cloudinary.uploader import upload
 
 load_dotenv()
 
@@ -25,6 +26,8 @@ embedding_collection = db['Embedding']
 ORG_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/original'
 INTER_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/inter'
 CANVAS_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/canvas'
+
+
 
 
 def save_project():
@@ -78,72 +81,180 @@ def save_project():
         
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png") 
-        _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
-        original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
-        inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
-        canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
-
-        
-
-        #  Update the image URL in canvas JSON
-        for obj in canvas_data.get("objects", []):
-            if obj.get("type").lower() == "image":
-                obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id +  "/inter/" + image_filename
 
      
         # Check if a project with the given project_id already exists
         existing_project = projects_collection.find_one({"project_id": canvas_id, "user_id": user_id})
 
         if existing_project:
-            # Update the existing project
-            inter_image_file.save(inter_image_path)
-            canvas_image_file.save(canvas_image_path)
+            if(os.getenv("DEPOLY_PRODUCTION").lower() == 'true'):
+                # we are in production mode and have to save everything online in cloudnary and mongodb
+                _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths("", user_id)
+                original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+                inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
+                canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
 
-            projects_collection.update_one(
-                {"project_id": canvas_id, "user_id": user_id}, 
-                {"$set": {
+                cloud_inter_result = upload(
+                    inter_image_file,
+                    public_id=inter_image_path,  # This sets the folder and filename
+                    overwrite=True  # Optional: allows overwriting if file with same ID exists
+                )
+
+                cloud_canvas_result = upload(
+                    canvas_image_file,
+                    public_id=canvas_image_path, # This sets the folder and filename
+                    overwrite=True  # Optional: allows overwriting if file with same ID exists
+                )
+
+                
+                #  Update the image URL in canvas JSON
+                for obj in canvas_data.get("objects", []):
+                    if obj.get("type").lower() == "image":
+                        obj["src"] = cloud_inter_result['secure_url']
+
+                projects_collection.update_one(
+                    {"project_id": canvas_id, "user_id": user_id}, 
+                    {"$set": {
+                        "project_data": canvas_data,
+                        "project_logs": canvas_logs, 
+                        "final_image_shape": final_image_shape, 
+                        "download_image_shape": download_image_shape,
+                        "filter_names": filter_names,
+                        "project_name": project_name,
+                        "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
+                    }}
+                )
+                response_message = "Project updated successfully"
+                status_code = 200
+
+
+            else:
+                _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
+                original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+                inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
+                canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+                # Update the existing project
+                inter_image_file.save(inter_image_path)
+                canvas_image_file.save(canvas_image_path)
+
+                #  Update the image URL in canvas JSON
+                for obj in canvas_data.get("objects", []):
+                    if obj.get("type").lower() == "image":
+                        obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id +  "/inter/" + image_filename
+
+                projects_collection.update_one(
+                    {"project_id": canvas_id, "user_id": user_id}, 
+                    {"$set": {
+                        "project_data": canvas_data,
+                        "project_logs": canvas_logs, 
+                        "final_image_shape": final_image_shape, 
+                        "download_image_shape": download_image_shape,
+                        "filter_names": filter_names,
+                        "project_name": project_name,
+                        "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
+                    }}
+                )
+                response_message = "Project updated successfully"
+                status_code = 200
+                
+        else:
+            if(os.getenv("DEPOLY_PRODUCTION").lower() == 'true'):
+                # we are in production mode and have to save everything online in cloudnary and mongodb
+                _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths("", user_id)
+                original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+                inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
+                canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+                cloud_org_result = upload(
+                    original_image_file,
+                    public_id=original_image_path,  # This sets the folder and filename
+                    overwrite=True  # Optional: allows overwriting if file with same ID exists
+                )
+
+                cloud_inter_result = upload(
+                    inter_image_file,
+                    public_id=inter_image_path,  # This sets the folder and filename
+                    overwrite=True  # Optional: allows overwriting if file with same ID exists
+                )
+
+                cloud_canvas_result = upload(
+                    canvas_image_file,
+                    public_id=canvas_image_path,  # This sets the folder and filename
+                    overwrite=True  # Optional: allows overwriting if file with same ID exists
+                )
+
+                #  Update the image URL in canvas JSON
+                for obj in canvas_data.get("objects", []):
+                    if obj.get("type").lower() == "image":
+                        obj["src"] = cloud_inter_result['secure_url']
+
+                new_project = {
+                    "user_id": user_id,
+                    "username": usename,
+                    "project_id": canvas_id,
+                    "is_public": is_public,
                     "project_data": canvas_data,
-                    "project_logs": canvas_logs, 
-                    "final_image_shape": final_image_shape, 
+                    "project_logs": canvas_logs,
+                    "granted_logs": [user_id],
+                    "original_image_url": cloud_org_result["secure_url"],
+                    "canvas_image_url": cloud_canvas_result["secure_url"],
+                    "total_rating": 5,
+                    "rating_count": 1,
+                    "total_views": 1,
+                    "total_bookmark": 0,
+                    "original_image_shape": original_image_shape,
+                    "final_image_shape": final_image_shape,
                     "download_image_shape": download_image_shape,
                     "filter_names": filter_names,
                     "project_name": project_name,
-                    "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
-                }}
-            )
-            response_message = "Project updated successfully"
-            status_code = 200
-            
-        else:
-            original_image_file.save(original_image_path)
-            inter_image_file.save(inter_image_path)
-            canvas_image_file.save(canvas_image_path)
-          
-            # Create a new project
-            new_project = {
-                "user_id": user_id,
-                "username": usename,
-                "project_id": canvas_id,
-                "is_public": is_public,
-                "project_data": canvas_data,
-                "project_logs": canvas_logs,
-                "granted_logs": [user_id],
-                "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/original/" + image_filename,
-                "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/canvas/" + image_filename,
-                "total_rating": 5,
-                "rating_count": 1,
-                "total_views": 1,
-                "total_bookmark": 0,
-                "original_image_shape": original_image_shape,
-                "final_image_shape": final_image_shape,
-                "download_image_shape": download_image_shape,
-                "filter_names": filter_names,
-                "project_name": project_name,
-                "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
-                "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
-                
-            }
+                    "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
+                    "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
+                    
+                }
+            else:
+
+                _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
+                original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+                inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
+                canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+
+                #  Update the image URL in canvas JSON
+                for obj in canvas_data.get("objects", []):
+                    if obj.get("type").lower() == "image":
+                        obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id +  "/inter/" + image_filename
+
+                original_image_file.save(original_image_path)
+                inter_image_file.save(inter_image_path)
+                canvas_image_file.save(canvas_image_path)
+                        # Create a new project
+                new_project = {
+                    "user_id": user_id,
+                    "username": usename,
+                    "project_id": canvas_id,
+                    "is_public": is_public,
+                    "project_data": canvas_data,
+                    "project_logs": canvas_logs,
+                    "granted_logs": [user_id],
+                    "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/original/" + image_filename,
+                    "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/canvas/" + image_filename,
+                    "total_rating": 5,
+                    "rating_count": 1,
+                    "total_views": 1,
+                    "total_bookmark": 0,
+                    "original_image_shape": original_image_shape,
+                    "final_image_shape": final_image_shape,
+                    "download_image_shape": download_image_shape,
+                    "filter_names": filter_names,
+                    "project_name": project_name,
+                    "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
+                    "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
+                    
+                }
         
+          
+
             projects_collection.insert_one(new_project)
             response_message = "Project created successfully"
             status_code = 201
@@ -158,6 +269,136 @@ def save_project():
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
 
+
+# def save_project():
+#     try:
+
+#         user_id = str(g._id)  # Extracted by the middleware
+#         print(request.files)     
+        
+#         usename = request.form.get("username")
+#         canvas_id = request.form.get('canvasId')
+      
+#         is_public = request.form.get("isPublic")
+        
+#         canvas_data = request.form.get('canvasData')
+        
+        
+#         canvas_logs = request.form.get('canvasLogs')
+        
+#         original_image_file = request.files.get('originalImage') 
+#         canvas_image_file = request.files.get('canvasImage')
+#         inter_image_file = request.files.get("interImage")
+#         project_name = request.form.get("projectName")
+        
+#         # Retrieve JSON-like data from form fields
+#         original_image_shape = request.form.get('originalImageShape')
+#         final_image_shape = request.form.get('finalImageShape')
+#         download_image_shape = request.form.get('downloadImageShape')
+#         filter_names = request.form.get("filterNames")
+
+#         filter_names = eval(filter_names)
+
+#         # Parse the JSON strings into Python dictionaries (optional)
+#         original_image_shape = eval(original_image_shape)
+#         final_image_shape = eval(final_image_shape)
+#         download_image_shape = eval(download_image_shape)
+ 
+
+#         # whether loaded from saved
+#         loaded_from_saved = request.form.get("loadedFromSaved")
+        
+#         if not canvas_data or not original_image_file and not canvas_image_file:
+#             return jsonify({"success": False, "message": "Missing canvas data or image file"}), 400
+  
+#         try:
+#             canvas_data = json.loads(canvas_data)  # Convert the string to a JSON object
+#             canvas_logs = json.loads(canvas_logs)
+#         except json.JSONDecodeError:
+#             return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
+        
+#         print("after converting string to json")
+        
+#         # Secure the filename and save it
+#         image_filename = secure_filename(f"{canvas_id}.png") 
+#         _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
+#         original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+#         inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
+#         canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+        
+
+#         #  Update the image URL in canvas JSON
+#         for obj in canvas_data.get("objects", []):
+#             if obj.get("type").lower() == "image":
+#                 obj["src"] = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id +  "/inter/" + image_filename
+
+     
+#         # Check if a project with the given project_id already exists
+#         existing_project = projects_collection.find_one({"project_id": canvas_id, "user_id": user_id})
+
+#         if existing_project:
+#             # Update the existing project
+#             inter_image_file.save(inter_image_path)
+#             canvas_image_file.save(canvas_image_path)
+
+#             projects_collection.update_one(
+#                 {"project_id": canvas_id, "user_id": user_id}, 
+#                 {"$set": {
+#                     "project_data": canvas_data,
+#                     "project_logs": canvas_logs, 
+#                     "final_image_shape": final_image_shape, 
+#                     "download_image_shape": download_image_shape,
+#                     "filter_names": filter_names,
+#                     "project_name": project_name,
+#                     "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
+#                 }}
+#             )
+#             response_message = "Project updated successfully"
+#             status_code = 200
+            
+#         else:
+#             original_image_file.save(original_image_path)
+#             inter_image_file.save(inter_image_path)
+#             canvas_image_file.save(canvas_image_path)
+          
+#             # Create a new project
+#             new_project = {
+#                 "user_id": user_id,
+#                 "username": usename,
+#                 "project_id": canvas_id,
+#                 "is_public": is_public,
+#                 "project_data": canvas_data,
+#                 "project_logs": canvas_logs,
+#                 "granted_logs": [user_id],
+#                 "original_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/original/" + image_filename,
+#                 "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/canvas/" + image_filename,
+#                 "total_rating": 5,
+#                 "rating_count": 1,
+#                 "total_views": 1,
+#                 "total_bookmark": 0,
+#                 "original_image_shape": original_image_shape,
+#                 "final_image_shape": final_image_shape,
+#                 "download_image_shape": download_image_shape,
+#                 "filter_names": filter_names,
+#                 "project_name": project_name,
+#                 "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
+#                 "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
+                
+#             }
+        
+#             projects_collection.insert_one(new_project)
+#             response_message = "Project created successfully"
+#             status_code = 201
+
+
+#         # Prepare the response
+#         response = {"user_id": user_id, "project_id": canvas_id, "project_data": canvas_data}
+#         return jsonify({"success": True, "message": response_message, "data": response}), status_code
+
+#     except Exception as e:
+
+#         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
 
 def get_projects(user_id):

@@ -109,6 +109,7 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     let bounds = getRotatedBoundingBox(image);
 
     if (frameObject && image.clipPath) {
+      frameObject.visible = false; // this line is new
       bounds = getRotatedBoundingBox(frameObject);
     }
 
@@ -131,6 +132,11 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
+
+    //the next two line is new
+    if(frameObject && image.clipPath){
+        frameObject.visible = true
+    }
     
 
     if(changeAngle) {

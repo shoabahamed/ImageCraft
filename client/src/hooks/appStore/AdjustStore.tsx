@@ -39,6 +39,9 @@ type AdjustStore = {
   enableTechnicolor: boolean;
   enableSharpen: boolean;
   enableInvert: boolean;
+  enableEdgeDetection: boolean;
+  enableColdFilter: boolean;
+  enableWarmFilter: boolean;
 
   setEnableGrayScale: (value: boolean) => void;
   setEnableSepia: (value: boolean) => void;
@@ -47,6 +50,10 @@ type AdjustStore = {
   setEnableTechnicolor: (value: boolean) => void;
   setEnableSharpen: (value: boolean) => void;
   setEnableInvert: (value: boolean) => void;
+  setEnableEdgeDetection: (value: boolean) => void;
+  setEnableWarmFilter: (value: boolean) => void;
+  setEnableColdFilter: (value: boolean) => void;
+
   resetFilters: () => void;
 };
 
@@ -90,6 +97,9 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   enableTechnicolor: false,
   enableSharpen: false,
   enableInvert: false,
+  enableEdgeDetection: false,
+  enableColdFilter: false,
+  enableWarmFilter: false,
   setEnableGrayScale: (value) => set({ enableGrayScale: value }),
   setEnableSepia: (value) => set({ enableSepia: value }),
   setEnableVintage: (value) => set({ enableVintage: value }),
@@ -97,6 +107,9 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   setEnableTechnicolor: (value) => set({ enableTechnicolor: value }),
   setEnableSharpen: (value) => set({ enableSharpen: value }),
   setEnableInvert: (value) => set({ enableInvert: value }),
+  setEnableEdgeDetection: (value) => set({ enableEdgeDetection: value }),
+  setEnableColdFilter: (value) => set({ enableColdFilter: value }),
+  setEnableWarmFilter: (value) => set({ enableWarmFilter: value }),
   resetFilters: () =>
     set({
       brightnessValue: 0,

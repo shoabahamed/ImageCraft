@@ -62,9 +62,11 @@ def apply_style_transfer():
     else:
         img_size = 1024  
 
+    
+
 
     original_image_transfrom = get_style_transfer_transform(img_size=img_size)
-    style_image_transform = get_style_transfer_transform(img_size=img_size)
+    style_image_transform = get_style_transfer_transform(img_size=512)
     
     original_image = original_image_transfrom(original_image).unsqueeze(0).to(CFG.device)
     style_image = style_image_transform(style_image).unsqueeze(0).to(CFG.device)
@@ -149,22 +151,13 @@ def find_similar_image():
 
 def apply_super_resolution():
     try:
-        # Get the image data URL from the request
-        data = request.json
-        image_data = data['image']
-        resolution = int(data['resolution'].split('x')[0])
+     
+        image_data =  request.files['originalImage']
+        resolution = int(request.form.get("scale"))
 
+        image = Image.open(image_data).convert("RGB")
 
-        # Remove the data URL prefix
-        image_data = image_data.split(',')[1]
-
-        # Decode the base64 image data
-        image_bytes = base64.b64decode(image_data)
-
-        # Convert the image bytes to a PIL image
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-
-        # get transfomration
+     
         transform = get_super_resolution_transform()
         # convert image to tensor
 

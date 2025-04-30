@@ -30,10 +30,17 @@ import { set } from "react-hook-form";
 import { getRotatedBoundingBox, updateOrInsert } from "@/utils/commonFunctions";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import { BBrightness } from "@/utils/BlueBrightnessFilter";
+import { SharpenFilter } from "@/utils/SharpenFilter";
 import { GBrightness } from "@/utils/GreenBrightnessValue";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
 import { useLogContext } from "@/hooks/useLogContext";
 import useUndoRedo from "@/hooks/useUndoRedo";
+import { SobelFilter } from "@/utils/SobelFilter";
+import { ColdFilter } from "@/utils/ColdFilter";
+import { WarmFilter } from "@/utils/WarmFilter";
+
+// TODO: in rotation set some presest 90/180 degree rotation
+// TODO: allow the user to apply the filters
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -123,8 +130,13 @@ const Test = () => {
   const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
   const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
   const enableSharpen = useAdjustStore((state) => state.enableSharpen);
-
+  const enableEdgeDetection = useAdjustStore(
+    (state) => state.enableEdgeDetection
+  );
   const enableInvert = useAdjustStore((state) => state.enableInvert);
+
+  const enableWarmFilter = useAdjustStore((state) => state.enableWarmFilter);
+  const enableColdFilter = useAdjustStore((state) => state.enableColdFilter);
 
   const blueBrightnessValue = useAdjustStore(
     (state) => state.blueBrightnessValue
@@ -140,6 +152,7 @@ const Test = () => {
   const setBlueBrightnessValue = useAdjustStore(
     (state) => state.setBlueBrightnessValue
   );
+
   const setGreenBrightnessValue = useAdjustStore(
     (state) => state.setGreenBrightnessValue
   );
@@ -161,8 +174,20 @@ const Test = () => {
   const setEnableKodachrome = useAdjustStore(
     (state) => state.setEnableKodachrome
   );
+
+  const setEnableEdgeDetection = useAdjustStore(
+    (state) => state.setEnableEdgeDetection
+  );
+
   const setEnableSharpen = useAdjustStore((state) => state.setEnableSharpen);
   const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
+  const setEnableWarmFilter = useAdjustStore(
+    (state) => state.setEnableWarmFilter
+  );
+
+  const setEnableColdFilter = useAdjustStore(
+    (state) => state.setEnableColdFilter
+  );
 
   // Set functions for each value
   const setBrightnessValue = useAdjustStore(
@@ -181,6 +206,7 @@ const Test = () => {
   const setBlurValue = useAdjustStore((state) => state.setBlurValue);
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
+
   const resetFilters = useAdjustStore((state) => state.resetFilters);
   const dbLoadingRef = useRef(false);
 
@@ -191,7 +217,7 @@ const Test = () => {
     undo,
     redo,
     isUndoRedoAction,
-  ] = useUndoRedo(10);
+  ] = useUndoRedo(50);
 
   // this function runs whenever the window size changes
   const handleContainerResize = () => {
@@ -248,7 +274,7 @@ const Test = () => {
         height: containerHeight,
       });
 
-      initCanvas.backgroundColor = "#000";
+      // initCanvas.backgroundColor = "#000";
 
       const savedData = localStorage.getItem("project_data");
 
@@ -327,6 +353,21 @@ const Test = () => {
                 imageHeight: finalImageShape.height,
               });
 
+              finalImageDimensionsRef.current = {
+                imageHeight: finalImageShape.height,
+                imageWidth: finalImageShape.width,
+              };
+
+              downloadImageDimensionsRef.current = {
+                imageHeight: downloadImageShape.height,
+                imageWidth: downloadImageShape.width,
+              };
+
+              originalImageDimensionsRef.current = {
+                imageHeight: originalImageShape.height,
+                imageWidth: originalImageShape.width,
+              };
+
               setLogs(project_logs);
 
               initCanvas.setDimensions({
@@ -360,10 +401,33 @@ const Test = () => {
                 originY: "center",
               });
 
+              const canvasData = initCanvas.toObject(["name", "isUpper", "id"]);
+
+              const allData = {
+                project_data: canvasData,
+                final_image_shape: {
+                  imageHeight: finalImageShape.height,
+                  imageWidth: finalImageShape.width,
+                },
+                original_image_shape: {
+                  imageHeight: originalImageShape.height,
+                  imageWidth: originalImageShape.width,
+                },
+                download_image_shape: {
+                  imageHeight: downloadImageShape.height,
+                  imageWidth: downloadImageShape.width,
+                },
+                filter_names: [],
+                viewportTransform: initCanvas.viewportTransform,
+                zoomValue: zoom,
+              };
+
+              dbLoadingRef.current = true;
               databaseFiltersNameRef.current = filterNames;
               databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
-              oldFiltersNameRef.current = filterNames;
+              // oldFiltersNameRef.current = filterNames;
               setFiltersUI(!filtersUI);
+              setHistoryValue(allData);
             }
 
             if (frameObject) {
@@ -382,12 +446,13 @@ const Test = () => {
             initCanvas.renderAll();
 
             if (localStorage.getItem("canvasId")) {
+              console.log(localStorage.getItem("canvasId"), "sdfsk");
               setShowUpdateButton(true);
             }
 
             canvasIdRef.current = localStorage.getItem("canvasId")!;
-            localStorage.removeItem("project_data");
-            localStorage.removeItem("CanvasId");
+            // localStorage.removeItem("project_data");
+            // localStorage.removeItem("CanvasId");
 
             setProjectName(projectName);
 
@@ -518,6 +583,9 @@ const Test = () => {
       });
 
       return () => {
+        // localStorage.removeItem("project_data");
+        // localStorage.removeItem("canvasId");
+
         initCanvas.dispose();
         // if (unsubscribeRef.current) unsubscribeRef.current();
         if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
@@ -823,13 +891,30 @@ const Test = () => {
       );
       updateOrInsert(
         filtersList,
+        "sobeledge",
+        new SobelFilter(),
+        enableEdgeDetection
+      );
+      // updateOrInsert(
+      //   filtersList,
+      //   "sharpen",
+      //   new filters.Convolute({
+      //     matrix: [0.0, -1.0, 0.0, -1.0, 5.0, -1.0, 0.0, -1.0, 0.0],
+      //     opaque: false,
+      //   }),
+      //   enableSharpen
+      // );
+
+      updateOrInsert(
+        filtersList,
         "sharpen",
-        new filters.Convolute({
-          matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
-          opaque: false,
-        }),
+        new SharpenFilter({ SharpenValue: 1.0 }),
         enableSharpen
       );
+
+      updateOrInsert(filtersList, "cold", new ColdFilter(), enableColdFilter);
+
+      updateOrInsert(filtersList, "warm", new WarmFilter(), enableWarmFilter);
 
       updateOrInsert(
         filtersList,
@@ -932,6 +1017,7 @@ const Test = () => {
     enableSharpen,
     enableTechnicolor,
     enableVintage,
+    enableEdgeDetection,
     redBrightnessValue,
     greenBrightnessValue,
     blueBrightnessValue,
@@ -945,6 +1031,8 @@ const Test = () => {
     pixelateValue,
     saturationValue,
     vibranceValue,
+    enableColdFilter,
+    enableWarmFilter,
   ]);
 
   // this only runs if we load a project from the database else it does not do anything
@@ -1013,19 +1101,44 @@ const Test = () => {
             );
 
             break;
+
+          case "sobeledge":
+            setEnableEdgeDetection(true);
+            updateOrInsert(filtersList, "sobeledge", new SobelFilter(), true);
+            break;
           case "sharpen":
             setEnableSharpen(true);
+            // updateOrInsert(
+            //   filtersList,
+            //   "sharpen",
+            //   new filters.Convolute({
+            //     matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
+            //     opaque: false,
+            //   }),
+            //   true
+            // );
             updateOrInsert(
               filtersList,
               "sharpen",
-              new filters.Convolute({
-                matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
-                opaque: false,
-              }),
+              new SharpenFilter({ SharpenValue: 1.0 }),
               true
             );
 
             break;
+
+          case "cold":
+            setEnableColdFilter(true);
+            updateOrInsert(filtersList, "cold", new ColdFilter(), true);
+
+            break;
+
+          case "warm":
+            setEnableWarmFilter(true);
+
+            updateOrInsert(filtersList, "warm", new WarmFilter(), true);
+
+            break;
+
           case "invert":
             setEnableInvert(true);
             updateOrInsert(
@@ -1266,10 +1379,11 @@ const Test = () => {
                 <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
                   Arrange Image
                 </div>
-                <div className="h-[90%]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="max-h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <Arrange
                     canvas={mainCanvasRef.current!}
-                    image={currentImageRef.current!}
+                    imageRef={currentImageRef!}
+                    setSpinnerLoading={setSpinnerLoading}
                   />
                 </div>
               </div>

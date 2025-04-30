@@ -7,6 +7,10 @@ from routes.image_proc_routes import image_proc_routes
 from routes.text_proc_routes import text_proc_routes
 from dotenv import load_dotenv
 import os 
+import cloudinary
+from cloudinary.uploader import upload
+from flask.json import jsonify
+
 load_dotenv()
 
 
@@ -21,8 +25,34 @@ app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/sty
 app.config['GENERAL_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/general'
 
 
+cloudinary.config( 
+    cloud_name = "dx9gej2lc", 
+    api_key = "988347957788346", 
+    api_secret = os.getenv("CLOUDNARY_API_SECRET_KEY"),
+    secure=True
+)
+
+
+
 CORS(app, resources={r"/server/static/*": {"origins": "*"}})
 # os.makedirs(app.config['ORG_IMG_FOLDER'], exist_ok=True)
+
+
+# @app.route("/server/upload", methods=['POST'])
+# def upload_image():
+#     file = request.files['file']
+
+#     result = cloudinary.uploader.upload(
+#         file,
+#         public_id="products/shoes/nike-air",  # This sets the folder and filename
+#         overwrite=True  # Optional: allows overwriting if file with same ID exists
+#     )
+
+#     return jsonify({
+#         "url": result["secure_url"],
+#         "public_id": result["public_id"]
+#     })
+
 
 @app.route('/server/static/<string:user_id>/original/<string:filename>')
 def get_original_image(user_id, filename):
@@ -58,6 +88,8 @@ def get_general_image(filename):
 def get_profile_image(user_id, filename):
     path = os.getenv("USER_COMMON_PATH") + user_id + "/" 
     return send_from_directory(path,filename, as_attachment=False)
+
+
 
 
 

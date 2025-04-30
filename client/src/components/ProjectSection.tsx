@@ -279,7 +279,7 @@ const ProjectSection = ({
     project_name: string,
     imageUrl: string
   ) => {
-    localStorage.setItem("CanvasId", project_id);
+    localStorage.setItem("canvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
     localStorage.setItem("project_logs", JSON.stringify(project_logs));
     localStorage.setItem("project_name", project_name);

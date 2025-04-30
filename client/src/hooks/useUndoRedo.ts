@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 
-const useUndoRedo = (limit=10) => {
+const useUndoRedo = (limit=25) => {
   const [history, setHistory] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const isUndoRedoAction = useRef(false);

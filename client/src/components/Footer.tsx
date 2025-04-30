@@ -286,54 +286,11 @@ const Footer = ({
 
     const dataURL = getCanvasDataUrl(canvas, image, false);
 
-    if (superResValue !== "none") {
-      try {
-        setLoadState(true);
-        const response = await apiClient.post(
-          "/image_proc/super_res",
-          { image: dataURL, resolution: superResValue },
-
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${user?.token}`,
-            },
-          }
-        );
-        setLoadState(false);
-        if (response.status === 200) {
-          const base64Image = `data:image/png;base64,${response.data.image}`;
-          const link = document.createElement("a");
-          link.href = base64Image;
-          link.download =
-            frameObject && downloadFrame
-              ? "clipped-image.png"
-              : "canvas-image.png";
-          link.click();
-
-          toast({
-            description: "Successfull",
-            className: "bg-green-500 text-gray-900",
-            duration: 3000,
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            description: "Error Encountered inference",
-            className: "bg-green-500 text-gray-900",
-            duration: 3000,
-          });
-        }
-      } catch (error) {
-        console.error("Error sending image to backend:", error);
-      }
-    } else {
-      // Trigger download (optional, if you still want to download the image)
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "canvas-image.png";
-      link.click();
-    }
+    // Trigger download (optional, if you still want to download the image)
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "canvas-image.png";
+    link.click();
   };
 
   const deleteObject = () => {

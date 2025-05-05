@@ -128,6 +128,25 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     canvas.fire("object:modified");
   };
 
+  const handlePresetRotation = (value: number) => {
+    addLog({
+      section: "arrange",
+      tab: "rotation",
+      event: "update",
+      message: `rotation value changed from  ${imageRotation} to ${value}`,
+      value: `${value}`,
+      objType: "canvas",
+    });
+
+    setImageRotation(value);
+    imageRef.current.angle = value;
+    canvas.renderAll();
+
+    handleRenderingFinalDimension();
+
+    canvas.fire("object:modified");
+  };
+
   const handleOrientationReset = () => {
     addLog({
       section: "arrange",
@@ -257,7 +276,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full gap-4">
+    <div className="flex flex-col md:flex-col items-center justify-center w-full gap-4">
       <div className="w-[90%]">
         <Card>
           <CardHeader>
@@ -265,7 +284,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-4">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <IconComponent
                   icon={<UndoDot />}
                   iconName="Flip Left"
@@ -375,6 +394,34 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
                   }}
                 />
               </div>
+              <div className="grid grid-cols-4 gap-1">
+                {[0, 90, 180, 270].map((angle) => (
+                  <button
+                    key={angle}
+                    onClick={() => handlePresetRotation(angle)}
+                    className="
+        aspect-square w-full
+        bg-gray-100
+        rounded-xl
+        text-gray-600
+        hover:bg-gray-200
+        active:bg-gray-300
+        transition-colors duration-50
+        dark:bg-gray-800
+        dark:text-gray-300
+        dark:hover:bg-gray-700
+        group
+      "
+                  >
+                    <div className="flex items-center justify-center h-full">
+                      <span className="text-sm font-medium group-hover:scale-103 transition-transform">
+                        {angle}°
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center text-slate-400 text-sm">
                   <p>Rotation</p>
@@ -419,6 +466,12 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
                 onClick={() => handleSuperResolution(2)}
               >
                 2X Using AI
+              </button>
+              <button
+                className="custom-button"
+                onClick={() => handleSuperResolution(3)}
+              >
+                3X Using AI
               </button>
 
               <button

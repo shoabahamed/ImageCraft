@@ -66,6 +66,7 @@ type projectType = {
   total_rating: number;
   rating_count: number;
   filter_names: string[];
+  all_filters_applied: string[];
   created_at: Date;
   updated_at: Date;
 };
@@ -301,8 +302,6 @@ export function LogsSection({ logs }: { logs: logType[] }) {
     event,
     count,
   }));
-
-  console.log(chartData);
 
   return (
     <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md h-full">
@@ -670,6 +669,7 @@ export default function LogDashboard() {
     final_image_shape: object,
     download_image_shape: object,
     filter_names: string[] | [],
+    all_filters_applied: string[] | [],
     project_name: string,
     imageUrl: string
   ) => {
@@ -682,6 +682,7 @@ export default function LogDashboard() {
       download_image_shape: download_image_shape,
       filter_names: filter_names,
       imageUrl: imageUrl,
+      all_filters_applied: all_filters_applied,
     };
 
     // Create JSON blob
@@ -749,6 +750,7 @@ export default function LogDashboard() {
                       project.final_image_shape,
                       project.download_image_shape,
                       project.filter_names,
+                      project.all_filters_applied,
                       project.project_name || "Untitled",
                       project.original_image_url
                     )

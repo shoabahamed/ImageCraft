@@ -22,6 +22,7 @@ interface Project {
   download_image_shape: { width: number; height: number };
   project_name: string;
   filter_names: string[] | [];
+  all_filters_applied: string[] | [];
   created_at: Date;
   updated_at: Date;
 }
@@ -87,6 +88,7 @@ export function ProjectDownloadDialog({
       original_image_shape: project.original_image_shape,
       download_image_shape: project.download_image_shape,
       filter_names: project.filter_names,
+      all_filters_applied: project.all_filters_applied,
       imageUrl: project.original_image_url,
     };
 

@@ -56,8 +56,10 @@ def save_project():
         final_image_shape = request.form.get('finalImageShape')
         download_image_shape = request.form.get('downloadImageShape')
         filter_names = request.form.get("filterNames")
+        all_filters_applied = request.form.get('allFiltersApplied')
 
         filter_names = eval(filter_names)
+        all_filters_applied = eval(all_filters_applied)
 
         # Parse the JSON strings into Python dictionaries (optional)
         original_image_shape = eval(original_image_shape)
@@ -120,6 +122,7 @@ def save_project():
                         "final_image_shape": final_image_shape, 
                         "download_image_shape": download_image_shape,
                         "filter_names": filter_names,
+                        "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
                         "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
                     }}
@@ -151,6 +154,7 @@ def save_project():
                         "final_image_shape": final_image_shape, 
                         "download_image_shape": download_image_shape,
                         "filter_names": filter_names,
+                        "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
                         "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
                     }}
@@ -207,6 +211,7 @@ def save_project():
                     "final_image_shape": final_image_shape,
                     "download_image_shape": download_image_shape,
                     "filter_names": filter_names,
+                    "all_filters_applied": all_filters_applied,
                     "project_name": project_name,
                     "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                     "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
@@ -247,6 +252,7 @@ def save_project():
                     "final_image_shape": final_image_shape,
                     "download_image_shape": download_image_shape,
                     "filter_names": filter_names,
+                    "all_filters_applied": all_filters_applied,
                     "project_name": project_name,
                     "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                     "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp

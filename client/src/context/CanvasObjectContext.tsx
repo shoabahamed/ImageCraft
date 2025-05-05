@@ -40,6 +40,11 @@ interface CanvasObjectsContextType {
   selectedRatio: AspectRatioType;
   setSelectedRatio: (obj: AspectRatioType) => void;
   disableSavingIntoStackRef: React.MutableRefObject<boolean>;
+
+  dbLoadingRef: React.MutableRefObject<boolean>;
+  allFiltersRef: React.MutableRefObject<string[]>;
+
+  tempRef: React.MutableRefObject<boolean>;
 }
 
 // Create the context with a default value
@@ -96,6 +101,11 @@ export const CanvasObjectsProvider = ({
     icon: <ImageIcon className="w-5 h-5" />,
   });
 
+  const dbLoadingRef = useRef(false);
+  const allFiltersRef = useRef<string[]>([]);
+
+  const tempRef = useRef<boolean>(true);
+
   return (
     <CanvasObjectsContext.Provider
       value={{
@@ -117,6 +127,9 @@ export const CanvasObjectsProvider = ({
         selectedRatio,
         setSelectedRatio,
         disableSavingIntoStackRef,
+        dbLoadingRef,
+        allFiltersRef,
+        tempRef,
       }}
     >
       {children}

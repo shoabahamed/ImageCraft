@@ -38,6 +38,12 @@ import useUndoRedo from "@/hooks/useUndoRedo";
 import { SobelFilter } from "@/utils/SobelFilter";
 import { ColdFilter } from "@/utils/ColdFilter";
 import { WarmFilter } from "@/utils/WarmFilter";
+import { RGBThresholdFilter } from "@/utils/ThresholdFilter";
+import { BlueThresholdFilter } from "@/utils/BlueThresholdFilter";
+import { RedThresholdFilter } from "@/utils/RedThresholdFilter";
+import { GreenThresholdFilter } from "@/utils/GreenThresholdFilter";
+import { useShapeStore } from "@/hooks/appStore/ShapeStore";
+import { CustomGaussianSobelFilter } from "@/utils/CustomGaussianBlur";
 
 // TODO: in rotation set some presest 90/180 degree rotation
 // TODO: allow the user to apply the filters
@@ -52,7 +58,7 @@ const override: CSSProperties = {
 
 const Test = () => {
   const sidebarName = useCommonProps((state) => state.sidebarName);
-  const { setLogs } = useLogContext();
+  const { setLogs, addLog } = useLogContext();
   const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
   const setSidebarName = useCommonProps((state) => state.setSidebarName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
@@ -104,6 +110,7 @@ const Test = () => {
     originalImageDimensionsRef,
     downloadImageDimensionsRef,
     setSelectedObject,
+    allFiltersRef,
   } = useCanvasObjects();
 
   const setFlipX = useArrangeStore((state) => state.setFlipX);
@@ -115,7 +122,6 @@ const Test = () => {
     (state) => state.redBrightnessValue
   );
 
-  const brightnessValue = useAdjustStore((state) => state.brightnessValue);
   const contrastValue = useAdjustStore((state) => state.contrastValue);
   const saturationValue = useAdjustStore((state) => state.saturationValue);
   const vibranceValue = useAdjustStore((state) => state.vibranceValue);
@@ -190,9 +196,6 @@ const Test = () => {
   );
 
   // Set functions for each value
-  const setBrightnessValue = useAdjustStore(
-    (state) => state.setBrightnessValue
-  );
   const setContrastValue = useAdjustStore((state) => state.setContrastValue);
   const setSaturationValue = useAdjustStore(
     (state) => state.setSaturationValue
@@ -201,14 +204,49 @@ const Test = () => {
     (state) => state.setRedBrightnessValue
   );
   const setVibranceValue = useAdjustStore((state) => state.setVibranceValue);
-  const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
   const setHueValue = useAdjustStore((state) => state.setHueValue);
   const setBlurValue = useAdjustStore((state) => state.setBlurValue);
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
 
+  const red = useAdjustStore((state) => state.red);
+
+  const green = useAdjustStore((state) => state.green);
+
+  const blue = useAdjustStore((state) => state.blue);
+
+  const setRed = useAdjustStore((state) => state.setRed);
+
+  const setGreen = useAdjustStore((state) => state.setGreen);
+
+  const setBlue = useAdjustStore((state) => state.setBlue);
+
+  const enableBlueThresholding = useAdjustStore(
+    (state) => state.enableBlueThresholding
+  );
+
+  const enableGreenThresholding = useAdjustStore(
+    (state) => state.enableGreenThresholding
+  );
+
+  const enableRedThresholding = useAdjustStore(
+    (state) => state.enableRedThresholding
+  );
+
+  const setEnableRedThresholding = useAdjustStore(
+    (state) => state.setEnableRedThresholding
+  );
+
+  const setEnableGreenThresholding = useAdjustStore(
+    (state) => state.setEnableGreenThresholding
+  );
+
+  const setEnableBlueThresholding = useAdjustStore(
+    (state) => state.setEnableBlueThresholding
+  );
+
   const resetFilters = useAdjustStore((state) => state.resetFilters);
-  const dbLoadingRef = useRef(false);
+  const { dbLoadingRef } = useCanvasObjects();
 
   const [
     currentHistoryIndex,
@@ -218,6 +256,57 @@ const Test = () => {
     redo,
     isUndoRedoAction,
   ] = useUndoRedo(50);
+
+  // shaper paramters
+  const {
+    // Rectangle properties
+    rectWidth,
+    rectHeight,
+    rectFill,
+    rectStroke,
+    rectStrokeWidth,
+    rectOpacity,
+    setRectWidth,
+    setRectHeight,
+    setRectFill,
+    setRectStroke,
+    setRectStrokeWidth,
+    setRectOpacity,
+
+    // Circle properties
+    circleRadius,
+    circleFill,
+    circleStroke,
+    circleStrokeWidth,
+    circleOpacity,
+    setCircleRadius,
+    setCircleFill,
+    setCircleStroke,
+    setCircleStrokeWidth,
+    setCircleOpacity,
+
+    // Triangle properties
+    triangleWidth,
+    triangleHeight,
+    triangleFill,
+    triangleStroke,
+    triangleStrokeWidth,
+    triangleOpacity,
+    setTriangleWidth,
+    setTriangleHeight,
+    setTriangleFill,
+    setTriangleStroke,
+    setTriangleStrokeWidth,
+    setTriangleOpacity,
+
+    // Line properties
+    lineStroke,
+    lineStrokeWidth,
+    lineOpacity,
+    setLineStroke,
+    setLineStrokeWidth,
+    setLineOpacity,
+  } = useShapeStore();
 
   // this function runs whenever the window size changes
   const handleContainerResize = () => {
@@ -288,6 +377,9 @@ const Test = () => {
           JSON.parse(localStorage.getItem("original_image_shape")!);
 
         const filterNames = JSON.parse(localStorage.getItem("filter_names")!);
+        const allFiltersApplied = JSON.parse(
+          localStorage.getItem("all_filters_applied")!
+        );
         const project_logs = JSON.parse(localStorage.getItem("project_logs"));
 
         const projectName = localStorage.getItem("project_name");
@@ -422,6 +514,7 @@ const Test = () => {
                 zoomValue: zoom,
               };
 
+              allFiltersRef.current = allFiltersApplied;
               dbLoadingRef.current = true;
               databaseFiltersNameRef.current = filterNames;
               databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
@@ -582,6 +675,81 @@ const Test = () => {
         opt.e.stopPropagation();
       });
 
+      initCanvas.on("object:scaling", function () {
+        const activeObject = this.getActiveObject();
+        console.log("scaling obnject");
+        if (activeObject) {
+          const objectName = activeObject.type || "Unknown Object";
+          const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+          const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+          addLog({
+            section: "shape",
+            tab: "shape",
+            event: "update",
+            message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+            param: "scale",
+            objType: objectName,
+          });
+
+          setSelectedObject(activeObject); // Update the context with the selected object
+        }
+      });
+
+      initCanvas.on("selection:created", function () {
+        const activeObject = this.getActiveObject();
+        if (activeObject) {
+          setSelectedObject(activeObject);
+
+          switch (activeObject.type) {
+            case "rect":
+              setRectWidth(activeObject.width || 100);
+              setRectHeight(activeObject.height || 60);
+              setRectFill(activeObject.fill as string);
+              setRectStroke(activeObject.stroke as string);
+              setRectStrokeWidth(activeObject.strokeWidth || 1);
+              setRectOpacity(activeObject.opacity || 1);
+              break;
+
+            case "circle":
+              setCircleRadius((activeObject as any).radius || 50);
+              setCircleFill(activeObject.fill as string);
+              setCircleStroke(activeObject.stroke as string);
+              setCircleStrokeWidth(activeObject.strokeWidth || 1);
+              setCircleOpacity(activeObject.opacity || 1);
+              break;
+
+            case "triangle":
+              setTriangleWidth(activeObject.width || 60);
+              setTriangleHeight(activeObject.height || 60);
+              setTriangleFill(activeObject.fill as string);
+              setTriangleStroke(activeObject.stroke as string);
+              setTriangleStrokeWidth(activeObject.strokeWidth || 1);
+              setTriangleOpacity(activeObject.opacity || 1);
+              break;
+
+            case "line":
+              setLineStroke(activeObject.stroke as string);
+              setLineStrokeWidth(activeObject.strokeWidth || 3);
+              setLineOpacity(activeObject.opacity || 1);
+              break;
+
+            default:
+              break;
+          }
+        } else {
+          setSelectedObject(null);
+        }
+      });
+
+      initCanvas.on("selection:cleared", () => {
+        setSelectedObject(null);
+      });
+
+      initCanvas.on("object:modified", function () {
+        console.log("skdjsflk");
+      });
+
       return () => {
         // localStorage.removeItem("project_data");
         // localStorage.removeItem("canvasId");
@@ -601,8 +769,80 @@ const Test = () => {
           opt.e.preventDefault();
           opt.e.stopPropagation();
         });
+        initCanvas.off("object:scaling", function () {
+          const activeObject = this.getActiveObject();
 
-        initCanvas.off("object:modified", handleObjectModified);
+          if (activeObject) {
+            const objectName = activeObject.type || "Unknown Object";
+            const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+            const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+            addLog({
+              section: "shape",
+              tab: "shape",
+              event: "update",
+              message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+              param: "scale",
+              objType: objectName,
+            });
+
+            setSelectedObject(activeObject); // Update the context with the selected object
+          }
+        });
+
+        initCanvas.off("object:modified", function () {
+          console.log("skdjsflk");
+        });
+
+        initCanvas.off("selection:created", function () {
+          const activeObject = this.getActiveObject();
+          if (activeObject) {
+            setSelectedObject(activeObject);
+
+            switch (activeObject.type) {
+              case "rect":
+                setRectWidth(activeObject.width || 100);
+                setRectHeight(activeObject.height || 60);
+                setRectFill(activeObject.fill as string);
+                setRectStroke(activeObject.stroke as string);
+                setRectStrokeWidth(activeObject.strokeWidth || 1);
+                setRectOpacity(activeObject.opacity || 1);
+                break;
+
+              case "circle":
+                setCircleRadius((activeObject as any).radius || 50);
+                setCircleFill(activeObject.fill as string);
+                setCircleStroke(activeObject.stroke as string);
+                setCircleStrokeWidth(activeObject.strokeWidth || 1);
+                setCircleOpacity(activeObject.opacity || 1);
+                break;
+
+              case "triangle":
+                setTriangleWidth(activeObject.width || 60);
+                setTriangleHeight(activeObject.height || 60);
+                setTriangleFill(activeObject.fill as string);
+                setTriangleStroke(activeObject.stroke as string);
+                setTriangleStrokeWidth(activeObject.strokeWidth || 1);
+                setTriangleOpacity(activeObject.opacity || 1);
+                break;
+
+              case "line":
+                setLineStroke(activeObject.stroke as string);
+                setLineStrokeWidth(activeObject.strokeWidth || 3);
+                setLineOpacity(activeObject.opacity || 1);
+                break;
+
+              default:
+                break;
+            }
+          } else {
+            setSelectedObject(null);
+          }
+        });
+
+        initCanvas.off("selection:cleared", () => {
+          setSelectedObject(null);
+        });
       };
     }
   }, []);
@@ -637,6 +877,7 @@ const Test = () => {
   //   setHistoryValue,
   // ]);
   const handleObjectModified = () => {
+    console.log("ran modification");
     if (disableSavingIntoStackRef.current) return;
 
     console.log("object modified from undo redo");
@@ -835,6 +1076,77 @@ const Test = () => {
       opt.e.stopPropagation();
     });
 
+    newCanvas.on("object:scaling", function () {
+      const activeObject = this.getActiveObject();
+      console.log("scaling obnject");
+      if (activeObject) {
+        const objectName = activeObject.type || "Unknown Object";
+        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+        addLog({
+          section: "shape",
+          tab: "shape",
+          event: "update",
+          message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+          param: "scale",
+          objType: objectName,
+        });
+
+        setSelectedObject(activeObject); // Update the context with the selected object
+      }
+    });
+
+    newCanvas.on("selection:created", function () {
+      const activeObject = this.getActiveObject();
+      if (activeObject) {
+        setSelectedObject(activeObject);
+
+        switch (activeObject.type) {
+          case "rect":
+            setRectWidth(activeObject.width || 100);
+            setRectHeight(activeObject.height || 60);
+            setRectFill(activeObject.fill as string);
+            setRectStroke(activeObject.stroke as string);
+            setRectStrokeWidth(activeObject.strokeWidth || 1);
+            setRectOpacity(activeObject.opacity || 1);
+            break;
+
+          case "circle":
+            setCircleRadius((activeObject as any).radius || 50);
+            setCircleFill(activeObject.fill as string);
+            setCircleStroke(activeObject.stroke as string);
+            setCircleStrokeWidth(activeObject.strokeWidth || 1);
+            setCircleOpacity(activeObject.opacity || 1);
+            break;
+
+          case "triangle":
+            setTriangleWidth(activeObject.width || 60);
+            setTriangleHeight(activeObject.height || 60);
+            setTriangleFill(activeObject.fill as string);
+            setTriangleStroke(activeObject.stroke as string);
+            setTriangleStrokeWidth(activeObject.strokeWidth || 1);
+            setTriangleOpacity(activeObject.opacity || 1);
+            break;
+
+          case "line":
+            setLineStroke(activeObject.stroke as string);
+            setLineStrokeWidth(activeObject.strokeWidth || 3);
+            setLineOpacity(activeObject.opacity || 1);
+            break;
+
+          default:
+            break;
+        }
+      } else {
+        setSelectedObject(null);
+      }
+    });
+
+    newCanvas.on("selection:cleared", () => {
+      setSelectedObject(null);
+    });
+
     isUndoRedoAction.current = false;
 
     return () => {
@@ -850,6 +1162,77 @@ const Test = () => {
         setZoomValue(zoom);
         opt.e.preventDefault();
         opt.e.stopPropagation();
+      });
+
+      newCanvas.off("object:modified", function () {
+        const activeObject = this.getActiveObject();
+        console.log("scaling obnject");
+        if (activeObject) {
+          const objectName = activeObject.type || "Unknown Object";
+          const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+          const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+          addLog({
+            section: "shape",
+            tab: "shape",
+            event: "update",
+            message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+            param: "scale",
+            objType: objectName,
+          });
+
+          setSelectedObject(activeObject); // Update the context with the selected object
+        }
+      });
+
+      newCanvas.off("selection:created", function () {
+        const activeObject = this.getActiveObject();
+        if (activeObject) {
+          setSelectedObject(activeObject);
+
+          switch (activeObject.type) {
+            case "rect":
+              setRectWidth(activeObject.width || 100);
+              setRectHeight(activeObject.height || 60);
+              setRectFill(activeObject.fill as string);
+              setRectStroke(activeObject.stroke as string);
+              setRectStrokeWidth(activeObject.strokeWidth || 1);
+              setRectOpacity(activeObject.opacity || 1);
+              break;
+
+            case "circle":
+              setCircleRadius((activeObject as any).radius || 50);
+              setCircleFill(activeObject.fill as string);
+              setCircleStroke(activeObject.stroke as string);
+              setCircleStrokeWidth(activeObject.strokeWidth || 1);
+              setCircleOpacity(activeObject.opacity || 1);
+              break;
+
+            case "triangle":
+              setTriangleWidth(activeObject.width || 60);
+              setTriangleHeight(activeObject.height || 60);
+              setTriangleFill(activeObject.fill as string);
+              setTriangleStroke(activeObject.stroke as string);
+              setTriangleStrokeWidth(activeObject.strokeWidth || 1);
+              setTriangleOpacity(activeObject.opacity || 1);
+              break;
+
+            case "line":
+              setLineStroke(activeObject.stroke as string);
+              setLineStrokeWidth(activeObject.strokeWidth || 3);
+              setLineOpacity(activeObject.opacity || 1);
+              break;
+
+            default:
+              break;
+          }
+        } else {
+          setSelectedObject(null);
+        }
+      });
+
+      newCanvas.off("selection:cleared", () => {
+        setSelectedObject(null);
       });
 
       // newCanvas.off("object:modified", handleObjectModified);
@@ -892,18 +1275,11 @@ const Test = () => {
       updateOrInsert(
         filtersList,
         "sobeledge",
-        new SobelFilter(),
+        new filters.Composed({
+          subFilters: [new CustomGaussianSobelFilter(), new SobelFilter()],
+        }),
         enableEdgeDetection
       );
-      // updateOrInsert(
-      //   filtersList,
-      //   "sharpen",
-      //   new filters.Convolute({
-      //     matrix: [0.0, -1.0, 0.0, -1.0, 5.0, -1.0, 0.0, -1.0, 0.0],
-      //     opaque: false,
-      //   }),
-      //   enableSharpen
-      // );
 
       updateOrInsert(
         filtersList,
@@ -991,6 +1367,45 @@ const Test = () => {
         pixelateValue !== 0
       );
 
+      updateOrInsert(
+        filtersList,
+        "redThreshold",
+        new RedThresholdFilter({
+          red: {
+            threshold: red.threshold,
+            lower: red.below,
+            upper: red.above,
+          },
+        }),
+        enableRedThresholding
+      );
+
+      updateOrInsert(
+        filtersList,
+        "greenThreshold",
+        new GreenThresholdFilter({
+          green: {
+            threshold: green.threshold,
+            lower: green.below,
+            upper: green.above,
+          },
+        }),
+        enableGreenThresholding
+      );
+
+      updateOrInsert(
+        filtersList,
+        "blueThreshold",
+        new BlueThresholdFilter({
+          blue: {
+            threshold: blue.threshold,
+            lower: blue.below,
+            upper: blue.above,
+          },
+        }),
+        enableBlueThresholding
+      );
+
       console.log("new", filtersList);
       const filterInstances = filtersList.map(
         (tempFilter) => tempFilter.instance
@@ -1033,6 +1448,12 @@ const Test = () => {
     vibranceValue,
     enableColdFilter,
     enableWarmFilter,
+    red,
+    green,
+    blue,
+    enableRedThresholding,
+    enableBlueThresholding,
+    enableGreenThresholding,
   ]);
 
   // this only runs if we load a project from the database else it does not do anything
@@ -1104,19 +1525,20 @@ const Test = () => {
 
           case "sobeledge":
             setEnableEdgeDetection(true);
-            updateOrInsert(filtersList, "sobeledge", new SobelFilter(), true);
+            updateOrInsert(
+              filtersList,
+              "sobeledge",
+              new filters.Composed({
+                subFilters: [
+                  new CustomGaussianSobelFilter(),
+                  new SobelFilter(),
+                ],
+              }),
+              true
+            );
             break;
           case "sharpen":
             setEnableSharpen(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "sharpen",
-            //   new filters.Convolute({
-            //     matrix: [0, -1, 0, -1, 5, -1, 0, -1, 0],
-            //     opaque: false,
-            //   }),
-            //   true
-            // );
             updateOrInsert(
               filtersList,
               "sharpen",
@@ -1267,6 +1689,67 @@ const Test = () => {
             );
 
             break;
+          case "redThreshold":
+            setEnableRedThresholding(true);
+            setRed({
+              threshold: filterData.red.threshold,
+              below: filterData.red.lower,
+              above: filterData.red.upper,
+            });
+            updateOrInsert(
+              filtersList,
+              "redThreshold",
+              new RedThresholdFilter({
+                red: {
+                  threshold: filterData.red.threshold,
+                  lower: filterData.red.below,
+                  upper: filterData.red.above,
+                },
+              }),
+              true
+            );
+            break;
+
+          case "blueThreshold":
+            setEnableBlueThresholding(true);
+            setBlue({
+              threshold: filterData.blue.threshold,
+              below: filterData.blue.lower,
+              above: filterData.blue.upper,
+            });
+            updateOrInsert(
+              filtersList,
+              "blueThreshold",
+              new BlueThresholdFilter({
+                blue: {
+                  threshold: filterData.blue.threshold,
+                  lower: filterData.blue.below,
+                  upper: filterData.blue.above,
+                },
+              }),
+              true
+            );
+            break;
+          case "greenThreshold":
+            setEnableGreenThresholding(true);
+            setGreen({
+              threshold: filterData.green.threshold,
+              below: filterData.green.lower,
+              above: filterData.green.upper,
+            });
+            updateOrInsert(
+              filtersList,
+              "greenThreshold",
+              new GreenThresholdFilter({
+                green: {
+                  threshold: filterData.green.threshold,
+                  lower: filterData.green.below,
+                  upper: filterData.green.above,
+                },
+              }),
+              true
+            );
+            break;
         }
       }
       setCurrentFilters(filtersList);
@@ -1283,7 +1766,7 @@ const Test = () => {
   return (
     <div className="h-screen max-w-screen flex flex-col">
       <Navbar />
-      <div className="w-full flex-1 flex items-center relative">
+      <div className="w-full flex-1 flex items-center relative flex-col md:flex-row">
         {/* Full-screen overlay */}
         {spinnerLoading && (
           <div className="fixed w-full h-full top-0 left-0 z-50 flex bg-black opacity-40 justify-center items-center">
@@ -1299,9 +1782,11 @@ const Test = () => {
         )}
         {/* Sidebar */}
         <div
-          className={`flex items-center h-full ${sidebarName ? "w-[25%]" : ""}`}
+          className={`flex w-full md:w-auto justify-center md:h-full items-start md:items-center ${
+            sidebarName ? " md:w-[40%] lg:w-[25%]" : ""
+          } flex-col md:flex-row`}
         >
-          <nav className="flex flex-col h-full gap-5 justify-center items-center border-slate-800 border-r-2 rounded-none">
+          <nav className="flex w-full md:w-auto flex-row md:flex-col gap-5 justify-center items-center border-slate-800 border-b-2 md:border-r-2">
             <IconComponent
               icon={<Home />}
               iconName="Home"
@@ -1352,7 +1837,10 @@ const Test = () => {
           <div
             className={`${
               sidebarName ? "w-full" : "w-0"
-            } transition-all duration-700 ease-in-out relative h-full  bg-gray-700`}
+            } transition-all duration-700 ease-in-out relative bg-gray-700 
+     h-auto md:h-full overflow-y-auto md:overflow-visible 
+     max-h-[20vh] md:max-h-full
+     [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
           >
             <div
               className={`${
@@ -1362,7 +1850,7 @@ const Test = () => {
             ></div>
             {sidebarName === "Crop" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
                   Crop&Cut
                 </div>
                 <div className="max-h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1376,7 +1864,7 @@ const Test = () => {
 
             {sidebarName === "Arrange" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
                   Arrange Image
                 </div>
                 <div className="max-h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1391,7 +1879,7 @@ const Test = () => {
 
             {sidebarName === "Shape" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
                   Add Shapes
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1402,15 +1890,17 @@ const Test = () => {
 
             {sidebarName === "Adjust" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
                   Adjust
                 </div>
                 <div className="max-h-[580px] overflow-hidden  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <AdjustSidebar
                     canvas={mainCanvasRef.current!}
                     image={currentImageRef.current!}
+                    imageRef={currentImageRef!}
                     databaseFiltersName={databaseFiltersNameRef.current}
                     databaseFiltersObject={databaseFiltersObjectRef.current}
+                    setLoadState={setSpinnerLoading}
                   />
                 </div>
               </div>
@@ -1418,7 +1908,7 @@ const Test = () => {
 
             {sidebarName === "Text" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
                   Text
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1432,7 +1922,7 @@ const Test = () => {
 
             {sidebarName === "AI" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
                   AI TOOLS
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1449,7 +1939,7 @@ const Test = () => {
         </div>
 
         {/* Main Section */}
-        <div className="flex-1 h-full flex flex-col">
+        <div className="flex-1 h-full flex flex-col w-full md:w-auto">
           {/* Design Section */}
           <div className="flex-1 w-full flex items-center justify-center">
             <div
@@ -1473,6 +1963,8 @@ const Test = () => {
               backupImage={backupCurrentImageRef.current}
               canvasId={canvasIdRef.current}
               imageUrl={imageUrl}
+              undo={undo}
+              redo={redo}
               setLoadState={setSpinnerLoading}
             />
           </div>

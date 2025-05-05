@@ -50,6 +50,7 @@ interface Project {
   download_image_shape: { width: number; height: number };
   project_name: string;
   filter_names: string[] | [];
+  all_filters_applied: string[] | [];
   created_at: Date;
   updated_at: Date;
 }

@@ -1,6 +1,17 @@
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { ZoomIn, ZoomOut, Pencil, Upload, RotateCcw } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  Pencil,
+  Upload,
+  RotateCcw,
+  Redo,
+  Undo,
+  Download,
+  Save,
+  Trash,
+} from "lucide-react";
 import IconComponent from "./icon-component";
 
 import { Canvas, FabricImage } from "fabric";
@@ -55,6 +66,8 @@ type Props = {
   canvasId: string;
   imageUrl: string;
   setLoadState: (val: boolean) => void;
+  undo: () => void;
+  redo: () => void;
 };
 
 const Footer = ({
@@ -64,28 +77,23 @@ const Footer = ({
   canvasId,
   imageUrl,
   setLoadState,
+  undo,
+  redo,
 }: Props) => {
   const {
     selectedObject,
-    zoomValue,
-    setZoomValue,
     finalImageDimensions,
     originalImageDimensions,
     downloadImageDimensions,
     setDownloadImageDimensions,
     setFinalImageDimensions,
-
+    allFiltersRef,
     loadedFromSaved,
   } = useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const [openDownloadOptions, setOpenDownloadOptions] = useState(false);
-
-  const [downloadFrame, setDownLoadFrame] = useState(false);
-  const [superResValue, setSuperResValue] = useState("none");
   const currentFilters = useCommonProps((state) => state.currentFilters);
   const projectName = useCommonProps((state) => state.projectName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
@@ -184,6 +192,10 @@ const Footer = ({
       formData.append("canvasData", JSON.stringify(canvasJSON));
       formData.append("canvasLogs", JSON.stringify(logs));
       formData.append("filterNames", JSON.stringify(filterNames));
+      formData.append(
+        "allFiltersApplied",
+        JSON.stringify(allFiltersRef.current)
+      );
       // formData.append("mainImageSrc", mainImageSrc);
       formData.append(
         "originalImageShape",
@@ -324,27 +336,27 @@ const Footer = ({
     }
   };
 
-  const handleZoomIn = () => {
-    const zoomScale = 0.05;
-    let newZoomValue = zoomValue + zoomScale;
+  // const handleZoomIn = () => {
+  //   const zoomScale = 0.05;
+  //   let newZoomValue = zoomValue + zoomScale;
 
-    if (newZoomValue > 20) newZoomValue = 20;
-    if (newZoomValue < 0.01) newZoomValue = 0.01;
+  //   if (newZoomValue > 20) newZoomValue = 20;
+  //   if (newZoomValue < 0.01) newZoomValue = 0.01;
 
-    setZoomValue(newZoomValue);
-    canvas.setZoom(newZoomValue);
-  };
+  //   setZoomValue(newZoomValue);
+  //   canvas.setZoom(newZoomValue);
+  // };
 
-  const handleZoomOut = () => {
-    const zoomScale = 0.05;
-    let newZoomValue = zoomValue - zoomScale;
+  // const handleZoomOut = () => {
+  //   const zoomScale = 0.05;
+  //   let newZoomValue = zoomValue - zoomScale;
 
-    if (newZoomValue > 20) newZoomValue = 20;
-    if (newZoomValue < 0.01) newZoomValue = 0.01;
+  //   if (newZoomValue > 20) newZoomValue = 20;
+  //   if (newZoomValue < 0.01) newZoomValue = 0.01;
 
-    setZoomValue(newZoomValue);
-    canvas.setZoom(newZoomValue);
-  };
+  //   setZoomValue(newZoomValue);
+  //   canvas.setZoom(newZoomValue);
+  // };
 
   const handleRestore = () => {
     // removing all objects from the canvas
@@ -405,55 +417,56 @@ const Footer = ({
   };
 
   return (
-    <div className="flex w-full items-center justify-between rounded-none border-slate-800 border-t-2 gap-4">
-      <div className="px-2 flex items-center gap-2">
-        <Pencil className="text-gray-400 w-5 h-5" /> {/* Pencil icon */}
+    <div className="flex w-full items-center justify-between rounded-none border-slate-800 border-t-2 gap-0 lg:gap-4">
+      <div className="px-2 flex items-center gap-0 lg:gap-2">
+        <Pencil className="text-gray-400 w-2 h-2 lg:w-5 lg:h-5" />{" "}
+        {/* Pencil icon */}
         <input
           type="text"
-          className="bg-gray-800 text-white font-semibold px-2 py-1 rounded-md border border-gray-800 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          className="bg-gray-800 text-white font-semibold px-0 py-0 md:px-2 md:py-1 rounded-md border border-gray-800 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
         />
         <NewProjectBox useButton={false} />
       </div>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-0 lg:gap-2">
+        <IconComponent
+          icon={<Undo />}
+          iconName={"Undo"}
+          extraStyles="px-0 py-0 md:px-1 py-1"
+          handleClick={() => {
+            undo();
+          }}
+        />
         <IconComponent
           icon={<RotateCcw />}
           iconName={"Restore"}
+          extraStyles="px-0 py-0 md:px-1 py-1"
           handleClick={() => {
             handleRestore();
           }}
         />
         <IconComponent
-          icon={<ZoomIn />}
-          iconName={"ZoomIn"}
-          handleClick={() => {
-            handleZoomIn();
-          }}
-        />
-        <div>{Math.round(zoomValue * 100)}%</div>
-        {/* <IconComponent icon={<Undo />} iconName={"Undo"} /> */}
-        {/* <IconComponent icon={<Redo />} iconName={"Redo"} />  */}
-        <IconComponent
-          icon={<ZoomOut />}
-          iconName={"ZoomOut"}
-          handleClick={() => handleZoomOut()}
+          icon={<Redo />}
+          iconName={"Redo"}
+          extraStyles="px-0 py-0 md:px-1 py-1"
+          handleClick={() => redo()}
         />
       </div>
-
-      <div className="flex flex-none gap-10">
+      <div className="flex  items-center justify-center gap-2 sm:gap-2 md:gap-2 lg:gap-10">
         <button
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-30"
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300 px-4 py-2"
           onClick={() => {
             downloadCanvas();
           }}
         >
-          Download
+          <span className="hidden lg:inline">Download</span>
+          <Download className="lg:hidden w-5 h-5" />
         </button>
 
         <button
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300  px-6 py-3 text-blue-700"
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300 px-4 py-2 text-blue-700"
           onClick={() => {
             if (user) {
               onSaveCanvas();
@@ -466,76 +479,22 @@ const Footer = ({
             }
           }}
         >
-          {showUpdateButton ? "Update" : "Save"}
+          <span className="hidden lg:inline">
+            {showUpdateButton ? "Update" : "Save"}
+          </span>
+          <Save className="lg:hidden w-5 h-5" />
         </button>
+
         {selectedObject && (
           <button
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-30  text-red-800"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-semibold transition-all duration-300 px-4 py-2 text-red-800"
             onClick={deleteObject}
           >
-            Delete
+            <span className="hidden lg:inline">Delete</span>
+            <Trash className="lg:hidden w-5 h-5" />
           </button>
         )}
       </div>
-
-      {/* <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
-        <DialogTrigger asChild>
-          <button className="hidden"></button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-900 text-center">
-              Upload Image
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex justify-center items-center">
-            <div
-              {...getRootProps()}
-              className="border-2 border-dashed border-blue-400 w-full max-w-sm p-6 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50"
-            >
-              <input {...getInputProps()} />
-              {dataURL ? (
-                <img
-                  src={dataURL}
-                  alt="Uploaded Preview"
-                  className="w-full h-auto rounded-lg shadow-md"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    height="50"
-                    width="50"
-                    className="text-blue-500"
-                  >
-                    <path d="M1 14.5C1 12.1716 2.22429 10.1291 4.06426 8.9812C4.56469 5.044 7.92686 2 12 2C16.0731 2 19.4353 5.044 19.9357 8.9812C21.7757 10.1291 23 12.1716 23 14.5C23 17.9216 20.3562 20.7257 17 20.9811L7 21C3.64378 20.7257 1 17.9216 1 14.5ZM16.8483 18.9868C19.1817 18.8093 21 16.8561 21 14.5C21 12.927 20.1884 11.4962 18.8771 10.6781L18.0714 10.1754L17.9517 9.23338C17.5735 6.25803 15.0288 4 12 4C8.97116 4 6.42647 6.25803 6.0483 9.23338L5.92856 10.1754L5.12288 10.6781C3.81156 11.4962 3 12.927 3 14.5C3 16.8561 4.81833 18.8093 7.1517 18.9868L7.325 19H16.675L16.8483 18.9868ZM13 13V17H11V13H8L12 8L16 13H13Z" />
-                  </svg>
-                  <p className="mt-2 text-sm">
-                    {isDragActive
-                      ? "Drop the files here..."
-                      : "Drag & drop an image here, or click to select one"}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6 flex justify-center">
-            {dataURL && (
-              <button
-                className="custom-button w-32"
-                onClick={() => {
-                  handleImageUpload(dataURL);
-                }}
-              >
-                Upload
-              </button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
     </div>
   );
 };

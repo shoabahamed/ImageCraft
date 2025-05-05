@@ -28,7 +28,7 @@ import {
   Italic,
 } from "lucide-react";
 
-import { Canvas, FabricImage, Textbox } from "fabric";
+import { Canvas, FabricImage, IText, Textbox } from "fabric";
 import { Textarea } from "./ui/textarea";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
@@ -133,6 +133,10 @@ const AddText = ({ canvas, image }: AddTextProps) => {
         textAlign: textAlignValue,
         charSpacing: charSpacing,
       });
+
+      selectedObject.setCoords();
+      canvas.fire("object:modified", { target: selectedObject });
+
       canvas.renderAll();
     }
   };
@@ -171,6 +175,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
     };
 
     const handleObjectModified = () => {
+      console.log("modifed ran");
       const activeObject = canvas.getActiveObject();
       if (activeObject && activeObject.type === "textbox") {
         const textObj = activeObject as Textbox;
@@ -460,7 +465,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
                 <CardDescription>Alignment</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <IconComponent
                     icon={<AlignLeft />}
                     iconName="Align Left"

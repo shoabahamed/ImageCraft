@@ -67,6 +67,7 @@ interface Project {
   download_image_shape: { width: number; height: number };
   project_name: string;
   filter_names: string[] | [];
+  all_filters_applied: string[] | [];
   created_at: Date;
   updated_at: Date;
 }
@@ -91,13 +92,13 @@ export default function Gallery() {
   // State management
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [sortDirection, setSortDirection] = useState("desc");
-  const [ratingInProgress, setRatingInProgress] = useState<string | null>(null);
+  // const [ratingInProgress, setRatingInProgress] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

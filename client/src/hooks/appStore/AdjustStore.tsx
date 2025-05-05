@@ -1,5 +1,11 @@
 import { create } from "zustand";
 
+export type RGBThreshold = {
+  threshold: number;
+  below: number;
+  above: number;
+};
+
 type AdjustStore = {
   brightnessValue: number;
   contrastValue: number;
@@ -53,6 +59,19 @@ type AdjustStore = {
   setEnableEdgeDetection: (value: boolean) => void;
   setEnableWarmFilter: (value: boolean) => void;
   setEnableColdFilter: (value: boolean) => void;
+
+  red: RGBThreshold;
+  green: RGBThreshold;
+  blue: RGBThreshold;
+  enableRedThresholding: boolean;
+  enableBlueThresholding: boolean;
+  enableGreenThresholding: boolean;
+  setRed: (value: RGBThreshold) => void;
+  setGreen: (value: RGBThreshold) => void;
+  setBlue: (value: RGBThreshold) => void;
+  setEnableRedThresholding: (value: boolean) => void;
+  setEnableGreenThresholding: (value: boolean) => void;
+  setEnableBlueThresholding: (value: boolean) => void;
 
   resetFilters: () => void;
 };
@@ -110,6 +129,31 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   setEnableEdgeDetection: (value) => set({ enableEdgeDetection: value }),
   setEnableColdFilter: (value) => set({ enableColdFilter: value }),
   setEnableWarmFilter: (value) => set({ enableWarmFilter: value }),
+
+  red: { threshold: 128, below: 0, above: 255 },
+  green: { threshold: 128, below: 0, above: 255 },
+  blue: { threshold: 128, below: 0, above: 255 },
+  enableBlueThresholding: false,
+  enableGreenThresholding: false,
+  enableRedThresholding: false,
+
+  setRed: (value) =>
+    set((state) => ({
+      red: { ...state.red, ...value },
+    })),
+  setGreen: (value) =>
+    set((state) => ({
+      green: { ...state.green, ...value },
+    })),
+  setBlue: (value) =>
+    set((state) => ({
+      blue: { ...state.blue, ...value },
+    })),
+  setEnableBlueThresholding: (value) => set({ enableBlueThresholding: value }),
+  setEnableGreenThresholding: (value) =>
+    set({ enableGreenThresholding: value }),
+  setEnableRedThresholding: (value) => set({ enableRedThresholding: value }),
+
   resetFilters: () =>
     set({
       brightnessValue: 0,
@@ -134,5 +178,12 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       enableTechnicolor: false,
       enableInvert: false,
       enableSharpen: false,
+      enableEdgeDetection: false,
+      enableColdFilter: false,
+      enableWarmFilter: false,
+
+      enableBlueThresholding: false,
+      enableRedThresholding: false,
+      enableGreenThresholding: false,
     }),
 }));

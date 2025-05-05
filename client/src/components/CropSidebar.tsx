@@ -189,20 +189,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
       }
     };
 
-    const handleObjectModified = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        addLog({
-          section: "crop&cut",
-          tab: "cut",
-          event: "update",
-          message: `object modification complete`,
-          param: "postion",
-          objType: activeObject.type,
-        });
-      }
-    };
-
     const handleObjectScaled = () => {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
@@ -239,37 +225,35 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
     canvas.on("selection:created", handleObjectCreated);
     canvas.on("selection:cleared", handleObjectCleared);
-    canvas.on("object:modified", handleObjectModified);
     canvas.on("object:scaling", handleObjectScaled);
 
     return () => {
-      if (!image.clipPath) {
-        canvas.getObjects().forEach((obj) => {
-          // @ts-ignore
-          if (obj.name?.startsWith("Frame")) {
-            addLog({
-              section: "crop&cut",
-              tab: "cut",
-              event: "deletion",
-              message: `deleted unused shape ${obj.type}`,
-              objType: obj.type,
-            });
+      const frameObject = canvas
+        .getObjects()
+        .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
 
-            canvas.remove(obj);
-          }
-        });
-        canvas.renderAll();
-      } else {
+      if (frameObject && image.clipPath) {
+        frameObject.selectable = false;
         canvas.discardActiveObject();
         setSelectedObject(null);
 
         canvas.requestRenderAll();
+      } else if (frameObject) {
+        addLog({
+          section: "crop&cut",
+          tab: "cut",
+          event: "deletion",
+          message: `deleted unused shape ${frameObject.type}`,
+          objType: frameObject.type,
+        });
+
+        canvas.remove(frameObject);
+        canvas.renderAll();
       }
 
       canvas.off("selection:created", handleObjectCreated);
       canvas.off("selection:cleared", handleObjectCleared);
       canvas.off("object:scaling", handleObjectScaled);
-      canvas.off("object:modified", handleObjectModified);
     };
   }, [canvas]);
 
@@ -285,6 +269,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
     }
 
     const shape = getShape(shapeType);
+
+    const frameObject = canvas
+      .getObjects()
+      .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
+
+    if (frameObject) {
+      canvas.remove(frameObject);
+    }
 
     canvas.add(shape);
     canvas.setActiveObject(shape); // Set the newly added shape as the active object
@@ -332,6 +324,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
       // Calculate dimensions to maintain aspect ratio
       if (targetAspect >= containerAspect) {
+        console.log("target is bigger");
         width = maxWidth;
         baseSize = maxWidth;
         height = width / targetAspect;
@@ -427,87 +420,87 @@ const CropSidebar = ({ canvas, image }: Props) => {
     }
   };
 
-  const handleBackGroundColorChange = (e) => {
-    canvas.backgroundColor = e.target.value;
-    addLog({
-      section: "crop&cut",
-      tab: "background",
-      event: "update",
-      message: `cavnvas background color changed to ${e.target.value}`,
-    });
+  // const handleBackGroundColorChange = (e) => {
+  //   canvas.backgroundColor = e.target.value;
+  //   addLog({
+  //     section: "crop&cut",
+  //     tab: "background",
+  //     event: "update",
+  //     message: `cavnvas background color changed to ${e.target.value}`,
+  //   });
 
-    setBackgroundColor(e.target.value);
-    canvas.renderAll();
-  };
+  //   setBackgroundColor(e.target.value);
+  //   canvas.renderAll();
+  // };
 
-  const handleBackGroundImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
+  // const handleBackGroundImageChange = async (
+  //   e: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   if (e.target.files && e.target.files.length > 0) {
+  //     const file = e.target.files[0];
 
-      if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image");
-        return;
-      }
+  //     if (!file.type.startsWith("image/")) {
+  //       alert("Please upload a valid image");
+  //       return;
+  //     }
 
-      // Convert the file to Base64
-      const base64Image = await convertFileToBase64(file);
+  //     // Convert the file to Base64
+  //     const base64Image = await convertFileToBase64(file);
 
-      // Create an Image object
-      const backgroundImage = new Image();
-      backgroundImage.src = base64Image;
+  //     // Create an Image object
+  //     const backgroundImage = new Image();
+  //     backgroundImage.src = base64Image;
 
-      backgroundImage.onload = () => {
-        const fabricBackgroundImage = new FabricImage(backgroundImage);
+  //     backgroundImage.onload = () => {
+  //       const fabricBackgroundImage = new FabricImage(backgroundImage);
 
-        // Scale the background image to fit the canvas dimensions
-        const scaleX = image.getScaledWidth() / fabricBackgroundImage.width;
-        const scaleY = image.getScaledHeight() / fabricBackgroundImage.height;
+  //       // Scale the background image to fit the canvas dimensions
+  //       const scaleX = image.getScaledWidth() / fabricBackgroundImage.width;
+  //       const scaleY = image.getScaledHeight() / fabricBackgroundImage.height;
 
-        fabricBackgroundImage.scaleX = scaleX;
-        fabricBackgroundImage.scaleY = scaleY;
+  //       fabricBackgroundImage.scaleX = scaleX;
+  //       fabricBackgroundImage.scaleY = scaleY;
 
-        // Set the background image (now using Base64)
-        canvas.backgroundImage = fabricBackgroundImage;
-        canvas.renderAll();
+  //       // Set the background image (now using Base64)
+  //       canvas.backgroundImage = fabricBackgroundImage;
+  //       canvas.renderAll();
 
-        setBackgroundImage(fabricBackgroundImage);
+  //       setBackgroundImage(fabricBackgroundImage);
 
-        addLog({
-          section: "crop&cut",
-          tab: "background",
-          event: "creation",
-          message: `added background image to canvas`,
-        });
-      };
-    }
-  };
+  //       addLog({
+  //         section: "crop&cut",
+  //         tab: "background",
+  //         event: "creation",
+  //         message: `added background image to canvas`,
+  //       });
+  //     };
+  //   }
+  // };
 
   // Helper function to convert File to Base64
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
+  // const convertFileToBase64 = (file: File): Promise<string> => {
+  //   return new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(file);
+  //     reader.onload = () => resolve(reader.result as string);
+  //     reader.onerror = (error) => reject(error);
+  //   });
+  // };
 
-  const removeBackGroundImage = () => {
-    addLog({
-      section: "crop&cut",
-      tab: "background",
-      event: "reset",
-      message: `background removed from canvas`,
-    });
+  // const removeBackGroundImage = () => {
+  //   addLog({
+  //     section: "crop&cut",
+  //     tab: "background",
+  //     event: "reset",
+  //     message: `background removed from canvas`,
+  //   });
 
-    if (canvas.backgroundImage) {
-      canvas.backgroundImage = null;
-      canvas.renderAll();
-      setBackgroundImage(null);
-    }
-  };
+  //   if (canvas.backgroundImage) {
+  //     canvas.backgroundImage = null;
+  //     canvas.renderAll();
+  //     setBackgroundImage(null);
+  //   }
+  // };
 
   const ASPECT_RATIOS = [
     {
@@ -550,7 +543,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
             <CardDescription>Shape</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <IconComponent
                 icon={<IconCircle />}
                 iconName="Circle"

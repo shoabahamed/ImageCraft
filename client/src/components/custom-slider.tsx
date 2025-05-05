@@ -5,13 +5,14 @@ type SlideProps = {
   sliderName: string;
   min: number;
   max: number;
-  defaultValue: number;
+  defaultValue?: number;
   sliderValue: number;
   setSliderValue: (value: number) => void;
   step?: number;
   logName?: string;
   section?: string;
   tab?: string;
+  disabled?: boolean;
 };
 
 const CustomSlider = ({
@@ -25,6 +26,7 @@ const CustomSlider = ({
   logName = "",
   section = "",
   tab = "",
+  disabled = false,
 }: SlideProps) => {
   const { addLog } = useLogContext(); // Use log contextuseLogContext
   return (
@@ -51,6 +53,7 @@ const CustomSlider = ({
           });
           setSliderValue(e[0]);
         }}
+        disabled={disabled}
       />
     </div>
   );

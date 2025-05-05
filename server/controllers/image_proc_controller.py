@@ -151,75 +151,72 @@ def find_similar_image():
 
 def apply_super_resolution():
     try:
-     
-        image_data =  request.files['originalImage']
-        resolution = int(request.form.get("scale"))
+        print("DEBUG: Starting apply_super_resolution function")
 
+        # Check if the file is provided
+        if 'originalImage' not in request.files:
+            print("DEBUG: originalImage not found in request.files")
+            return jsonify({"success": False, "message": "originalImage must be provided"}), 400
+
+        # Get the image and resolution
+        image_data = request.files['originalImage']
+        resolution = request.form.get("scale")
+        print(f"DEBUG: Received resolution: {resolution}")
+
+        if not resolution:
+            print("DEBUG: Resolution not provided in request.form")
+            return jsonify({"success": False, "message": "Resolution must be provided"}), 400
+
+        resolution = int(resolution)
+        print(f"DEBUG: Parsed resolution: {resolution}")
+
+        # Open the image
         image = Image.open(image_data).convert("RGB")
+        print("DEBUG: Image successfully opened and converted to RGB")
 
-     
+        # Apply transformation
         transform = get_super_resolution_transform()
-        # convert image to tensor
-
         image = transform(image)
+        print("DEBUG: Image transformed to tensor")
 
+        # Load the model
+        print("DEBUG: Loading MDSR model")
+        model = MDSR(num_res_blocks=80, num_feats=64, scales=[2, 3, 4]).to(CFG.device)
+        model_checkpoint = torch.load(CFG.super_resolution_model_path, map_location=CFG.device, weights_only=True)
+        model.load_state_dict(model_checkpoint['model_state'])
+        print("DEBUG: Model loaded successfully")
 
-      
-        if resolution == 2: 
-            # creating model
-            model = EDSR(2).to(CFG.device)
-
-            # loading weights
-            model_checkpoint = torch.load(CFG.super_resolution_x2_model_path, map_location=CFG.device, weights_only=True)
-            model.load_state_dict(model_checkpoint['model_state'])
-        
+        # Apply super-resolution based on the scale
+        if resolution in [2, 3, 4]:
+            print(f"DEBUG: Applying super-resolution for scale {resolution}")
             with torch.no_grad():
                 image = image * 255
-                image = torch.clip(model(image.unsqueeze(0).to(CFG.device)), min=0, max=255).to('cpu').squeeze(0)
+                image = torch.clip(model(image.unsqueeze(0).to(CFG.device), resolution), min=0, max=255).to('cpu').squeeze(0)
                 image = image / 255
-
-            del model
-            torch.cuda.empty_cache()
-            gc.collect()
-          
-
-
-        elif resolution == 4:
-            # # creating model
-            model = EDSR(4).to(CFG.device)
-            # loading weights
-            model_checkpoint = torch.load(CFG.super_resolution_x4_model_path, map_location=CFG.device, weights_only=True)
-            model.load_state_dict(model_checkpoint['model_state'])
-
-            with torch.no_grad():
-                image = image * 255
-                image = torch.clip(model(image.unsqueeze(0).to(CFG.device)), min=0, max=255).to('cpu').squeeze(0)
-                image = image / 255
-           
-
-            del model
-            torch.cuda.empty_cache()
-            gc.collect()
-
+            print(f"DEBUG: Super-resolution applied for scale {resolution}")
         else:
-            jsonify({"success": False, "message": f"resolution do not match"}), 500
+            print(f"DEBUG: Invalid resolution: {resolution}")
+            return jsonify({"success": False, "message": f"Resolution {resolution} is not supported"}), 400
 
-       
+        # Clean up
+        del model
+        torch.cuda.empty_cache()
+        gc.collect()
+        print("DEBUG: Model and cache cleared")
+
+        # Convert tensor back to image
         image = T.ToPILImage()(image)
+        print("DEBUG: Tensor converted back to PIL image")
 
-        # encode to base64
+        # Encode image to base64
         buffer = io.BytesIO()
         image.save(buffer, format="png")
         buffer.seek(0)
         image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        print("DEBUG: Image encoded to base64")
 
-
-        
-
-        return jsonify({"success": True, "message": "Style Trasnfer Successfull", 'image': image_base64}), 200
-
-    
-    
+        return jsonify({"success": True, "message": "Super-resolution applied successfully", 'image': image_base64}), 200
 
     except Exception as e:
-        return jsonify({"success": False, "message": f"An Error has occurced {str(e)}"}), 500
+        print(f"DEBUG: Exception occurred - {str(e)}")
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

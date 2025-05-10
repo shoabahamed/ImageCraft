@@ -56,6 +56,31 @@ const CropSidebar = ({ canvas, image }: Props) => {
       canvas.setActiveObject(frameObject);
       setSelectedObject(frameObject);
     }
+
+    return () => {
+      const frameObject = canvas
+        .getObjects()
+        .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
+
+      if (frameObject && image.clipPath) {
+        frameObject.selectable = false;
+        canvas.discardActiveObject();
+        setSelectedObject(null);
+
+        canvas.requestRenderAll();
+      } else if (frameObject) {
+        addLog({
+          section: "crop&cut",
+          tab: "cut",
+          event: "deletion",
+          message: `deleted unused shape ${frameObject.type}`,
+          objType: frameObject.type,
+        });
+
+        canvas.remove(frameObject);
+        canvas.renderAll();
+      }
+    };
   }, [canvas, image]);
 
   // Helper function to create shapes
@@ -171,92 +196,6 @@ const CropSidebar = ({ canvas, image }: Props) => {
     }
   };
 
-  useEffect(() => {
-    const handleObjectCleared = () => {
-      setSelectedObject(null);
-    };
-
-    const handleObjectCreated = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        addLog({
-          section: "crop&cut",
-          tab: "cut",
-          event: "creation",
-          message: `nee crop obejct created`,
-          objType: activeObject.type,
-        });
-      }
-    };
-
-    const handleObjectScaled = () => {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
-        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
-
-        const objectType = activeObject.type;
-
-        if (objectType === "circle") {
-          const currentScale = Math.max(
-            activeObject.scaleX,
-            activeObject.scaleY
-          );
-
-          activeObject
-            .set({
-              scaleX: currentScale,
-              scaleY: currentScale,
-            })
-            .setCoords();
-
-          canvas.requestRenderAll();
-        }
-        addLog({
-          section: "crop&cut",
-          tab: "cut",
-          event: "update",
-          message: `scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
-          param: "scale",
-          objType: activeObject.type,
-        });
-      }
-    };
-
-    canvas.on("selection:created", handleObjectCreated);
-    canvas.on("selection:cleared", handleObjectCleared);
-    canvas.on("object:scaling", handleObjectScaled);
-
-    return () => {
-      const frameObject = canvas
-        .getObjects()
-        .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
-
-      if (frameObject && image.clipPath) {
-        frameObject.selectable = false;
-        canvas.discardActiveObject();
-        setSelectedObject(null);
-
-        canvas.requestRenderAll();
-      } else if (frameObject) {
-        addLog({
-          section: "crop&cut",
-          tab: "cut",
-          event: "deletion",
-          message: `deleted unused shape ${frameObject.type}`,
-          objType: frameObject.type,
-        });
-
-        canvas.remove(frameObject);
-        canvas.renderAll();
-      }
-
-      canvas.off("selection:created", handleObjectCreated);
-      canvas.off("selection:cleared", handleObjectCleared);
-      canvas.off("object:scaling", handleObjectScaled);
-    };
-  }, [canvas]);
-
   // Function to add shapes to the canvas
   const addShape = (shapeType: string) => {
     if (selectedObject) {
@@ -364,12 +303,14 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
     frameObject.setCoords(); // Update the object's coordinates
     canvas.renderAll();
-    canvas.fire("object:modified"); // Trigger the object:modified event
+    canvas.fire("object:modified"); // Trigger the object:modified
+
+    const [ratioW, ratioH] = ratio.value.split(":").map(Number);
     addLog({
       section: "crop&cut",
       tab: "aspect",
       event: "update",
-      message: `Changed aspect ratio to ${ratio}`,
+      message: `Changed aspect ratio to ${ratioW}:${ratioH}`,
     });
   };
 
@@ -635,7 +576,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
             <div className="flex flex-col gap-3 justify-center">
               {/* <Button className="text-sm md:text-sm">Invert Cutout</Button> */}
               <button className="custom-button w-full" onClick={resetClip}>
-                Reset Cutout
+                Reset Crop
               </button>
             </div>
           </CardContent>

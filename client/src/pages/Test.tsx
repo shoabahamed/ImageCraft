@@ -44,6 +44,11 @@ import { RedThresholdFilter } from "@/utils/RedThresholdFilter";
 import { GreenThresholdFilter } from "@/utils/GreenThresholdFilter";
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
 import { CustomGaussianSobelFilter } from "@/utils/CustomGaussianBlur";
+import useAddTextStore from "@/hooks/appStore/AddTextStore";
+import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
+import { FocusFilter } from "@/utils/FocusFilter";
+import AdjustSidebarAdvanced from "@/components/AdjustSidebarAdvanced";
+import { ReflectFilter } from "@/utils/LeftReflectFilter";
 
 // TODO: in rotation set some presest 90/180 degree rotation
 // TODO: allow the user to apply the filters
@@ -246,6 +251,43 @@ const Test = () => {
   );
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
+
+  const enableGaussianBlur = useAdjustStore(
+    (state) => state.enableGaussianBlur
+  );
+  const gaussianSigma = useAdjustStore((state) => state.gaussianSigma);
+
+  const setEnableGaussianBlur = useAdjustStore(
+    (state) => state.setEnableGaussianBlur
+  );
+  const setGaussianSigma = useAdjustStore((state) => state.setGaussianSigma);
+  const gaussianMatrixSize = useAdjustStore(
+    (state) => state.gaussianMatrixSize
+  );
+
+  const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
+
+  const radius = useAdjustStore((state) => state.radius);
+  const softness = useAdjustStore((state) => state.softness);
+  const darkFocus = useAdjustStore((state) => state.darkFocus);
+
+  const sharpenValue = useAdjustStore((state) => state.sharpenValue);
+  const setSharpenValue = useAdjustStore((state) => state.setSharpenValue);
+
+  const setEnableFocusFilter = useAdjustStore(
+    (state) => state.setEnableFocusFilter
+  );
+
+  const setRadius = useAdjustStore((state) => state.setRadius);
+  const setSoftness = useAdjustStore((state) => state.setSoftness);
+
+  const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
+
+  const enableLeftReflect = useAdjustStore((state) => state.enableLeftReflect);
+  const setEnableLeftReflect = useAdjustStore(
+    (state) => state.setEnableLeftReflect
+  );
+
   const { dbLoadingRef } = useCanvasObjects();
 
   const [
@@ -308,6 +350,23 @@ const Test = () => {
     setLineOpacity,
   } = useShapeStore();
 
+  // Unpacking setter functions one by one
+  const setTextValue = useAddTextStore((state) => state.setTextValue);
+  const setTextColorValue = useAddTextStore((state) => state.setTextColorValue);
+  const setTextFont = useAddTextStore((state) => state.setTextFont);
+  const setTextSize = useAddTextStore((state) => state.setTextSize);
+  const setTextOpacity = useAddTextStore((state) => state.setTextOpacity);
+  const setTextLineSpacing = useAddTextStore(
+    (state) => state.setTextLineSpacing
+  );
+  const setTextAlignValue = useAddTextStore((state) => state.setTextAlignValue);
+  const setUpper = useAddTextStore((state) => state.setUpper);
+  const setItalic = useAddTextStore((state) => state.setItalic);
+  const setBold = useAddTextStore((state) => state.setBold);
+  const setUnderLine = useAddTextStore((state) => state.setUnderLine);
+
+  const setCharSpacing = useAddTextStore((state) => state.setCharSpacing);
+
   // this function runs whenever the window size changes
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
@@ -343,6 +402,106 @@ const Test = () => {
 
     mainCanvasRef.current.renderAll();
   };
+
+  const handleObjectSelected = () => {
+    const activeObject = mainCanvasRef.current.getActiveObject();
+    if (activeObject) {
+      setSelectedObject(activeObject);
+
+      switch (activeObject.type) {
+        case "rect":
+          setRectWidth(activeObject.width || 100);
+          setRectHeight(activeObject.height || 60);
+          setRectFill(activeObject.fill as string);
+          setRectStroke(activeObject.stroke as string);
+          setRectStrokeWidth(activeObject.strokeWidth || 1);
+          setRectOpacity(activeObject.opacity || 1);
+          break;
+
+        case "circle":
+          setCircleRadius((activeObject as any).radius || 50);
+          setCircleFill(activeObject.fill as string);
+          setCircleStroke(activeObject.stroke as string);
+          setCircleStrokeWidth(activeObject.strokeWidth || 1);
+          setCircleOpacity(activeObject.opacity || 1);
+          break;
+
+        case "triangle":
+          setTriangleWidth(activeObject.width || 60);
+          setTriangleHeight(activeObject.height || 60);
+          setTriangleFill(activeObject.fill as string);
+          setTriangleStroke(activeObject.stroke as string);
+          setTriangleStrokeWidth(activeObject.strokeWidth || 1);
+          setTriangleOpacity(activeObject.opacity || 1);
+          break;
+
+        case "line":
+          setLineStroke(activeObject.stroke as string);
+          setLineStrokeWidth(activeObject.strokeWidth || 3);
+          setLineOpacity(activeObject.opacity || 1);
+          break;
+
+        case "textbox":
+          setSelectedObject(activeObject);
+          setTextValue(activeObject.text || "");
+          setTextColorValue(activeObject.fill as string);
+          setTextSize(activeObject.fontSize || 14);
+          setTextFont(activeObject.fontFamily || "arial");
+          setTextOpacity(activeObject.opacity || 1);
+
+          setTextAlignValue(activeObject.textAlign);
+          setTextLineSpacing(activeObject.lineHeight);
+
+          setItalic(activeObject.fontStyle === "italic" ? true : false);
+          setUnderLine(activeObject.underline ? true : false);
+          setBold(activeObject.fontWeight === "bold" ? true : false);
+          setUpper(activeObject.get("isUpper") || false);
+
+          break;
+        default:
+          break;
+      }
+    } else {
+      setSelectedObject(null);
+    }
+  };
+
+  const hanldeObjectScaled = () => {
+    const activeObject = mainCanvasRef.current.getActiveObject();
+    console.log("scaling obnject");
+    if (activeObject) {
+      const objectName = activeObject.type || "Unknown Object";
+      const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
+      const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+
+      if (activeObject.name?.toLowerCase().startsWith("frame")) {
+        addLog({
+          section: "crop&cut",
+          tab: "cut",
+          event: "update",
+          message: `scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+          param: "scale",
+          objType: activeObject.type,
+        });
+      } else {
+        addLog({
+          section: "shape",
+          tab: "shape",
+          event: "update",
+          message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
+          param: "scale",
+          objType: objectName,
+        });
+      }
+
+      setSelectedObject(activeObject); // Update the context with the selected object
+    }
+  };
+
+  const handleObjectDeselected = () => {
+    setSelectedObject(null);
+  };
+
   // the below code is responsible for handling canvas and image loading
   useEffect(() => {
     if (canvasRef.current) {
@@ -539,7 +698,7 @@ const Test = () => {
             initCanvas.renderAll();
 
             if (localStorage.getItem("canvasId")) {
-              console.log(localStorage.getItem("canvasId"), "sdfsk");
+              // console.log(localStorage.getItem("canvasId"), "sdfsk");
               setShowUpdateButton(true);
             }
 
@@ -675,80 +834,14 @@ const Test = () => {
         opt.e.stopPropagation();
       });
 
-      initCanvas.on("object:scaling", function () {
-        const activeObject = this.getActiveObject();
-        console.log("scaling obnject");
-        if (activeObject) {
-          const objectName = activeObject.type || "Unknown Object";
-          const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
-          const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+      initCanvas.on("object:scaling", hanldeObjectScaled);
 
-          addLog({
-            section: "shape",
-            tab: "shape",
-            event: "update",
-            message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
-            param: "scale",
-            objType: objectName,
-          });
+      initCanvas.on("selection:created", handleObjectSelected);
+      initCanvas.on("selection:updated", handleObjectSelected);
 
-          setSelectedObject(activeObject); // Update the context with the selected object
-        }
-      });
+      initCanvas.on("selection:cleared", handleObjectDeselected);
 
-      initCanvas.on("selection:created", function () {
-        const activeObject = this.getActiveObject();
-        if (activeObject) {
-          setSelectedObject(activeObject);
-
-          switch (activeObject.type) {
-            case "rect":
-              setRectWidth(activeObject.width || 100);
-              setRectHeight(activeObject.height || 60);
-              setRectFill(activeObject.fill as string);
-              setRectStroke(activeObject.stroke as string);
-              setRectStrokeWidth(activeObject.strokeWidth || 1);
-              setRectOpacity(activeObject.opacity || 1);
-              break;
-
-            case "circle":
-              setCircleRadius((activeObject as any).radius || 50);
-              setCircleFill(activeObject.fill as string);
-              setCircleStroke(activeObject.stroke as string);
-              setCircleStrokeWidth(activeObject.strokeWidth || 1);
-              setCircleOpacity(activeObject.opacity || 1);
-              break;
-
-            case "triangle":
-              setTriangleWidth(activeObject.width || 60);
-              setTriangleHeight(activeObject.height || 60);
-              setTriangleFill(activeObject.fill as string);
-              setTriangleStroke(activeObject.stroke as string);
-              setTriangleStrokeWidth(activeObject.strokeWidth || 1);
-              setTriangleOpacity(activeObject.opacity || 1);
-              break;
-
-            case "line":
-              setLineStroke(activeObject.stroke as string);
-              setLineStrokeWidth(activeObject.strokeWidth || 3);
-              setLineOpacity(activeObject.opacity || 1);
-              break;
-
-            default:
-              break;
-          }
-        } else {
-          setSelectedObject(null);
-        }
-      });
-
-      initCanvas.on("selection:cleared", () => {
-        setSelectedObject(null);
-      });
-
-      initCanvas.on("object:modified", function () {
-        console.log("skdjsflk");
-      });
+      // initCanvas.on("object:modified", handleObjectModifiedTemp);
 
       return () => {
         // localStorage.removeItem("project_data");
@@ -769,80 +862,13 @@ const Test = () => {
           opt.e.preventDefault();
           opt.e.stopPropagation();
         });
-        initCanvas.off("object:scaling", function () {
-          const activeObject = this.getActiveObject();
+        initCanvas.off("object:scaling", hanldeObjectScaled);
 
-          if (activeObject) {
-            const objectName = activeObject.type || "Unknown Object";
-            const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
-            const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+        initCanvas.off("selection:created", handleObjectSelected);
+        initCanvas.off("selection:updated", handleObjectSelected);
+        initCanvas.off("selection:cleared", handleObjectDeselected);
 
-            addLog({
-              section: "shape",
-              tab: "shape",
-              event: "update",
-              message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
-              param: "scale",
-              objType: objectName,
-            });
-
-            setSelectedObject(activeObject); // Update the context with the selected object
-          }
-        });
-
-        initCanvas.off("object:modified", function () {
-          console.log("skdjsflk");
-        });
-
-        initCanvas.off("selection:created", function () {
-          const activeObject = this.getActiveObject();
-          if (activeObject) {
-            setSelectedObject(activeObject);
-
-            switch (activeObject.type) {
-              case "rect":
-                setRectWidth(activeObject.width || 100);
-                setRectHeight(activeObject.height || 60);
-                setRectFill(activeObject.fill as string);
-                setRectStroke(activeObject.stroke as string);
-                setRectStrokeWidth(activeObject.strokeWidth || 1);
-                setRectOpacity(activeObject.opacity || 1);
-                break;
-
-              case "circle":
-                setCircleRadius((activeObject as any).radius || 50);
-                setCircleFill(activeObject.fill as string);
-                setCircleStroke(activeObject.stroke as string);
-                setCircleStrokeWidth(activeObject.strokeWidth || 1);
-                setCircleOpacity(activeObject.opacity || 1);
-                break;
-
-              case "triangle":
-                setTriangleWidth(activeObject.width || 60);
-                setTriangleHeight(activeObject.height || 60);
-                setTriangleFill(activeObject.fill as string);
-                setTriangleStroke(activeObject.stroke as string);
-                setTriangleStrokeWidth(activeObject.strokeWidth || 1);
-                setTriangleOpacity(activeObject.opacity || 1);
-                break;
-
-              case "line":
-                setLineStroke(activeObject.stroke as string);
-                setLineStrokeWidth(activeObject.strokeWidth || 3);
-                setLineOpacity(activeObject.opacity || 1);
-                break;
-
-              default:
-                break;
-            }
-          } else {
-            setSelectedObject(null);
-          }
-        });
-
-        initCanvas.off("selection:cleared", () => {
-          setSelectedObject(null);
-        });
+        // initCanvas.off("object:modified", handleObjectModifiedTemp);
       };
     }
   }, []);
@@ -877,7 +903,7 @@ const Test = () => {
   //   setHistoryValue,
   // ]);
   const handleObjectModified = () => {
-    console.log("ran modification");
+    // console.log("ran modification");
     if (disableSavingIntoStackRef.current) return;
 
     console.log("object modified from undo redo");
@@ -896,6 +922,7 @@ const Test = () => {
       original_image_shape: originalImageDimensionsRef.current,
       download_image_shape: downloadImageDimensionsRef.current,
       filter_names: filterNames,
+      all_filters_applied: allFiltersRef.current,
       viewportTransform: mainCanvasRef.current.viewportTransform,
       zoomValue: zoomValue,
     };
@@ -932,6 +959,7 @@ const Test = () => {
     const originalImageShape: { imageWidth: number; imageHeight: number } =
       currentSnapshot.original_image_shape;
     const filterNames = currentSnapshot.filter_names;
+    const allFiltersApplied = currentSnapshot.all_filters_applied;
 
     console.log(currentHistoryIndex, "history index");
 
@@ -1042,19 +1070,19 @@ const Test = () => {
           });
 
           dbLoadingRef.current = true;
+          allFiltersRef.current = allFiltersApplied;
           databaseFiltersNameRef.current = filterNames;
           databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
           setFiltersUI(!filtersUI);
         }
 
-        console.log(imageObject.clipPath, "clip path");
         if (frameObject && imageObject.clipPath) {
           imageObject.clipPath = null;
           frameObject.absolutePositioned = true;
           // selectedObject.absolutePositioned = true;
           imageObject.clipPath = frameObject;
         }
-        console.log("load complete");
+
         // @ts-ignore
         currentImageRef.current = imageObject; // Store the Fabric.js image object reference
         mainCanvasRef.current = newCanvas; // Store the Fabric.js canvas reference
@@ -1076,76 +1104,13 @@ const Test = () => {
       opt.e.stopPropagation();
     });
 
-    newCanvas.on("object:scaling", function () {
-      const activeObject = this.getActiveObject();
-      console.log("scaling obnject");
-      if (activeObject) {
-        const objectName = activeObject.type || "Unknown Object";
-        const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
-        const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+    newCanvas.on("object:scaling", hanldeObjectScaled);
 
-        addLog({
-          section: "shape",
-          tab: "shape",
-          event: "update",
-          message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
-          param: "scale",
-          objType: objectName,
-        });
+    newCanvas.on("selection:created", handleObjectSelected);
 
-        setSelectedObject(activeObject); // Update the context with the selected object
-      }
-    });
+    newCanvas.on("selection:cleared", handleObjectDeselected);
 
-    newCanvas.on("selection:created", function () {
-      const activeObject = this.getActiveObject();
-      if (activeObject) {
-        setSelectedObject(activeObject);
-
-        switch (activeObject.type) {
-          case "rect":
-            setRectWidth(activeObject.width || 100);
-            setRectHeight(activeObject.height || 60);
-            setRectFill(activeObject.fill as string);
-            setRectStroke(activeObject.stroke as string);
-            setRectStrokeWidth(activeObject.strokeWidth || 1);
-            setRectOpacity(activeObject.opacity || 1);
-            break;
-
-          case "circle":
-            setCircleRadius((activeObject as any).radius || 50);
-            setCircleFill(activeObject.fill as string);
-            setCircleStroke(activeObject.stroke as string);
-            setCircleStrokeWidth(activeObject.strokeWidth || 1);
-            setCircleOpacity(activeObject.opacity || 1);
-            break;
-
-          case "triangle":
-            setTriangleWidth(activeObject.width || 60);
-            setTriangleHeight(activeObject.height || 60);
-            setTriangleFill(activeObject.fill as string);
-            setTriangleStroke(activeObject.stroke as string);
-            setTriangleStrokeWidth(activeObject.strokeWidth || 1);
-            setTriangleOpacity(activeObject.opacity || 1);
-            break;
-
-          case "line":
-            setLineStroke(activeObject.stroke as string);
-            setLineStrokeWidth(activeObject.strokeWidth || 3);
-            setLineOpacity(activeObject.opacity || 1);
-            break;
-
-          default:
-            break;
-        }
-      } else {
-        setSelectedObject(null);
-      }
-    });
-
-    newCanvas.on("selection:cleared", () => {
-      setSelectedObject(null);
-    });
+    newCanvas.on("selection:updated", handleObjectSelected);
 
     isUndoRedoAction.current = false;
 
@@ -1164,76 +1129,13 @@ const Test = () => {
         opt.e.stopPropagation();
       });
 
-      newCanvas.off("object:modified", function () {
-        const activeObject = this.getActiveObject();
-        console.log("scaling obnject");
-        if (activeObject) {
-          const objectName = activeObject.type || "Unknown Object";
-          const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
-          const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
+      newCanvas.off("object:scaling", hanldeObjectScaled);
 
-          addLog({
-            section: "shape",
-            tab: "shape",
-            event: "update",
-            message: `Scaled selected object: ${objectName}. scaleX changed to ${scaleX}, scaleY changed to ${scaleY}`,
-            param: "scale",
-            objType: objectName,
-          });
+      newCanvas.off("selection:created", handleObjectSelected);
 
-          setSelectedObject(activeObject); // Update the context with the selected object
-        }
-      });
+      newCanvas.off("selection:updated", handleObjectSelected);
 
-      newCanvas.off("selection:created", function () {
-        const activeObject = this.getActiveObject();
-        if (activeObject) {
-          setSelectedObject(activeObject);
-
-          switch (activeObject.type) {
-            case "rect":
-              setRectWidth(activeObject.width || 100);
-              setRectHeight(activeObject.height || 60);
-              setRectFill(activeObject.fill as string);
-              setRectStroke(activeObject.stroke as string);
-              setRectStrokeWidth(activeObject.strokeWidth || 1);
-              setRectOpacity(activeObject.opacity || 1);
-              break;
-
-            case "circle":
-              setCircleRadius((activeObject as any).radius || 50);
-              setCircleFill(activeObject.fill as string);
-              setCircleStroke(activeObject.stroke as string);
-              setCircleStrokeWidth(activeObject.strokeWidth || 1);
-              setCircleOpacity(activeObject.opacity || 1);
-              break;
-
-            case "triangle":
-              setTriangleWidth(activeObject.width || 60);
-              setTriangleHeight(activeObject.height || 60);
-              setTriangleFill(activeObject.fill as string);
-              setTriangleStroke(activeObject.stroke as string);
-              setTriangleStrokeWidth(activeObject.strokeWidth || 1);
-              setTriangleOpacity(activeObject.opacity || 1);
-              break;
-
-            case "line":
-              setLineStroke(activeObject.stroke as string);
-              setLineStrokeWidth(activeObject.strokeWidth || 3);
-              setLineOpacity(activeObject.opacity || 1);
-              break;
-
-            default:
-              break;
-          }
-        } else {
-          setSelectedObject(null);
-        }
-      });
-
-      newCanvas.off("selection:cleared", () => {
-        setSelectedObject(null);
-      });
+      newCanvas.off("selection:cleared", handleObjectDeselected);
 
       // newCanvas.off("object:modified", handleObjectModified);
     };
@@ -1279,13 +1181,6 @@ const Test = () => {
           subFilters: [new CustomGaussianSobelFilter(), new SobelFilter()],
         }),
         enableEdgeDetection
-      );
-
-      updateOrInsert(
-        filtersList,
-        "sharpen",
-        new SharpenFilter({ SharpenValue: 1.0 }),
-        enableSharpen
       );
 
       updateOrInsert(filtersList, "cold", new ColdFilter(), enableColdFilter);
@@ -1369,6 +1264,13 @@ const Test = () => {
 
       updateOrInsert(
         filtersList,
+        "sharpen",
+        new SharpenFilter({ SharpenValue: sharpenValue }),
+        sharpenValue !== 0
+      );
+
+      updateOrInsert(
+        filtersList,
         "redThreshold",
         new RedThresholdFilter({
           red: {
@@ -1404,6 +1306,36 @@ const Test = () => {
           },
         }),
         enableBlueThresholding
+      );
+
+      updateOrInsert(
+        filtersList,
+        "gaussianBlur",
+        new GaussianBlurFilter({
+          sigma: gaussianSigma,
+          matrixSize: gaussianMatrixSize,
+        }),
+        enableGaussianBlur
+      );
+
+      updateOrInsert(
+        filtersList,
+        "focusFilter",
+        new FocusFilter({
+          radius: radius,
+          softness: softness,
+          dark: darkFocus,
+        }),
+        enableFocusFilter
+      );
+
+      updateOrInsert(
+        filtersList,
+        "reflect",
+        new ReflectFilter({
+          reflectType: "left",
+        }),
+        enableLeftReflect
       );
 
       console.log("new", filtersList);
@@ -1454,6 +1386,16 @@ const Test = () => {
     enableRedThresholding,
     enableBlueThresholding,
     enableGreenThresholding,
+    enableGaussianBlur,
+    gaussianSigma,
+    gaussianMatrixSize,
+    enableFocusFilter,
+    radius,
+    softness,
+    darkFocus,
+    sharpenValue,
+
+    enableLeftReflect,
   ]);
 
   // this only runs if we load a project from the database else it does not do anything
@@ -1538,11 +1480,12 @@ const Test = () => {
             );
             break;
           case "sharpen":
-            setEnableSharpen(true);
+            // setEnableSharpen(true);
+            setSharpenValue(filterData.sharpenValue);
             updateOrInsert(
               filtersList,
               "sharpen",
-              new SharpenFilter({ SharpenValue: 1.0 }),
+              new SharpenFilter({ SharpenValue: filterData.sharpenValue }),
               true
             );
 
@@ -1750,6 +1693,36 @@ const Test = () => {
               true
             );
             break;
+          case "gaussianBlur":
+            setEnableGaussianBlur(true);
+            setGaussianSigma(filterData.sigma);
+
+            updateOrInsert(
+              filtersList,
+              "gaussianBlur",
+              new GaussianBlurFilter({
+                sigma: filterData.gaussianSigma,
+                matrixSize: filterData.gaussianMatrixSize,
+              }),
+              true
+            );
+            break;
+          case "focusFilter":
+            setEnableFocusFilter(true);
+            setSoftness(filterData.softness);
+            setRadius(filterData.radius);
+            setDarkFocus(filterData.dark);
+            updateOrInsert(
+              filtersList,
+              "focusFilter",
+              new FocusFilter({
+                radius: filterData.radius,
+                softness: filterData.softness,
+                dark: filterData.dark,
+              }),
+              true
+            );
+            break;
         }
       }
       setCurrentFilters(filtersList);
@@ -1764,7 +1737,7 @@ const Test = () => {
   }, [filtersUI]);
 
   return (
-    <div className="h-screen max-w-screen flex flex-col">
+    <div className="h-screen max-w-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
       <Navbar />
       <div className="w-full flex-1 flex items-center relative flex-col md:flex-row">
         {/* Full-screen overlay */}
@@ -1786,7 +1759,7 @@ const Test = () => {
             sidebarName ? " md:w-[40%] lg:w-[25%]" : ""
           } flex-col md:flex-row`}
         >
-          <nav className="flex w-full md:w-auto flex-row md:flex-col gap-5 justify-center items-center border-slate-800 border-b-2 md:border-r-2">
+          <nav className="flex w-full md:w-auto flex-row md:flex-col gap-5 justify-center items-center border-slate-800 dark:border-slate-900 border-b-2 md:border-r-2 md:border-b-0 md:h-full">
             <IconComponent
               icon={<Home />}
               iconName="Home"
@@ -1815,6 +1788,13 @@ const Test = () => {
             />
 
             <IconComponent
+              icon={<ListPlus />}
+              iconName="Fun"
+              sidebarName={sidebarName}
+              setSidebarName={setSidebarName}
+            />
+
+            <IconComponent
               icon={<Diamond />}
               iconName="Shape"
               sidebarName={sidebarName}
@@ -1837,7 +1817,7 @@ const Test = () => {
           <div
             className={`${
               sidebarName ? "w-full" : "w-0"
-            } transition-all duration-700 ease-in-out relative bg-gray-700 
+            } transition-all duration-700 ease-in-out relative bg-slate-300  dark:bg-gray-700  
      h-auto md:h-full overflow-y-auto md:overflow-visible 
      max-h-[20vh] md:max-h-full
      [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
@@ -1845,13 +1825,13 @@ const Test = () => {
             <div
               className={`${
                 sidebarName ? "absolute w-[20px]" : "w-0"
-              } flex justify-center items-center bg-gray-900  -right-2 text-slate-300 top-[40%] cursor-pointer h-[100px] rounded-full `}
+              } flex justify-center items-center bg-gray-500  dark:bg-gray-900  -right-2 text-slate-300 top-[40%] cursor-pointer h-[100px] rounded-full `}
               onClick={() => setSidebarName("")}
             ></div>
             {sidebarName === "Crop" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
-                  Crop&Cut
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
+                  Crop
                 </div>
                 <div className="max-h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <CropSidebar
@@ -1864,7 +1844,7 @@ const Test = () => {
 
             {sidebarName === "Arrange" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
                   Arrange Image
                 </div>
                 <div className="max-h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1879,7 +1859,7 @@ const Test = () => {
 
             {sidebarName === "Shape" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
                   Add Shapes
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1890,7 +1870,7 @@ const Test = () => {
 
             {sidebarName === "Adjust" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
                   Adjust
                 </div>
                 <div className="max-h-[580px] overflow-hidden  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1906,9 +1886,27 @@ const Test = () => {
               </div>
             )}
 
+            {sidebarName === "Fun" && (
+              <div className="w-full h-full">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
+                  fun
+                </div>
+                <div className="max-h-[580px] overflow-hidden  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  <AdjustSidebarAdvanced
+                    canvas={mainCanvasRef.current!}
+                    image={currentImageRef.current!}
+                    imageRef={currentImageRef!}
+                    databaseFiltersName={databaseFiltersNameRef.current}
+                    databaseFiltersObject={databaseFiltersObjectRef.current}
+                    setLoadState={setSpinnerLoading}
+                  />
+                </div>
+              </div>
+            )}
+
             {sidebarName === "Text" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
                   Text
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -1922,7 +1920,7 @@ const Test = () => {
 
             {sidebarName === "AI" && (
               <div className="w-full h-full">
-                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-300 top-0 left-0 hidden md:block">
+                <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
                   AI TOOLS
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">

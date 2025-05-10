@@ -27,12 +27,8 @@ type Props = {
 };
 
 const AddShape = ({ canvasRef }: Props) => {
-  const {
-    selectedObject,
-    setSelectedObject,
-    disableSavingIntoStackRef,
-    tempRef,
-  } = useCanvasObjects();
+  const { selectedObject, setSelectedObject, disableSavingIntoStackRef } =
+    useCanvasObjects();
   const { addLog } = useLogContext();
 
   const {
@@ -103,92 +99,6 @@ const AddShape = ({ canvasRef }: Props) => {
       setShapeType("");
     };
   }, [canvasRef]);
-
-  // Function to update properties in Fabric.js
-  const updateShapeProperties = () => {
-    console.log(tempRef.current);
-    // if (tempRef.current) return;
-    console.log("weirdly running the value");
-    if (selectedObject) {
-      switch (selectedObject.type) {
-        case "rect":
-          selectedObject.set({
-            width: rectWidth,
-            height: rectHeight,
-            fill: rectFill,
-            stroke: rectStroke,
-            strokeWidth: rectStrokeWidth,
-            opacity: rectOpacity,
-          });
-          break;
-
-        case "circle":
-          console.log("skdjf");
-          selectedObject.set({
-            radius: circleRadius,
-            fill: circleFill,
-            stroke: circleStroke,
-            strokeWidth: circleStrokeWidth,
-            opacity: circleOpacity,
-          });
-          break;
-
-        case "triangle":
-          selectedObject.set({
-            width: triangleWidth,
-            height: triangleHeight,
-            fill: triangleFill,
-            stroke: triangleStroke,
-            strokeWidth: triangleStrokeWidth,
-            opacity: triangleOpacity,
-          });
-          break;
-
-        case "line":
-          selectedObject.set({
-            stroke: lineStroke,
-            strokeWidth: lineStrokeWidth,
-            opacity: lineOpacity,
-          });
-          break;
-
-        default:
-          break;
-      }
-      console.log("Updated values");
-      selectedObject.setCoords(); // Update the coordinates of the object
-      console.log(canvasRef.current);
-      canvasRef.current.fire("object:modified");
-      canvasRef.current.requestRenderAll();
-    }
-  };
-
-  useEffect(() => {
-    if (selectedObject) {
-      updateShapeProperties();
-    }
-  }, [
-    rectWidth,
-    rectHeight,
-    rectFill,
-    rectStroke,
-    rectStrokeWidth,
-    rectOpacity,
-    circleRadius,
-    circleFill,
-    circleStroke,
-    circleStrokeWidth,
-    circleOpacity,
-    triangleWidth,
-    triangleHeight,
-    triangleFill,
-    triangleStroke,
-    triangleStrokeWidth,
-    triangleOpacity,
-    lineStroke,
-    lineStrokeWidth,
-    lineOpacity,
-  ]);
 
   // code for adding circle
   const startAddingRect = useCallback((o) => {
@@ -643,7 +553,10 @@ const AddShape = ({ canvasRef }: Props) => {
             <CardDescription>Shape Properties</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <ShapePropertiesSwitcher type={selectedObject.type} />
+            <ShapePropertiesSwitcher
+              type={selectedObject.type}
+              canvasRef={canvasRef}
+            />
           </CardContent>
         </Card>
       ) : null}

@@ -1,9 +1,15 @@
 import { Input } from "@/components/ui/input";
-import CustomSlider from "./custom-slider";
+import { Slider } from "./ui/slider";
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
 import { useLogContext } from "@/hooks/useLogContext";
 
-export const LineProperties = () => {
+import { Canvas } from "fabric";
+
+export const LineProperties = ({
+  canvasRef,
+}: {
+  canvasRef: React.RefObject<Canvas>;
+}) => {
   const { addLog } = useLogContext();
   const {
     lineStroke,
@@ -14,15 +20,79 @@ export const LineProperties = () => {
     setLineOpacity,
   } = useShapeStore();
 
-  const handlePropertyChange = (prop: string, value: any) => {
-    addLog({
-      section: "shape",
-      tab: "shape",
-      event: "update",
-      message: `Line ${prop} changed to ${value}`,
-      param: prop,
-      objType: "line",
-    });
+  const handleLineStroke = (value) => {
+    const selectedObject = canvasRef.current.getActiveObject();
+    if (selectedObject) {
+      addLog({
+        section: "shape",
+        tab: "shape",
+        event: "update",
+        message: `Line stroke color changed to ${value}`,
+        param: "stroke",
+        objType: "line",
+      });
+
+      selectedObject.set({
+        stroke: value,
+      });
+
+      setLineStroke(value);
+
+      selectedObject.setCoords();
+      canvasRef.current.fire("object:modified");
+
+      canvasRef.current.renderAll();
+    }
+  };
+
+  const handleLineStrokeWidth = (value) => {
+    const selectedObject = canvasRef.current.getActiveObject();
+    if (selectedObject) {
+      addLog({
+        section: "shape",
+        tab: "shape",
+        event: "update",
+        message: `Line stroke width changed to ${value}`,
+        param: "strokeWidth",
+        objType: "line",
+      });
+
+      selectedObject.set({
+        strokeWidth: value,
+      });
+
+      setLineStrokeWidth(value);
+
+      selectedObject.setCoords();
+      canvasRef.current.fire("object:modified");
+
+      canvasRef.current.renderAll();
+    }
+  };
+
+  const handleLineOpacity = (value) => {
+    const selectedObject = canvasRef.current.getActiveObject();
+    if (selectedObject) {
+      addLog({
+        section: "shape",
+        tab: "shape",
+        event: "update",
+        message: `Line opacity changed to ${value}`,
+        param: "opacity",
+        objType: "line",
+      });
+
+      selectedObject.set({
+        opacity: value,
+      });
+
+      setLineOpacity(value);
+
+      selectedObject.setCoords();
+      canvasRef.current.fire("object:modified");
+
+      canvasRef.current.renderAll();
+    }
   };
 
   return (
@@ -33,42 +103,44 @@ export const LineProperties = () => {
           type="color"
           value={lineStroke}
           onChange={(e) => {
-            setLineStroke(e.target.value);
-            handlePropertyChange("stroke", e.target.value);
+            handleLineStroke(e.target.value);
           }}
         />
       </div>
 
-      <CustomSlider
-        sliderName="Stroke Width"
-        min={1}
-        max={20}
-        defaultValue={lineStrokeWidth}
-        sliderValue={lineStrokeWidth}
-        setSliderValue={(value) => {
-          setLineStrokeWidth(value);
-          handlePropertyChange("stroke width", value);
-        }}
-        logName="Line Stroke width"
-        section="shape"
-        tab="shape"
-      />
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center text-slate-400 text-sm">
+          <p>Stroke Width</p>
+          <p>{lineStrokeWidth}</p>
+        </div>
 
-      <CustomSlider
-        sliderName="Opacity"
-        min={0}
-        max={1}
-        step={0.01}
-        defaultValue={lineOpacity}
-        sliderValue={lineOpacity}
-        setSliderValue={(value) => {
-          setLineOpacity(value);
-          handlePropertyChange("opacity", value);
-        }}
-        logName="line opacity"
-        section="shape"
-        tab="shape"
-      />
+        <Slider
+          value={[lineStrokeWidth]}
+          min={1}
+          max={20}
+          step={1}
+          onValueChange={(e) => {
+            handleLineStrokeWidth(e[0]);
+          }}
+        />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center text-slate-400 text-sm">
+          <p>Opacity</p>
+          <p>{lineOpacity}</p>
+        </div>
+
+        <Slider
+          value={[lineOpacity]}
+          min={0}
+          max={1}
+          step={0.01}
+          onValueChange={(e) => {
+            handleLineOpacity(e[0]);
+          }}
+        />
+      </div>
     </>
   );
 };

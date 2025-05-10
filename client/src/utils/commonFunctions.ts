@@ -8,7 +8,7 @@ function isBase64(input) {
   const base64Pattern = /^([A-Za-z0-9+/=]|\r|\n)*$/;
   
   // Check if the input starts with "data:" (base64) or "http://" or "https://" (URL)
-  if (input.startsWith('data:') && base64Pattern.test(input.split(',')[1])) {
+  if (input.startsWith('data:')) {
     return true; // Base64 string
   }
 }

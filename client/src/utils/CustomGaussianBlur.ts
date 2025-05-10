@@ -57,7 +57,7 @@ void main() {
             gray = dot(sample.rgb, vec3(0.299, 0.587, 0.114));
 
             
-            sum += gray * gaussianKernel[(y + 2) * 3 + (x + 2)];
+            sum += gray * gaussianKernel[(y + 2) * 5 + (x + 2)];
         }
     }
 

@@ -43,8 +43,6 @@ interface CanvasObjectsContextType {
 
   dbLoadingRef: React.MutableRefObject<boolean>;
   allFiltersRef: React.MutableRefObject<string[]>;
-
-  tempRef: React.MutableRefObject<boolean>;
 }
 
 // Create the context with a default value
@@ -104,8 +102,6 @@ export const CanvasObjectsProvider = ({
   const dbLoadingRef = useRef(false);
   const allFiltersRef = useRef<string[]>([]);
 
-  const tempRef = useRef<boolean>(true);
-
   return (
     <CanvasObjectsContext.Provider
       value={{
@@ -129,7 +125,6 @@ export const CanvasObjectsProvider = ({
         disableSavingIntoStackRef,
         dbLoadingRef,
         allFiltersRef,
-        tempRef,
       }}
     >
       {children}

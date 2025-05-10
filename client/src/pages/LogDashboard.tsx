@@ -785,7 +785,11 @@ export default function LogDashboard() {
 
               <ProjectInfo project={project} />
 
-              <FiltersDisplay filters={project.filter_names} />
+              <FiltersDisplay
+                filters={project.all_filters_applied.concat(
+                  project.filter_names
+                )}
+              />
             </div>
 
             {/* Logs Section */}

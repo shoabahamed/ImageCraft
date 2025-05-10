@@ -25,6 +25,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 type AdjustSidebarProps = {
   canvas: Canvas;
@@ -58,13 +65,15 @@ const AdjustSidebar = ({
   const noiseValue = useAdjustStore((state) => state.noiseValue);
   const pixelateValue = useAdjustStore((state) => state.pixelateValue);
   const enableGrayScale = useAdjustStore((state) => state.enableGrayScale);
-  const enableVintage = useAdjustStore((state) => state.enableVintage);
+  // const enableVintage = useAdjustStore((state) => state.enableVintage);
   const enableSepia = useAdjustStore((state) => state.enableSepia);
   const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
   const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
   const enableSharpen = useAdjustStore((state) => state.enableSharpen);
   const enableWarmFilter = useAdjustStore((state) => state.enableWarmFilter);
   const enableColdFilter = useAdjustStore((state) => state.enableColdFilter);
+
+  const sharpenValue = useAdjustStore((state) => state.sharpenValue);
 
   const enableInvert = useAdjustStore((state) => state.enableInvert);
 
@@ -138,6 +147,7 @@ const AdjustSidebar = ({
   const setBlurValue = useAdjustStore((state) => state.setBlurValue);
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
+  const setSharpenValue = useAdjustStore((state) => state.setSharpenValue);
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
@@ -210,6 +220,15 @@ const AdjustSidebar = ({
   // };
 
   const handleApplyFilter = () => {
+    addLog({
+      section: "adjust",
+      tab: "mode",
+      event: "update",
+      message: "filters permanently applied",
+      param: "filters",
+      objType: "image",
+    });
+
     disableSavingIntoStackRef.current = true;
     const filtersInCanvas: string[] = currentFilters.map((f) => f.filterName);
     allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
@@ -333,6 +352,43 @@ const AdjustSidebar = ({
     (state) => state.setEnableBlueThresholding
   );
 
+  const enableGaussianBlur = useAdjustStore(
+    (state) => state.enableGaussianBlur
+  );
+  const gaussianSigma = useAdjustStore((state) => state.gaussianSigma);
+
+  const setEnableGaussianBlur = useAdjustStore(
+    (state) => state.setEnableGaussianBlur
+  );
+  const setGaussianSigma = useAdjustStore((state) => state.setGaussianSigma);
+
+  const gaussianMatrixSize = useAdjustStore(
+    (state) => state.gaussianMatrixSize
+  );
+  const setGaussianMatrixSize = useAdjustStore(
+    (state) => state.setGaussianMatrixSize
+  );
+
+  const handleGaussianMatrixSizeChange = (size) => {
+    const newSize = parseInt(size);
+    setGaussianMatrixSize(newSize);
+  };
+
+  const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
+  const radius = useAdjustStore((state) => state.radius);
+  const softness = useAdjustStore((state) => state.softness);
+
+  const darkFocus = useAdjustStore((state) => state.darkFocus);
+
+  const setEnableFocusFilter = useAdjustStore(
+    (state) => state.setEnableFocusFilter
+  );
+
+  const setRadius = useAdjustStore((state) => state.setRadius);
+  const setSoftness = useAdjustStore((state) => state.setSoftness);
+
+  const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
+
   return (
     <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <Tabs
@@ -340,10 +396,11 @@ const AdjustSidebar = ({
         className="w-full flex-1 flex flex-col rounded-none"
       >
         <div className="border-b border-gray-200 dark:border-gray-800">
-          <TabsList className="w-full grid grid-cols-3 rounded-none">
+          <TabsList className="w-full grid grid-cols-4 rounded-none">
             <TabsTrigger value="presets">Presets</TabsTrigger>
             <TabsTrigger value="colors">Colors</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
         </div>
 
@@ -447,7 +504,7 @@ const AdjustSidebar = ({
                     <span className="text-sm font-medium">Sepia</span>
                   </div>
 
-                  <div
+                  {/* <div
                     onClick={() => {
                       const filterName = "vintage";
                       addLog({
@@ -488,7 +545,7 @@ const AdjustSidebar = ({
                       </span>
                     </div>
                     <span className="text-sm font-medium">Vintage</span>
-                  </div>
+                  </div> */}
 
                   <div
                     onClick={() => {
@@ -576,7 +633,7 @@ const AdjustSidebar = ({
                     <span className="text-sm font-medium">Technicolor</span>
                   </div>
 
-                  <div
+                  {/* <div
                     onClick={() => {
                       const filterName = "Sharpen";
                       addLog({
@@ -617,7 +674,7 @@ const AdjustSidebar = ({
                       </span>
                     </div>
                     <span className="text-sm font-medium">Sharpen</span>
-                  </div>
+                  </div> */}
 
                   <div
                     onClick={() => {
@@ -965,15 +1022,49 @@ const AdjustSidebar = ({
                   <div className="flex flex-row justify-evenly items-center">
                     <Switch
                       checked={enableRedThresholding}
-                      onCheckedChange={setEnableRedThresholding}
+                      onCheckedChange={() => {
+                        const filterName = "red threshold";
+                        addLog({
+                          section: "adjust",
+                          tab: "threshold",
+                          event: "update",
+                          message: !enableRedThresholding
+                            ? `enabled ${filterName} filter`
+                            : `disabled ${filterName} filter`,
+                        });
+                        setEnableRedThresholding(!enableRedThresholding);
+                      }}
                     />
                     <Switch
                       checked={enableGreenThresholding}
-                      onCheckedChange={setEnableGreenThresholding}
+                      onCheckedChange={() => {
+                        const filterName = "green threshold";
+                        addLog({
+                          section: "adjust",
+                          tab: "threshold",
+                          event: "update",
+                          message: !enableRedThresholding
+                            ? `enabled ${filterName} filter`
+                            : `disabled ${filterName} filter`,
+                        });
+                        setEnableGreenThresholding(!enableGreenThresholding);
+                      }}
                     />
                     <Switch
                       checked={enableBlueThresholding}
-                      onCheckedChange={setEnableBlueThresholding}
+                      onCheckedChange={() => {
+                        const filterName = "blue threshold";
+                        addLog({
+                          section: "adjust",
+                          tab: "threshold",
+                          event: "update",
+                          message: !enableRedThresholding
+                            ? `enabled ${filterName} filter`
+                            : `disabled ${filterName} filter`,
+                        });
+
+                        setEnableBlueThresholding(!enableBlueThresholding);
+                      }}
                     />
                   </div>
 
@@ -1178,9 +1269,184 @@ const AdjustSidebar = ({
                     section={"adjust"}
                     tab={"detail"}
                   />
+
+                  <CustomSlider
+                    sliderName={"Sharpen"}
+                    min={0}
+                    max={2}
+                    step={0.01}
+                    sliderValue={sharpenValue}
+                    defaultValue={sharpenValue}
+                    setSliderValue={setSharpenValue}
+                    section={"adjust"}
+                    tab={"detail"}
+                  />
+
                   <button className="custom-button" onClick={handleDetailReset}>
                     Reset
                   </button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        {/* advanced tab */}
+        <TabsContent
+          value="advanced"
+          className="w-full flex flex-col justify-center items-center space-y-2"
+        >
+          <div className="w-[90%]">
+            <Card className="w-full">
+              <CardHeader>
+                <CardDescription className="">
+                  <div className="flex flex-row justify-between items-center">
+                    <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                      Gaussian Blur
+                    </span>
+                    <div className="flex flex-row justify-end items-center">
+                      <Switch
+                        checked={enableGaussianBlur}
+                        onCheckedChange={() => {
+                          const filterName = "Gaussian Blur";
+                          addLog({
+                            section: "adjust",
+                            tab: "threshold",
+                            event: "update",
+                            message: !enableGaussianBlur
+                              ? `enabled ${filterName} filter`
+                              : `disabled ${filterName} filter`,
+                          });
+
+                          setEnableGaussianBlur(!enableGaussianBlur);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-8  border-t pt-4">
+                <div className="flex flex-col justify-between items-center mb-3">
+                  <div className="w-full flex  justify-between items-center space-x-2">
+                    <label className="text-sm font-medium">Matrix Size</label>
+                    <Select
+                      value={gaussianMatrixSize.toString()}
+                      onValueChange={handleGaussianMatrixSizeChange}
+                      disabled={!enableGaussianBlur}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue placeholder="Size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="3">3×3</SelectItem>
+                        <SelectItem value="5">5×5</SelectItem>
+                        <SelectItem value="7">7×7</SelectItem>
+                        <SelectItem value="9">9×9</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="w-full flex flex-col gap-4 pt-2">
+                    <CustomSlider
+                      sliderName="Sigma"
+                      min={0}
+                      max={3}
+                      step={0.01}
+                      sliderValue={gaussianSigma}
+                      defaultValue={gaussianSigma}
+                      setSliderValue={setGaussianSigma}
+                      section="adjust"
+                      tab="gaussian_blur"
+                      disabled={!enableGaussianBlur}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="w-full">
+              <CardHeader>
+                <CardDescription className="">
+                  <div className="flex flex-row justify-between items-center">
+                    <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                      Focus
+                    </span>
+                    <div className="flex flex-row justify-end items-center">
+                      <Switch
+                        checked={enableFocusFilter}
+                        onCheckedChange={() => {
+                          const filterName = "Focus Filter";
+                          addLog({
+                            section: "adjust",
+                            tab: "threshold",
+                            event: "update",
+                            message: !enableFocusFilter
+                              ? `enabled ${filterName} filter`
+                              : `disabled ${filterName} filter`,
+                          });
+
+                          setEnableFocusFilter(!enableFocusFilter);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-8  border-t pt-4">
+                <div className="flex flex-col justify-between items-center mb-3">
+                  <div className="w-full flex  justify-between items-center space-x-2">
+                    <div className="w-full flex flex-col gap-4 pt-2">
+                      <CustomSlider
+                        sliderName="radius"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        sliderValue={radius}
+                        defaultValue={radius}
+                        setSliderValue={setRadius}
+                        section="adjust"
+                        tab="focus"
+                        disabled={!enableFocusFilter}
+                      />
+                    </div>
+
+                    <div className="w-full flex flex-col gap-4 pt-2">
+                      <CustomSlider
+                        sliderName="softness"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        sliderValue={softness}
+                        defaultValue={softness}
+                        setSliderValue={setSoftness}
+                        section="adjust"
+                        tab="softness"
+                        disabled={!enableFocusFilter}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-row justify-between items-center">
+                  <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                    Reverse
+                  </span>
+                  <div className="flex flex-row justify-end items-center">
+                    <Switch
+                      checked={darkFocus}
+                      onCheckedChange={() => {
+                        const filterName = "Focus Reverse";
+                        addLog({
+                          section: "adjust",
+                          tab: "threshold",
+                          event: "update",
+                          message: !darkFocus
+                            ? `enabled ${filterName} filter`
+                            : `disabled ${filterName} filter`,
+                        });
+
+                        setDarkFocus(!darkFocus);
+                      }}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

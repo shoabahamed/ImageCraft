@@ -40,7 +40,7 @@ const useAddTextStore = create<AddTextStore>((set) => ({
   isItalic: false,
   isBold: false,
   isUnderLine: false,
-  charSpacing: 0,
+  charSpacing: 1,
   setTextValue: (value) => set({ textValue: value }),
   setTextColorValue: (value) => set({ textColorValue: value }),
   setTextFont: (value) => set({ textFont: value }),

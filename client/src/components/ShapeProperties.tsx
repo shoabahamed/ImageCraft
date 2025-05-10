@@ -3,16 +3,24 @@ import { RectProperties } from "./RectProperties";
 import { TriangleProperties } from "./TriangleProperties";
 import { LineProperties } from "./LineProperties";
 
-export const ShapePropertiesSwitcher = ({ type }: { type: string }) => {
+import { Canvas } from "fabric";
+
+export const ShapePropertiesSwitcher = ({
+  type,
+  canvasRef,
+}: {
+  type: string;
+  canvasRef: React.RefObject<Canvas>;
+}) => {
   switch (type) {
     case "circle":
-      return <CircleProperties />;
+      return <CircleProperties canvasRef={canvasRef} />;
     case "rect":
-      return <RectProperties />;
+      return <RectProperties canvasRef={canvasRef} />;
     case "triangle":
-      return <TriangleProperties />;
+      return <TriangleProperties canvasRef={canvasRef} />;
     case "line":
-      return <LineProperties />;
+      return <LineProperties canvasRef={canvasRef} />;
     default:
       return null;
   }

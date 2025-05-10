@@ -45,9 +45,9 @@ export const LogProvider = ({ children }: { children: ReactNode }) => {
     setLogs([]); // Clear all logs
   };
 
-  // useEffect(() => {
-  //   console.log(logs);
-  // });
+  useEffect(() => {
+    // console.log(logs);
+  });
 
   return (
     <LogContext.Provider value={{ logs, addLog, clearLogs, setLogs }}>

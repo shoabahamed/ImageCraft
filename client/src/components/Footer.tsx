@@ -1,10 +1,7 @@
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import {
-  ZoomIn,
-  ZoomOut,
   Pencil,
-  Upload,
   RotateCcw,
   Redo,
   Undo,
@@ -15,31 +12,11 @@ import {
 import IconComponent from "./icon-component";
 
 import { Canvas, FabricImage } from "fabric";
-import { useCallback, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
-import { useDropzone } from "react-dropzone";
-import { useNavigate } from "react-router-dom";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import {
   base64ToFile,
@@ -73,7 +50,6 @@ type Props = {
 const Footer = ({
   canvas,
   image,
-  backupImage,
   canvasId,
   imageUrl,
   setLoadState,
@@ -154,7 +130,7 @@ const Footer = ({
       const bounds = getRotatedBoundingBox(image);
 
       // TODO: since scale has changed I also need to scale other objects too. For some weird reason though everything is working just fine
-
+      // @ts-ignore
       const canvasDataUrl = canvas.toDataURL({
         format: "png",
         left: bounds.left,
@@ -181,6 +157,7 @@ const Footer = ({
       const interImage = base64ToFile(mainImageSrc, "inter_image");
       let filterNames = [];
       if (currentFilters) {
+        // @ts-ignore
         filterNames = currentFilters.map((filter) => filter.filterName);
       }
 
@@ -417,7 +394,7 @@ const Footer = ({
   };
 
   return (
-    <div className="flex w-full items-center justify-between rounded-none border-slate-800 border-t-2 gap-0 lg:gap-4">
+    <div className="flex w-full items-center justify-between rounded-none bg-white dark:bg-gray-950 border-b border-slate-800 dark:border-slate-900 border-t-2 gap-0 lg:gap-4">
       <div className="px-2 flex items-center gap-0 lg:gap-2">
         <Pencil className="text-gray-400 w-2 h-2 lg:w-5 lg:h-5" />{" "}
         {/* Pencil icon */}

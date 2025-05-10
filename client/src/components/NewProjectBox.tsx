@@ -1,5 +1,5 @@
 import { useDropzone } from "react-dropzone";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -30,9 +30,38 @@ const NewProjectBox = (props: {
   const navigate = useNavigate();
   const [dataURL, setDataURL] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
-  const [jsonData, setJsonData] = useState("");
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("local");
+
+  const [jsonFile, setJsonFile] = useState<null | object>(null);
+
+  // Create a new dropzone for JSON files
+  const onDropJson = useCallback((acceptedFiles) => {
+    const file = acceptedFiles[0];
+    const reader = new FileReader();
+
+    reader.onabort = () => console.log("file reading was aborted");
+    reader.onerror = () => console.log("file reading has failed");
+    reader.onload = () => {
+      try {
+        const jsonData = JSON.parse(reader.result);
+        setJsonFile(jsonData);
+      } catch (error) {
+        console.error("Error parsing JSON file:", error);
+        // You might want to add error handling here
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const { getRootProps: getJsonRootProps, getInputProps: getJsonInputProps } =
+    useDropzone({
+      onDrop: onDropJson,
+      accept: {
+        "application/json": [".json"],
+      },
+      maxFiles: 1,
+    });
 
   const onDrop = useCallback((acceptedFiles) => {
     acceptedFiles.forEach((file) => {
@@ -56,61 +85,74 @@ const NewProjectBox = (props: {
   });
 
   const handleImageUpload = () => {
-    let data;
-    switch (activeTab) {
-      case "local":
-        data = { type: "local", imageUrl: dataURL };
+    localStorage.removeItem("CanvasId");
+    localStorage.removeItem("project_data");
+    localStorage.removeItem("project_logs");
+    localStorage.removeItem("project_name");
 
-        navigate(`/mainpage`, { state: data });
-        break;
-      case "url":
-        data = { type: "url", imageUrl };
-        navigate("/mainpage", { state: data });
-        break;
-      case "json":
-        if (jsonData) {
-          const canvasData = JSON.parse(jsonData);
-          const {
-            project_data,
-            project_logs,
-            project_name,
-            final_image_shape,
-            original_image_shape,
-            download_image_shape,
-            imageUrl,
-            filter_names,
-          } = canvasData;
-          localStorage.setItem("project_data", JSON.stringify(project_data));
-          localStorage.setItem("project_logs", JSON.stringify(project_logs));
-          localStorage.setItem("project_name", project_name);
+    localStorage.removeItem("final_image_shape");
+    localStorage.removeItem("original_image_shape");
+    localStorage.removeItem("download_image_shape");
+    localStorage.removeItem("filter_names");
+    localStorage.removeItem("all_filters_applied");
 
-          localStorage.setItem(
-            "final_image_shape",
-            JSON.stringify(final_image_shape)
-          );
-          localStorage.setItem(
-            "original_image_shape",
-            JSON.stringify(original_image_shape)
-          );
-          localStorage.setItem(
-            "download_image_shape",
-            JSON.stringify(download_image_shape)
-          );
-          localStorage.setItem("filter_names", JSON.stringify(filter_names));
-          navigate("/mainpage", { state: { imageUrl } });
-        }
-        break;
-    }
+    setTimeout(() => {
+      let data;
+      switch (activeTab) {
+        case "local":
+          data = { type: "local", imageUrl: dataURL };
 
-    window.location.href = `/mainpage`;
+          navigate(`/mainpage`, { state: data });
+          break;
+        case "url":
+          data = { type: "url", imageUrl };
+          navigate("/mainpage", { state: data });
+          break;
+        case "json":
+          if (jsonFile) {
+            const {
+              project_data,
+              project_logs,
+              project_name,
+              final_image_shape,
+              original_image_shape,
+              download_image_shape,
+              imageUrl,
+              filter_names,
+              all_filters_applied,
+            } = jsonFile;
+            localStorage.setItem("project_data", JSON.stringify(project_data));
+            localStorage.setItem("project_logs", JSON.stringify(project_logs));
+            localStorage.setItem("project_name", project_name);
+
+            localStorage.setItem(
+              "final_image_shape",
+              JSON.stringify(final_image_shape)
+            );
+            localStorage.setItem(
+              "original_image_shape",
+              JSON.stringify(original_image_shape)
+            );
+            localStorage.setItem(
+              "download_image_shape",
+              JSON.stringify(download_image_shape)
+            );
+            localStorage.setItem("filter_names", JSON.stringify(filter_names));
+            localStorage.setItem(
+              "all_filters_applied",
+              JSON.stringify(all_filters_applied)
+            );
+            navigate("/mainpage", { state: { imageUrl } });
+          }
+          break;
+      }
+
+      window.location.href = `/mainpage`;
+    }, 500);
   };
 
   const handleUrlChange = (e) => {
     setImageUrl(e.target.value);
-  };
-
-  const handleJsonChange = (e) => {
-    setJsonData(e.target.value);
   };
 
   return (
@@ -127,7 +169,7 @@ const NewProjectBox = (props: {
       )}
 
       {!useButton && (
-        <button
+        <div
           className={`flex cursor-default select-none items-center justify-center rounded-[0.2rem] px-3 py-1.5 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground transition-all duration-300`}
           onClick={() => setShowLoadingDialog(true)}
         >
@@ -141,7 +183,7 @@ const NewProjectBox = (props: {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        </button>
+        </div>
       )}
 
       <Dialog open={showLoadingDialog} onOpenChange={setShowLoadingDialog}>
@@ -238,16 +280,48 @@ const NewProjectBox = (props: {
 
             <TabsContent value="json" className="flex flex-col items-center">
               <div className="w-full max-w-sm">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Canvas JSON Data
-                  </label>
-                  <textarea
-                    value={jsonData}
-                    onChange={handleJsonChange}
-                    placeholder="Paste your canvas JSON data here..."
-                    className="w-full p-2 border border-gray-300 rounded-lg h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
+                <div
+                  {...getJsonRootProps()}
+                  className="border-2 border-dashed border-blue-400 w-full p-8 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50 dark:border-blue-500 dark:hover:bg-gray-700/50"
+                >
+                  <input {...getJsonInputProps()} />
+                  {jsonFile ? (
+                    <div className="text-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        height="50"
+                        width="50"
+                        className="text-green-500 dark:text-green-400 mx-auto"
+                      >
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                      </svg>
+                      <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                        JSON file loaded successfully!
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        {Object.keys(jsonFile).join(", ")}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-blue-600 dark:text-blue-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        height="50"
+                        width="50"
+                        className="text-blue-500 dark:text-blue-400"
+                      >
+                        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm8-6v-2h2v2h2v2h-2v2h-2v-2h-2v-2h2z" />
+                      </svg>
+                      <p className="mt-4 text-sm">
+                        Drag & drop a JSON file here, or click to select one
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        (.json files only)
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -258,7 +332,7 @@ const NewProjectBox = (props: {
               className={`px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-blue-500/50 transition-all duration-300 dark:bg-blue-500 dark:hover:bg-blue-600 ${
                 (activeTab === "local" && !dataURL) ||
                 (activeTab === "url" && !imageUrl) ||
-                (activeTab === "json" && !jsonData)
+                (activeTab === "json" && !jsonFile)
                   ? "opacity-50 cursor-not-allowed"
                   : ""
               }`}
@@ -266,7 +340,7 @@ const NewProjectBox = (props: {
               disabled={
                 (activeTab === "local" && !dataURL) ||
                 (activeTab === "url" && !imageUrl) ||
-                (activeTab === "json" && !jsonData)
+                (activeTab === "json" && !jsonFile)
               }
             >
               Upload

@@ -16,6 +16,7 @@ type AdjustStore = {
   blurValue: number;
   noiseValue: number;
   pixelateValue: number;
+  sharpenValue: number;
   redBrightnessValue: number;
   blueBrightnessValue: number;
   greenBrightnessValue: number;
@@ -37,6 +38,7 @@ type AdjustStore = {
   setGammaRedValue: (value: number) => void;
   setGammaBlueValue: (value: number) => void;
   setGammaGreenValue: (value: number) => void;
+  setSharpenValue: (value: number) => void;
   // standalone filters
   enableGrayScale: boolean;
   enableSepia: boolean;
@@ -73,6 +75,25 @@ type AdjustStore = {
   setEnableGreenThresholding: (value: boolean) => void;
   setEnableBlueThresholding: (value: boolean) => void;
 
+  enableGaussianBlur: boolean;
+  gaussianSigma: number;
+  gaussianMatrixSize: number;
+  setEnableGaussianBlur: (value: boolean) => void;
+  setGaussianSigma: (value: number) => void;
+  setGaussianMatrixSize: (value: number) => void;
+
+  enableFocusFilter: boolean;
+  setEnableFocusFilter: (value: boolean) => void;
+  radius: number;
+  softness: number;
+  darkFocus: boolean;
+  setRadius: (value: number) => void;
+  setSoftness: (value: number) => void;
+  setDarkFocus: (value: boolean) => void;
+
+  enableLeftReflect: boolean;
+  setEnableLeftReflect: (value: boolean) => void;
+
   resetFilters: () => void;
 };
 
@@ -92,6 +113,7 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   gammaRed: 1,
   gammaBlue: 1,
   gammaGreen: 1,
+  sharpenValue: 0.5,
 
   setBrightnessValue: (value) => set({ brightnessValue: value }),
   setContrastValue: (value) => set({ contrastValue: value }),
@@ -108,6 +130,7 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   setGammaBlueValue: (value) => set({ gammaBlue: value }),
   setGammaRedValue: (value) => set({ gammaRed: value }),
   setGammaGreenValue: (value) => set({ gammaGreen: value }),
+  setSharpenValue: (value) => set({ sharpenValue: value }),
 
   enableGrayScale: false,
   enableSepia: false,
@@ -154,6 +177,27 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
     set({ enableGreenThresholding: value }),
   setEnableRedThresholding: (value) => set({ enableRedThresholding: value }),
 
+  enableGaussianBlur: false,
+  gaussianSigma: 1.0,
+  gaussianMatrixSize: 5,
+  setEnableGaussianBlur: (value) => set({ enableGaussianBlur: value }),
+  setGaussianSigma: (value) => set({ gaussianSigma: value }),
+  setGaussianMatrixSize: (value) => set({ gaussianMatrixSize: value }),
+
+  enableFocusFilter: false,
+  setEnableFocusFilter: (value) => set({ enableFocusFilter: value }),
+
+  radius: 0.5,
+  softness: 0.5,
+  darkFocus: true,
+  setRadius: (value) => set({ radius: value }),
+  setSoftness: (value) => set({ softness: value }),
+
+  setDarkFocus: (value) => set({ darkFocus: value }),
+
+  enableLeftReflect: false,
+  setEnableLeftReflect: (value) => set({ enableLeftReflect: value }),
+
   resetFilters: () =>
     set({
       brightnessValue: 0,
@@ -171,6 +215,7 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       blurValue: 0,
       noiseValue: 0,
       pixelateValue: 0,
+      sharpenValue: 0.5,
       enableGrayScale: false,
       enableSepia: false,
       enableVintage: false,
@@ -185,5 +230,8 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       enableBlueThresholding: false,
       enableRedThresholding: false,
       enableGreenThresholding: false,
+      enableGaussianBlur: false,
+
+      enableFocusFilter: false,
     }),
 }));

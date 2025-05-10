@@ -142,8 +142,8 @@ void main() {
   
 
     // 2. Sobel Edge Detection on Blurred Image
-    vec4 sumH = vec4(0.0);
-    vec4 sumV = vec4(0.0);
+    vec3 sumH = vec3(0.0);
+    vec3 sumV = vec3(0.0);
     vec2 offset;
     vec4 sample;
     float gray;
@@ -155,7 +155,7 @@ void main() {
             sample = texture2D(uTexture, vTexCoord + offset);
 
             
-            sumH += samaple.rgb * uHKernel[(y + 1) * 3 + (x + 1)];
+            sumH += sample.rgb * uHKernel[(y + 1) * 3 + (x + 1)];
             sumV += sample.rgb * uVKernel[(y + 1) * 3 + (x + 1)];
         }
     }

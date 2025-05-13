@@ -1,5 +1,6 @@
 import { useLogContext } from "@/hooks/useLogContext";
 import { Slider } from "./ui/slider";
+import { useCallback, useRef } from "react";
 
 type SlideProps = {
   sliderName: string;
@@ -28,7 +29,31 @@ const CustomSlider = ({
   tab = "",
   disabled = false,
 }: SlideProps) => {
-  const { addLog } = useLogContext(); // Use log contextuseLogContext
+  const { addLog } = useLogContext();
+  const debounceTimerRef = useRef<NodeJS.Timeout>();
+
+  const debouncedValueChange = useCallback(
+    (value: number) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        addLog({
+          section: section,
+          tab: tab,
+          event: "update",
+          message: `${
+            logName === "" ? sliderName : logName
+          } value changed from ${sliderValue} to ${value}`,
+          value: `${value}`,
+        });
+        setSliderValue(value);
+      }, 150); // 150ms debounce
+    },
+    [sliderName, logName, section, tab, sliderValue, setSliderValue, addLog]
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center text-slate-400 text-sm">
@@ -36,22 +61,12 @@ const CustomSlider = ({
         <p>{sliderValue}</p>
       </div>
       <Slider
-        // defaultValue={[defaultValue]}
         value={[sliderValue]}
         min={min}
         max={max}
         step={step}
         onValueChange={(e) => {
-          addLog({
-            section: section,
-            tab: tab,
-            event: "update",
-            message: `${
-              logName === "" ? sliderName : logName
-            } value changed from ${sliderValue} to ${e[0]}`,
-            value: `${e[0]}`,
-          });
-          setSliderValue(e[0]);
+          debouncedValueChange(e[0]);
         }}
         disabled={disabled}
       />

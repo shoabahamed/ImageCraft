@@ -1047,30 +1047,32 @@ const Test = () => {
   //   setHistoryValue,
   // ]);
   const handleObjectModified = () => {
-    // console.log("ran modification");
     if (disableSavingIntoStackRef.current) return;
 
-    console.log("object modified from undo redo");
-    const canvasData = mainCanvasRef.current.toObject([
-      "name",
-      "isUpper",
-      "id",
-    ]);
+    // Only save to stack if it's not a filter update
+    if (!isFilterUpdate.current) {
+      console.log("object modified from undo redo");
+      const canvasData = mainCanvasRef.current.toObject([
+        "name",
+        "isUpper",
+        "id",
+      ]);
 
-    const filterNames = //@ts-ignore
-      currentFiltersRef.current?.map((filter) => filter.filterName) || [];
-    const allData = {
-      project_data: canvasData,
-      final_image_shape: finalImageDimensionsRef.current,
-      original_image_shape: originalImageDimensionsRef.current,
-      download_image_shape: downloadImageDimensionsRef.current,
-      filter_names: filterNames,
-      all_filters_applied: allFiltersRef.current,
-      viewportTransform: mainCanvasRef.current.viewportTransform,
-      zoomValue: zoomValue,
-    };
+      const filterNames =
+        currentFiltersRef.current?.map((filter) => filter.filterName) || [];
+      const allData = {
+        project_data: canvasData,
+        final_image_shape: finalImageDimensionsRef.current,
+        original_image_shape: originalImageDimensionsRef.current,
+        download_image_shape: downloadImageDimensionsRef.current,
+        filter_names: filterNames,
+        all_filters_applied: allFiltersRef.current,
+        viewportTransform: mainCanvasRef.current.viewportTransform,
+        zoomValue: zoomValue,
+      };
 
-    setHistoryValue(allData);
+      setHistoryValue(allData);
+    }
   };
 
   useEffect(() => {
@@ -1294,315 +1296,330 @@ const Test = () => {
   useEffect(() => {
     if (currentImageRef.current && mainCanvasRef.current) {
       if (dbLoadingRef.current) return;
-      const filtersList = [...(currentFilters || [])];
 
-      console.log("old, running from main", filtersList);
-      updateOrInsert(
-        filtersList,
-        "grayscale",
-        new filters.Grayscale(),
-        enableGrayScale
-      );
-      updateOrInsert(filtersList, "sepia", new filters.Sepia(), enableSepia);
-      updateOrInsert(
-        filtersList,
-        "vintage",
-        new filters.Vintage(),
-        enableVintage
-      );
-      updateOrInsert(
-        filtersList,
-        "kodachrome",
-        new filters.Kodachrome(),
-        enableKodachrome
-      );
-      updateOrInsert(
-        filtersList,
-        "technicolor",
-        new filters.Technicolor(),
-        enableTechnicolor
-      );
-      updateOrInsert(
-        filtersList,
-        "sobeledge",
-        new filters.Composed({
-          subFilters: [new CustomGaussianSobelFilter(), new SobelFilter()],
-        }),
-        enableEdgeDetection
-      );
+      isFilterUpdate.current = true;
 
-      updateOrInsert(filtersList, "cold", new ColdFilter(), enableColdFilter);
+      // Clear any pending filter updates
+      if (filterUpdateTimeout.current) {
+        clearTimeout(filterUpdateTimeout.current);
+      }
 
-      updateOrInsert(filtersList, "warm", new WarmFilter(), enableWarmFilter);
+      // Batch filter updates
+      filterUpdateTimeout.current = setTimeout(() => {
+        const filtersList = [...(currentFilters || [])];
 
-      updateOrInsert(
-        filtersList,
-        "invert",
-        new filters.Invert({ alpha: false }),
-        enableInvert
-      );
+        console.log("old, running from main", filtersList);
+        updateOrInsert(
+          filtersList,
+          "grayscale",
+          new filters.Grayscale(),
+          enableGrayScale
+        );
+        updateOrInsert(filtersList, "sepia", new filters.Sepia(), enableSepia);
+        updateOrInsert(
+          filtersList,
+          "vintage",
+          new filters.Vintage(),
+          enableVintage
+        );
+        updateOrInsert(
+          filtersList,
+          "kodachrome",
+          new filters.Kodachrome(),
+          enableKodachrome
+        );
+        updateOrInsert(
+          filtersList,
+          "technicolor",
+          new filters.Technicolor(),
+          enableTechnicolor
+        );
+        updateOrInsert(
+          filtersList,
+          "sobeledge",
+          new filters.Composed({
+            subFilters: [new CustomGaussianSobelFilter(), new SobelFilter()],
+          }),
+          enableEdgeDetection
+        );
 
-      updateOrInsert(
-        filtersList,
-        "rbrightness",
-        new RBrightness({ RBrightness: redBrightnessValue }),
-        redBrightnessValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "bbrightness",
-        new BBrightness({ BBrightness: blueBrightnessValue }),
-        blueBrightnessValue !== 0
-      );
+        updateOrInsert(filtersList, "cold", new ColdFilter(), enableColdFilter);
 
-      updateOrInsert(
-        filtersList,
-        "gbrightness",
-        new GBrightness({ GBrightness: greenBrightnessValue }),
-        greenBrightnessValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "gamma",
-        new filters.Gamma({ gamma: [gammaRed, gammaGreen, gammaBlue] }),
-        gammaBlue !== 1 || gammaGreen !== 1 || gammaRed !== 1
-      );
-      updateOrInsert(
-        filtersList,
-        "contrast",
-        new filters.Contrast({ contrast: contrastValue }),
-        contrastValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "saturation",
-        new filters.Saturation({ saturation: saturationValue }),
-        saturationValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "vibrance",
-        new filters.Vibrance({ vibrance: vibranceValue }),
-        vibranceValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "blur",
-        new filters.Blur({ blur: blurValue }),
-        blurValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "hueRotation",
-        new filters.HueRotation({ rotation: hueValue }),
-        hueValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "noise",
-        new filters.Noise({ noise: noiseValue }),
-        noiseValue !== 0
-      );
-      updateOrInsert(
-        filtersList,
-        "pixelate",
-        new filters.Pixelate({ blocksize: pixelateValue }),
-        pixelateValue !== 0
-      );
+        updateOrInsert(filtersList, "warm", new WarmFilter(), enableWarmFilter);
 
-      updateOrInsert(
-        filtersList,
-        "sharpen",
-        new SharpenFilter({ SharpenValue: sharpenValue }),
-        sharpenValue !== 0.5
-      );
+        updateOrInsert(
+          filtersList,
+          "invert",
+          new filters.Invert({ alpha: false }),
+          enableInvert
+        );
 
-      // deprecated rgb thresholding
-      // updateOrInsert(
-      //   filtersList,
-      //   "redThreshold",
-      //   new RedThresholdFilter({
-      //     red: {
-      //       threshold: red.threshold,
-      //       lower: red.below,
-      //       upper: red.above,
-      //     },
-      //   }),
-      //   enableRedThresholding
-      // );
+        updateOrInsert(
+          filtersList,
+          "rbrightness",
+          new RBrightness({ RBrightness: redBrightnessValue }),
+          redBrightnessValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "bbrightness",
+          new BBrightness({ BBrightness: blueBrightnessValue }),
+          blueBrightnessValue !== 0
+        );
 
-      // updateOrInsert(
-      //   filtersList,
-      //   "greenThreshold",
-      //   new GreenThresholdFilter({
-      //     green: {
-      //       threshold: green.threshold,
-      //       lower: green.below,
-      //       upper: green.above,
-      //     },
-      //   }),
-      //   enableGreenThresholding
-      // );
+        updateOrInsert(
+          filtersList,
+          "gbrightness",
+          new GBrightness({ GBrightness: greenBrightnessValue }),
+          greenBrightnessValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "gamma",
+          new filters.Gamma({ gamma: [gammaRed, gammaGreen, gammaBlue] }),
+          gammaBlue !== 1 || gammaGreen !== 1 || gammaRed !== 1
+        );
+        updateOrInsert(
+          filtersList,
+          "contrast",
+          new filters.Contrast({ contrast: contrastValue }),
+          contrastValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "saturation",
+          new filters.Saturation({ saturation: saturationValue }),
+          saturationValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "vibrance",
+          new filters.Vibrance({ vibrance: vibranceValue }),
+          vibranceValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "blur",
+          new filters.Blur({ blur: blurValue }),
+          blurValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "hueRotation",
+          new filters.HueRotation({ rotation: hueValue }),
+          hueValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "noise",
+          new filters.Noise({ noise: noiseValue }),
+          noiseValue !== 0
+        );
+        updateOrInsert(
+          filtersList,
+          "pixelate",
+          new filters.Pixelate({ blocksize: pixelateValue }),
+          pixelateValue !== 0
+        );
 
-      // updateOrInsert(
-      //   filtersList,
-      //   "blueThreshold",
-      //   new BlueThresholdFilter({
-      //     blue: {
-      //       threshold: blue.threshold,
-      //       lower: blue.below,
-      //       upper: blue.above,
-      //     },
-      //   }),
-      //   enableBlueThresholding
-      // );
+        updateOrInsert(
+          filtersList,
+          "sharpen",
+          new SharpenFilter({ SharpenValue: sharpenValue }),
+          sharpenValue !== 0.5
+        );
 
-      updateOrInsert(
-        filtersList,
-        "gaussianBlur",
-        new GaussianBlurFilter({
-          sigma: gaussianSigma,
-          matrixSize: gaussianMatrixSize,
-        }),
-        enableGaussianBlur
-      );
+        // deprecated rgb thresholding
+        // updateOrInsert(
+        //   filtersList,
+        //   "redThreshold",
+        //   new RedThresholdFilter({
+        //     red: {
+        //       threshold: red.threshold,
+        //       lower: red.below,
+        //       upper: red.above,
+        //     },
+        //   }),
+        //   enableRedThresholding
+        // );
 
-      updateOrInsert(
-        filtersList,
-        "focusFilter",
-        new FocusFilter({
-          radius: radius,
-          softness: softness,
-          dark: darkFocus,
-        }),
-        enableFocusFilter
-      );
+        // updateOrInsert(
+        //   filtersList,
+        //   "greenThreshold",
+        //   new GreenThresholdFilter({
+        //     green: {
+        //       threshold: green.threshold,
+        //       lower: green.below,
+        //       upper: green.above,
+        //     },
+        //   }),
+        //   enableGreenThresholding
+        // );
 
-      updateOrInsert(
-        filtersList,
-        "leftToRight",
-        new ReflectFilter({
-          reflectType: "leftToRight",
-        }),
-        enableLeftToRightReflect
-      );
+        // updateOrInsert(
+        //   filtersList,
+        //   "blueThreshold",
+        //   new BlueThresholdFilter({
+        //     blue: {
+        //       threshold: blue.threshold,
+        //       lower: blue.below,
+        //       upper: blue.above,
+        //     },
+        //   }),
+        //   enableBlueThresholding
+        // );
 
-      updateOrInsert(
-        filtersList,
-        "rightToLeft",
-        new ReflectFilter({
-          reflectType: "rightToLeft",
-        }),
-        enableRightToLeftReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "gaussianBlur",
+          new GaussianBlurFilter({
+            sigma: gaussianSigma,
+            matrixSize: gaussianMatrixSize,
+          }),
+          enableGaussianBlur
+        );
 
-      updateOrInsert(
-        filtersList,
-        "bottomToTop",
-        new ReflectFilter({
-          reflectType: "bottomToTop",
-        }),
-        enableBottomToTopReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "focusFilter",
+          new FocusFilter({
+            radius: radius,
+            softness: softness,
+            dark: darkFocus,
+          }),
+          enableFocusFilter
+        );
 
-      updateOrInsert(
-        filtersList,
-        "topToBottom",
-        new ReflectFilter({
-          reflectType: "topToBottom",
-        }),
-        enableTopToBottomReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "leftToRight",
+          new ReflectFilter({
+            reflectType: "leftToRight",
+          }),
+          enableLeftToRightReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "topLeft",
-        new ReflectFilter({
-          reflectType: "topLeft",
-        }),
-        enableTopLeftReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "rightToLeft",
+          new ReflectFilter({
+            reflectType: "rightToLeft",
+          }),
+          enableRightToLeftReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "topRight",
-        new ReflectFilter({
-          reflectType: "topRight",
-        }),
-        enableTopRightReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "bottomToTop",
+          new ReflectFilter({
+            reflectType: "bottomToTop",
+          }),
+          enableBottomToTopReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "bottomRight",
-        new ReflectFilter({
-          reflectType: "bottomRight",
-        }),
-        enableBottomRightReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "topToBottom",
+          new ReflectFilter({
+            reflectType: "topToBottom",
+          }),
+          enableTopToBottomReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "bottomLeft",
-        new ReflectFilter({
-          reflectType: "bottomLeft",
-        }),
-        enableBottomLeftReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "topLeft",
+          new ReflectFilter({
+            reflectType: "topLeft",
+          }),
+          enableTopLeftReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "leftDiagonal",
-        new ReflectFilter({
-          reflectType: "leftDiagonal",
-        }),
-        enableLeftDiagonalReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "topRight",
+          new ReflectFilter({
+            reflectType: "topRight",
+          }),
+          enableTopRightReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "rightDiagonal",
-        new ReflectFilter({
-          reflectType: "rightDiagonal",
-        }),
-        enableRightDiagonalReflect
-      );
+        updateOrInsert(
+          filtersList,
+          "bottomRight",
+          new ReflectFilter({
+            reflectType: "bottomRight",
+          }),
+          enableBottomRightReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "medianFilter",
-        new MedianFilter({ matrixSize: medianFilterMatrixSize }),
-        enableMedianFilter
-      );
+        updateOrInsert(
+          filtersList,
+          "bottomLeft",
+          new ReflectFilter({
+            reflectType: "bottomLeft",
+          }),
+          enableBottomLeftReflect
+        );
 
-      updateOrInsert(
-        filtersList,
-        "bilateralFilter",
-        new BilateralFilter({
-          sigmaS: bilateralSigmaS,
-          sigmaC: bilateralSigmaC,
-          kernelSize: bilateralKernelSize,
-        }),
-        enableBilateralFilter
-      );
+        updateOrInsert(
+          filtersList,
+          "leftDiagonal",
+          new ReflectFilter({
+            reflectType: "leftDiagonal",
+          }),
+          enableLeftDiagonalReflect
+        );
 
-      console.log("new", filtersList);
-      const filterInstances = filtersList.map(
-        //@ts-ignore
-        (tempFilter) => tempFilter.instance
-      );
+        updateOrInsert(
+          filtersList,
+          "rightDiagonal",
+          new ReflectFilter({
+            reflectType: "rightDiagonal",
+          }),
+          enableRightDiagonalReflect
+        );
 
-      currentImageRef.current.filters = filterInstances;
+        updateOrInsert(
+          filtersList,
+          "medianFilter",
+          new MedianFilter({ matrixSize: medianFilterMatrixSize }),
+          enableMedianFilter
+        );
 
-      currentImageRef.current.applyFilters();
-      currentImageRef.current.set("opacity", opacityValue);
+        updateOrInsert(
+          filtersList,
+          "bilateralFilter",
+          new BilateralFilter({
+            sigmaS: bilateralSigmaS,
+            sigmaC: bilateralSigmaC,
+            kernelSize: bilateralKernelSize,
+          }),
+          enableBilateralFilter
+        );
 
-      mainCanvasRef.current.requestRenderAll();
+        console.log("new", filtersList);
+        const filterInstances = filtersList.map(
+          //@ts-ignore
+          (tempFilter) => tempFilter.instance
+        );
 
-      setCurrentFilters(filtersList);
-      currentFiltersRef.current = filtersList;
+        currentImageRef.current.filters = filterInstances;
 
-      mainCanvasRef.current.fire("object:modified");
+        currentImageRef.current.applyFilters();
+        currentImageRef.current.set("opacity", opacityValue);
+
+        mainCanvasRef.current.requestRenderAll();
+
+        setCurrentFilters(filtersList);
+        currentFiltersRef.current = filtersList;
+
+        // Reset filter update flag after a short delay
+        setTimeout(() => {
+          isFilterUpdate.current = false;
+          mainCanvasRef.current.fire("object:modified");
+        }, 100);
+      }, 150); // Batch updates within 150ms window
     }
   }, [
     opacityValue,
@@ -2148,6 +2165,10 @@ const Test = () => {
       mainCanvasRef.current.requestRenderAll();
     }, 500);
   }, [filtersUI]);
+
+  // Add this near the top of the component with other refs
+  const isFilterUpdate = useRef(false);
+  const filterUpdateTimeout = useRef<NodeJS.Timeout>();
 
   return (
     <div className="h-screen max-w-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">

@@ -15,14 +15,12 @@ load_dotenv()
 
 
 app = Flask(__name__)
-app.config['DEBUG'] = True
-
 app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # ✅ Allow 50MB file uploads
 
 
 app.secret_key = os.getenv("APP_SECRET")
-app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
-app.config['GENERAL_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/general'
+# app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
+# app.config['GENERAL_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/general'
 
 
 cloudinary.config( 
@@ -42,44 +40,44 @@ def index():
     return "<h1>Hello World</h1>"
 
 
-# gets the original image from the static folder
-@app.route('/server/static/<string:user_id>/original/<string:filename>')
-def get_original_image(user_id, filename):
-    path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "original/" 
-    return send_from_directory(path, filename, as_attachment=False)
+# # gets the original image from the static folder
+# @app.route('/server/static/<string:user_id>/original/<string:filename>')
+# def get_original_image(user_id, filename):
+#     path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "original/" 
+#     return send_from_directory(path, filename, as_attachment=False)
 
-# gets the canvas image from the static folder
-@app.route('/server/static/<string:user_id>/canvas/<string:filename>')
-def get_canvas_image(user_id, filename):
-    path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "canvas/" 
-    return send_from_directory(path, filename, as_attachment=False)
+# # gets the canvas image from the static folder
+# @app.route('/server/static/<string:user_id>/canvas/<string:filename>')
+# def get_canvas_image(user_id, filename):
+#     path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "canvas/" 
+#     return send_from_directory(path, filename, as_attachment=False)
 
-# gets the intermediate image from the static folder
-@app.route('/server/static/inter/<string:filename>')
-def get_inter_image(filename):
-    return send_from_directory(app.config['INTER_IMG_FOLDER'], filename, as_attachment=False)
+# # gets the intermediate image from the static folder
+# @app.route('/server/static/inter/<string:filename>')
+# def get_inter_image(filename):
+#     return send_from_directory(app.config['INTER_IMG_FOLDER'], filename, as_attachment=False)
 
-# gets the intermediate image from the static folder
-@app.route('/server/static/<string:user_id>/inter/<string:filename>')
-def get_user_inter_image(user_id, filename):
-    path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "inter/" 
-    return send_from_directory(path,filename, as_attachment=False)
+# # gets the intermediate image from the static folder
+# @app.route('/server/static/<string:user_id>/inter/<string:filename>')
+# def get_user_inter_image(user_id, filename):
+#     path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "inter/" 
+#     return send_from_directory(path,filename, as_attachment=False)
 
-# gets the style image from the static folder
-@app.route('/server/static/style/<string:filename>')
-def get_style_image(filename):
-    return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
+# # gets the style image from the static folder
+# @app.route('/server/static/style/<string:filename>')
+# def get_style_image(filename):
+#     return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
 
-# gets the general image from the static folder
-@app.route('/api/server/static/general/<string:filename>')
-def get_general_image(filename):
-    return send_from_directory(app.config['GENERAL_IMG_FOLDER'], filename, as_attachment=False)
+# # gets the general image from the static folder
+# @app.route('/api/server/static/general/<string:filename>')
+# def get_general_image(filename):
+#     return send_from_directory(app.config['GENERAL_IMG_FOLDER'], filename, as_attachment=False)
 
-# gets the profile image from the static folder
-@app.route('/server/static/<string:user_id>/<string:filename>')
-def get_profile_image(user_id, filename):
-    path = os.getenv("USER_COMMON_PATH") + user_id + "/" 
-    return send_from_directory(path,filename, as_attachment=False)
+# # gets the profile image from the static folder
+# @app.route('/server/static/<string:user_id>/<string:filename>')
+# def get_profile_image(user_id, filename):
+#     path = os.getenv("USER_COMMON_PATH") + user_id + "/" 
+#     return send_from_directory(path,filename, as_attachment=False)
 
 
 
@@ -97,6 +95,8 @@ app.register_blueprint(text_proc_routes)
 # runs the server on port 5000
 if __name__ == "__main__":
     if(os.getenv("DEPOLY_PRODUCTION").lower() == 'true'):
+        print("launching server in production mode")
         app.run(debug=False)
     else:
+        print("launching server in development mode")
         app.run(debug=True, port=5000)

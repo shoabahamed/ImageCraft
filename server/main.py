@@ -33,57 +33,49 @@ cloudinary.config(
 )
 
 
-
+# sets the cors policy for the files in the static folder
 CORS(app, resources={r"/server/static/*": {"origins": "*"}})
-# os.makedirs(app.config['ORG_IMG_FOLDER'], exist_ok=True)
 
 
-# @app.route("/server/upload", methods=['POST'])
-# def upload_image():
-#     file = request.files['file']
-
-#     result = cloudinary.uploader.upload(
-#         file,
-#         public_id="products/shoes/nike-air",  # This sets the folder and filename
-#         overwrite=True  # Optional: allows overwriting if file with same ID exists
-#     )
-
-#     return jsonify({
-#         "url": result["secure_url"],
-#         "public_id": result["public_id"]
-#     })
+@app.route('/')
+def index():
+    return "<h1>Hello World</h1>"
 
 
+# gets the original image from the static folder
 @app.route('/server/static/<string:user_id>/original/<string:filename>')
 def get_original_image(user_id, filename):
     path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "original/" 
     return send_from_directory(path, filename, as_attachment=False)
 
+# gets the canvas image from the static folder
 @app.route('/server/static/<string:user_id>/canvas/<string:filename>')
 def get_canvas_image(user_id, filename):
     path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "canvas/" 
     return send_from_directory(path, filename, as_attachment=False)
 
+# gets the intermediate image from the static folder
 @app.route('/server/static/inter/<string:filename>')
 def get_inter_image(filename):
     return send_from_directory(app.config['INTER_IMG_FOLDER'], filename, as_attachment=False)
 
-
+# gets the intermediate image from the static folder
 @app.route('/server/static/<string:user_id>/inter/<string:filename>')
 def get_user_inter_image(user_id, filename):
     path = os.getenv("USER_COMMON_PATH") + user_id + "/" + "inter/" 
     return send_from_directory(path,filename, as_attachment=False)
 
-
+# gets the style image from the static folder
 @app.route('/server/static/style/<string:filename>')
 def get_style_image(filename):
     return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
 
+# gets the general image from the static folder
 @app.route('/api/server/static/general/<string:filename>')
 def get_general_image(filename):
     return send_from_directory(app.config['GENERAL_IMG_FOLDER'], filename, as_attachment=False)
 
-
+# gets the profile image from the static folder
 @app.route('/server/static/<string:user_id>/<string:filename>')
 def get_profile_image(user_id, filename):
     path = os.getenv("USER_COMMON_PATH") + user_id + "/" 
@@ -95,12 +87,16 @@ def get_profile_image(user_id, filename):
 
 
 
-# Register Blueprints
+# Register Blueprints for the routes
 app.register_blueprint(auth_routes)
 app.register_blueprint(project_routes)
 app.register_blueprint(report_routes)
 app.register_blueprint(image_proc_routes)
 app.register_blueprint(text_proc_routes)
 
+# runs the server on port 5000
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    if(os.getenv("DEPOLY_PRODUCTION").lower() == 'true'):
+        app.run(debug=False)
+    else:
+        app.run(debug=True, port=5000)

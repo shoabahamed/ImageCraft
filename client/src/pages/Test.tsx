@@ -2,11 +2,11 @@ import IconComponent from "@/components/icon-component";
 
 import { Diamond, Home } from "lucide-react";
 import { Crop, RotateCwSquare, ListPlus, Type, Cpu } from "lucide-react";
-import { useEffect, useRef, useState, CSSProperties, useCallback } from "react";
+import { useEffect, useRef, useState, CSSProperties } from "react";
 
 import { filters } from "fabric";
 import * as fabric from "fabric";
-import { data, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdjustSidebar from "@/components/AdjustSidebar";
 import AddText from "@/components/AddText";
 import Arrange from "@/components/Arrange";
@@ -21,13 +21,8 @@ import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import AddShape from "@/components/AddShape";
 import AITools2 from "@/components/AITools2";
 import Navbar from "@/components/Navbar";
-import {
-  applyFiltersFromDatabase,
-  subscribeToAdjustStore,
-} from "@/hooks/appStore/applyFilterSubscriber";
+
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
-import { set } from "react-hook-form";
-import { getRotatedBoundingBox, updateOrInsert } from "@/utils/commonFunctions";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import { BBrightness } from "@/utils/BlueBrightnessFilter";
 import { SharpenFilter } from "@/utils/SharpenFilter";
@@ -38,17 +33,16 @@ import useUndoRedo from "@/hooks/useUndoRedo";
 import { SobelFilter } from "@/utils/SobelFilter";
 import { ColdFilter } from "@/utils/ColdFilter";
 import { WarmFilter } from "@/utils/WarmFilter";
-import { RGBThresholdFilter } from "@/utils/ThresholdFilter";
-import { BlueThresholdFilter } from "@/utils/BlueThresholdFilter";
-import { RedThresholdFilter } from "@/utils/RedThresholdFilter";
-import { GreenThresholdFilter } from "@/utils/GreenThresholdFilter";
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
 import { CustomGaussianSobelFilter } from "@/utils/CustomGaussianBlur";
 import useAddTextStore from "@/hooks/appStore/AddTextStore";
 import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
 import { FocusFilter } from "@/utils/FocusFilter";
 import AdjustSidebarAdvanced from "@/components/AdjustSidebarAdvanced";
-import { ReflectFilter } from "@/utils/LeftReflectFilter";
+import { ReflectFilter } from "@/utils/ReflectFilter";
+import { MedianFilter } from "@/utils/MedianFilter";
+import { BilateralFilter } from "@/utils/BilteralFilter";
+import { updateOrInsert } from "@/utils/commonFunctions";
 
 // TODO: in rotation set some presest 90/180 degree rotation
 // TODO: allow the user to apply the filters
@@ -104,8 +98,6 @@ const Test = () => {
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
 
   const {
-    originalImageDimensions,
-    finalImageDimensions,
     disableSavingIntoStackRef,
     downloadImageDimensions,
     setOriginalImageDimensions,
@@ -190,7 +182,6 @@ const Test = () => {
     (state) => state.setEnableEdgeDetection
   );
 
-  const setEnableSharpen = useAdjustStore((state) => state.setEnableSharpen);
   const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
   const setEnableWarmFilter = useAdjustStore(
     (state) => state.setEnableWarmFilter
@@ -220,35 +211,35 @@ const Test = () => {
 
   const blue = useAdjustStore((state) => state.blue);
 
-  const setRed = useAdjustStore((state) => state.setRed);
+  // const setRed = useAdjustStore((state) => state.setRed);
 
-  const setGreen = useAdjustStore((state) => state.setGreen);
+  // const setGreen = useAdjustStore((state) => state.setGreen);
 
-  const setBlue = useAdjustStore((state) => state.setBlue);
+  // const setBlue = useAdjustStore((state) => state.setBlue);
 
-  const enableBlueThresholding = useAdjustStore(
-    (state) => state.enableBlueThresholding
-  );
+  // const enableBlueThresholding = useAdjustStore(
+  //   (state) => state.enableBlueThresholding
+  // );
 
-  const enableGreenThresholding = useAdjustStore(
-    (state) => state.enableGreenThresholding
-  );
+  // const enableGreenThresholding = useAdjustStore(
+  //   (state) => state.enableGreenThresholding
+  // );
 
-  const enableRedThresholding = useAdjustStore(
-    (state) => state.enableRedThresholding
-  );
+  // const enableRedThresholding = useAdjustStore(
+  //   (state) => state.enableRedThresholding
+  // );
 
-  const setEnableRedThresholding = useAdjustStore(
-    (state) => state.setEnableRedThresholding
-  );
+  // const setEnableRedThresholding = useAdjustStore(
+  //   (state) => state.setEnableRedThresholding
+  // );
 
-  const setEnableGreenThresholding = useAdjustStore(
-    (state) => state.setEnableGreenThresholding
-  );
+  // const setEnableGreenThresholding = useAdjustStore(
+  //   (state) => state.setEnableGreenThresholding
+  // );
 
-  const setEnableBlueThresholding = useAdjustStore(
-    (state) => state.setEnableBlueThresholding
-  );
+  // const setEnableBlueThresholding = useAdjustStore(
+  //   (state) => state.setEnableBlueThresholding
+  // );
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
@@ -283,9 +274,105 @@ const Test = () => {
 
   const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
 
-  const enableLeftReflect = useAdjustStore((state) => state.enableLeftReflect);
-  const setEnableLeftReflect = useAdjustStore(
-    (state) => state.setEnableLeftReflect
+  const enableLeftToRightReflect = useAdjustStore(
+    (state) => state.enableLeftToRightReflect
+  );
+  const enableRightToLeftReflect = useAdjustStore(
+    (state) => state.enableRightToLeftReflect
+  );
+  const enableTopToBottomReflect = useAdjustStore(
+    (state) => state.enableTopToBottomReflect
+  );
+  const enableBottomToTopReflect = useAdjustStore(
+    (state) => state.enableBottomToTopReflect
+  );
+  const enableTopLeftReflect = useAdjustStore(
+    (state) => state.enableTopLeftReflect
+  );
+  const enableTopRightReflect = useAdjustStore(
+    (state) => state.enableTopRightReflect
+  );
+  const enableBottomLeftReflect = useAdjustStore(
+    (state) => state.enableBottomLeftReflect
+  );
+  const enableBottomRightReflect = useAdjustStore(
+    (state) => state.enableBottomRightReflect
+  );
+
+  const setEnableLeftToRightReflect = useAdjustStore(
+    (state) => state.setEnableLeftToRightReflect
+  );
+  const setEnableRightToLeftReflect = useAdjustStore(
+    (state) => state.setEnableRightToLeftReflect
+  );
+  const setEnableTopToBottomReflect = useAdjustStore(
+    (state) => state.setEnableTopToBottomReflect
+  );
+  const setEnableBottomToTopReflect = useAdjustStore(
+    (state) => state.setEnableBottomToTopReflect
+  );
+  const setEnableTopLeftReflect = useAdjustStore(
+    (state) => state.setEnableTopLeftReflect
+  );
+  const setEnableTopRightReflect = useAdjustStore(
+    (state) => state.setEnableTopRightReflect
+  );
+  const setEnableBottomLeftReflect = useAdjustStore(
+    (state) => state.setEnableBottomLeftReflect
+  );
+  const setEnableBottomRightReflect = useAdjustStore(
+    (state) => state.setEnableBottomRightReflect
+  );
+
+  const setEnableLeftDiagonalReflect = useAdjustStore(
+    (state) => state.setEnableLeftDiagonalReflect
+  );
+  const setEnableRightDiagonalReflect = useAdjustStore(
+    (state) => state.setEnableRightDiagonalReflect
+  );
+
+  const enableLeftDiagonalReflect = useAdjustStore(
+    (state) => state.enableLeftDiagonalReflect
+  );
+  const enableRightDiagonalReflect = useAdjustStore(
+    (state) => state.enableRightDiagonalReflect
+  );
+
+  const enableMedianFilter = useAdjustStore(
+    (state) => state.enableMedianFilter
+  );
+  const setEnableMedianFilter = useAdjustStore(
+    (state) => state.setEnableMedianFilter
+  );
+
+  const enableBilateralFilter = useAdjustStore(
+    (state) => state.enableBilateralFilter
+  );
+  const setEnableBilateralFilter = useAdjustStore(
+    (state) => state.setEnableBilateralFilter
+  );
+
+  const bilateralSigmaS = useAdjustStore((state) => state.bilateralSigmaS);
+  const setBilateralSigmaS = useAdjustStore(
+    (state) => state.setBilateralSigmaS
+  );
+  const bilateralSigmaC = useAdjustStore((state) => state.bilateralSigmaC);
+  const setBilateralSigmaC = useAdjustStore(
+    (state) => state.setBilateralSigmaC
+  );
+
+  const bilateralKernelSize = useAdjustStore(
+    (state) => state.bilateralKernelSize
+  );
+  const setBilateralKernelSize = useAdjustStore(
+    (state) => state.setBilateralKernelSize
+  );
+
+  const medianFilterMatrixSize = useAdjustStore(
+    (state) => state.medianFilterMatrixSize
+  );
+  const setMedianFilterMatrixSize = useAdjustStore(
+    (state) => state.setMedianFilterMatrixSize
   );
 
   const { dbLoadingRef } = useCanvasObjects();
@@ -299,58 +386,57 @@ const Test = () => {
     isUndoRedoAction,
   ] = useUndoRedo(50);
 
-  // shaper paramters
-  const {
-    // Rectangle properties
-    rectWidth,
-    rectHeight,
-    rectFill,
-    rectStroke,
-    rectStrokeWidth,
-    rectOpacity,
-    setRectWidth,
-    setRectHeight,
-    setRectFill,
-    setRectStroke,
-    setRectStrokeWidth,
-    setRectOpacity,
+  // shape properties
+  const setShapeType = useShapeStore((state) => state.setShapeType);
 
-    // Circle properties
-    circleRadius,
-    circleFill,
-    circleStroke,
-    circleStrokeWidth,
-    circleOpacity,
-    setCircleRadius,
-    setCircleFill,
-    setCircleStroke,
-    setCircleStrokeWidth,
-    setCircleOpacity,
+  const setRectFill = useShapeStore((state) => state.setRectFill);
+  const setCircleFill = useShapeStore((state) => state.setCircleFill);
+  const setTriangleFill = useShapeStore((state) => state.setTriangleFill);
+  const setLineStroke = useShapeStore((state) => state.setLineStroke);
 
-    // Triangle properties
-    triangleWidth,
-    triangleHeight,
-    triangleFill,
-    triangleStroke,
-    triangleStrokeWidth,
-    triangleOpacity,
-    setTriangleWidth,
-    setTriangleHeight,
-    setTriangleFill,
-    setTriangleStroke,
-    setTriangleStrokeWidth,
-    setTriangleOpacity,
+  const setRectWidth = useShapeStore((state) => state.setRectWidth);
+  const setRectHeight = useShapeStore((state) => state.setRectHeight);
+  const setRectOpacity = useShapeStore((state) => state.setRectOpacity);
+  const setTriangleWidth = useShapeStore((state) => state.setTriangleWidth);
+  const setTriangleHeight = useShapeStore((state) => state.setTriangleHeight);
+  const setTriangleOpacity = useShapeStore((state) => state.setTriangleOpacity);
+  const setLineStrokeWidth = useShapeStore((state) => state.setLineStrokeWidth);
+  const setLineOpacity = useShapeStore((state) => state.setLineOpacity);
+  const setCircleStroke = useShapeStore((state) => state.setCircleStroke);
+  const setCircleStrokeWidth = useShapeStore(
+    (state) => state.setCircleStrokeWidth
+  );
 
-    // Line properties
-    lineStroke,
-    lineStrokeWidth,
-    lineOpacity,
-    setLineStroke,
-    setLineStrokeWidth,
-    setLineOpacity,
-  } = useShapeStore();
+  const setCircleRadius = useShapeStore((state) => state.setCircleRadius);
+  const setCircleOpacity = useShapeStore((state) => state.setCircleOpacity);
 
-  // Unpacking setter functions one by one
+  const setRectStroke = useShapeStore((state) => state.setRectStroke);
+  const setRectStrokeWidth = useShapeStore((state) => state.setRectStrokeWidth);
+
+  const setTriangleStroke = useShapeStore((state) => state.setTriangleStroke);
+  const setTriangleStrokeWidth = useShapeStore(
+    (state) => state.setTriangleStrokeWidth
+  );
+
+  const setShadowEnabled = useShapeStore((state) => state.setShadowEnabled);
+  const setShadowColor = useShapeStore((state) => state.setShadowColor);
+  const setShadowBlur = useShapeStore((state) => state.setShadowBlur);
+  const setShadowOffsetX = useShapeStore((state) => state.setShadowOffsetX);
+  const setShadowOffsetY = useShapeStore((state) => state.setShadowOffsetY);
+
+  const setRectSkewX = useShapeStore((state) => state.setRectSkewX);
+  const setRectSkewY = useShapeStore((state) => state.setRectSkewY);
+
+  const setTriangleSkewX = useShapeStore((state) => state.setTriangleSkewX);
+  const setTriangleSkewY = useShapeStore((state) => state.setTriangleSkewY);
+
+  const setLineSkewX = useShapeStore((state) => state.setLineSkewX);
+  const setLineSkewY = useShapeStore((state) => state.setLineSkewY);
+
+  const setCircleSkewX = useShapeStore((state) => state.setCircleSkewX);
+  const setCircleSkewY = useShapeStore((state) => state.setCircleSkewY);
+
+  // text properties
   const setTextValue = useAddTextStore((state) => state.setTextValue);
   const setTextColorValue = useAddTextStore((state) => state.setTextColorValue);
   const setTextFont = useAddTextStore((state) => state.setTextFont);
@@ -366,6 +452,18 @@ const Test = () => {
   const setUnderLine = useAddTextStore((state) => state.setUnderLine);
 
   const setCharSpacing = useAddTextStore((state) => state.setCharSpacing);
+
+  const setTextShadowEnabled = useAddTextStore(
+    (state) => state.setShadowEnabled
+  );
+  const setTextShadowColor = useAddTextStore((state) => state.setShadowColor);
+  const setTextShadowBlur = useAddTextStore((state) => state.setShadowBlur);
+  const setTextShadowOffsetX = useAddTextStore(
+    (state) => state.setShadowOffsetX
+  );
+  const setTextShadowOffsetY = useAddTextStore(
+    (state) => state.setShadowOffsetY
+  );
 
   // this function runs whenever the window size changes
   const handleContainerResize = () => {
@@ -416,6 +514,13 @@ const Test = () => {
           setRectStroke(activeObject.stroke as string);
           setRectStrokeWidth(activeObject.strokeWidth || 1);
           setRectOpacity(activeObject.opacity || 1);
+          setRectSkewX(activeObject.skewX || 0);
+          setRectSkewY(activeObject.skewY || 0);
+          setShadowEnabled(activeObject.shadow ? true : false);
+          setShadowColor(activeObject.shadow?.color || "#000");
+          setShadowBlur(activeObject.shadow?.blur || 0);
+          setShadowOffsetX(activeObject.shadow?.offsetX || 0);
+          setShadowOffsetY(activeObject.shadow?.offsetY || 0);
           break;
 
         case "circle":
@@ -424,6 +529,13 @@ const Test = () => {
           setCircleStroke(activeObject.stroke as string);
           setCircleStrokeWidth(activeObject.strokeWidth || 1);
           setCircleOpacity(activeObject.opacity || 1);
+          setCircleSkewX(activeObject.skewX || 0);
+          setCircleSkewY(activeObject.skewY || 0);
+          setShadowEnabled(activeObject.shadow ? true : false);
+          setShadowColor(activeObject.shadow?.color || "#000");
+          setShadowBlur(activeObject.shadow?.blur || 0);
+          setShadowOffsetX(activeObject.shadow?.offsetX || 0);
+          setShadowOffsetY(activeObject.shadow?.offsetY || 0);
           break;
 
         case "triangle":
@@ -433,36 +545,66 @@ const Test = () => {
           setTriangleStroke(activeObject.stroke as string);
           setTriangleStrokeWidth(activeObject.strokeWidth || 1);
           setTriangleOpacity(activeObject.opacity || 1);
+          setTriangleSkewX(activeObject.skewX || 0);
+          setTriangleSkewY(activeObject.skewY || 0);
+          setShadowEnabled(activeObject.shadow ? true : false);
+          setShadowColor(activeObject.shadow?.color || "#000");
+          setShadowBlur(activeObject.shadow?.blur || 0);
+          setShadowOffsetX(activeObject.shadow?.offsetX || 0);
+          setShadowOffsetY(activeObject.shadow?.offsetY || 0);
           break;
 
         case "line":
           setLineStroke(activeObject.stroke as string);
           setLineStrokeWidth(activeObject.strokeWidth || 3);
           setLineOpacity(activeObject.opacity || 1);
+          setLineSkewX(activeObject.skewX || 0);
+          setLineSkewY(activeObject.skewY || 0);
+          setShadowEnabled(activeObject.shadow ? true : false);
+          setShadowColor(activeObject.shadow?.color || "#000");
+          setShadowBlur(activeObject.shadow?.blur || 0);
+          setShadowOffsetX(activeObject.shadow?.offsetX || 0);
+          setShadowOffsetY(activeObject.shadow?.offsetY || 0);
           break;
 
-        case "textbox":
-          setSelectedObject(activeObject);
-          setTextValue(activeObject.text || "");
-          setTextColorValue(activeObject.fill as string);
-          setTextSize(activeObject.fontSize || 14);
-          setTextFont(activeObject.fontFamily || "arial");
-          setTextOpacity(activeObject.opacity || 1);
+        case "textbox": {
+          const textbox = activeObject as fabric.Textbox;
+          setSelectedObject(textbox);
+          setTextValue(textbox.text || "");
+          setTextColorValue(textbox.fill as string);
+          setTextSize(textbox.fontSize || 14);
+          setTextFont(textbox.fontFamily || "arial");
+          setTextOpacity(textbox.opacity || 1);
 
-          setTextAlignValue(activeObject.textAlign);
-          setTextLineSpacing(activeObject.lineHeight);
+          setTextAlignValue(textbox.textAlign);
+          setTextLineSpacing(textbox.lineHeight);
 
-          setItalic(activeObject.fontStyle === "italic" ? true : false);
-          setUnderLine(activeObject.underline ? true : false);
-          setBold(activeObject.fontWeight === "bold" ? true : false);
-          setUpper(activeObject.get("isUpper") || false);
+          setItalic(textbox.fontStyle === "italic" ? true : false);
+          setUnderLine(textbox.underline ? true : false);
+          setBold(textbox.fontWeight === "bold" ? true : false);
+          setUpper(textbox.get("isUpper") || false);
+          setCharSpacing(textbox.charSpacing || 0);
 
+          setTextShadowEnabled(textbox.shadow ? true : false);
+          setTextShadowColor(textbox.shadow?.color || "#000");
+          setTextShadowBlur(textbox.shadow?.blur || 0);
+          setTextShadowOffsetX(textbox.shadow?.offsetX || 0);
+          setTextShadowOffsetY(textbox.shadow?.offsetY || 0);
           break;
+        }
         default:
           break;
       }
     } else {
       setSelectedObject(null);
+    }
+  };
+
+  const handleTextChanged = () => {
+    const activeObject = mainCanvasRef.current.getActiveObject();
+    if (activeObject && activeObject.type === "textbox") {
+      const textbox = activeObject as fabric.Textbox;
+      setTextValue(textbox.text || "");
     }
   };
 
@@ -474,6 +616,7 @@ const Test = () => {
       const scaleX = activeObject.scaleX?.toFixed(2) || "N/A";
       const scaleY = activeObject.scaleY?.toFixed(2) || "N/A";
 
+      //@ts-ignore
       if (activeObject.name?.toLowerCase().startsWith("frame")) {
         addLog({
           section: "crop&cut",
@@ -827,7 +970,7 @@ const Test = () => {
         let zoom = initCanvas.getZoom();
         zoom *= 0.999 ** delta;
         if (zoom > 20) zoom = 20;
-        if (zoom < 0.01) zoom = 0.01;
+        if (zoom < 0.01) zoom = 0.01; //@ts-ignore
         initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
         setZoomValue(zoom);
         opt.e.preventDefault();
@@ -835,7 +978,7 @@ const Test = () => {
       });
 
       initCanvas.on("object:scaling", hanldeObjectScaled);
-
+      initCanvas.on("text:changed", handleTextChanged);
       initCanvas.on("selection:created", handleObjectSelected);
       initCanvas.on("selection:updated", handleObjectSelected);
 
@@ -856,7 +999,7 @@ const Test = () => {
           let zoom = initCanvas.getZoom();
           zoom *= 0.999 ** delta;
           if (zoom > 20) zoom = 20;
-          if (zoom < 0.01) zoom = 0.01;
+          if (zoom < 0.01) zoom = 0.01; //@ts-ignore
           initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
           setZoomValue(zoom);
           opt.e.preventDefault();
@@ -867,6 +1010,7 @@ const Test = () => {
         initCanvas.off("selection:created", handleObjectSelected);
         initCanvas.off("selection:updated", handleObjectSelected);
         initCanvas.off("selection:cleared", handleObjectDeselected);
+        initCanvas.off("text:changed", handleTextChanged);
 
         // initCanvas.off("object:modified", handleObjectModifiedTemp);
       };
@@ -913,9 +1057,8 @@ const Test = () => {
       "id",
     ]);
 
-    const filterNames =
+    const filterNames = //@ts-ignore
       currentFiltersRef.current?.map((filter) => filter.filterName) || [];
-
     const allData = {
       project_data: canvasData,
       final_image_shape: finalImageDimensionsRef.current,
@@ -950,6 +1093,7 @@ const Test = () => {
 
     setSpinnerLoading(true);
     setSelectedObject(null);
+    setShapeType(null);
 
     const canvasJSON = currentSnapshot.project_data;
     const finalImageShape: { imageWidth: number; imageHeight: number } =
@@ -1097,7 +1241,7 @@ const Test = () => {
       let zoom = newCanvas.getZoom();
       zoom *= 0.999 ** delta;
       if (zoom > 20) zoom = 20;
-      if (zoom < 0.01) zoom = 0.01;
+      if (zoom < 0.01) zoom = 0.01; //@ts-ignore
       newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
       setZoomValue(zoom);
       opt.e.preventDefault();
@@ -1112,6 +1256,8 @@ const Test = () => {
 
     newCanvas.on("selection:updated", handleObjectSelected);
 
+    newCanvas.on("text:changed", handleTextChanged);
+
     isUndoRedoAction.current = false;
 
     return () => {
@@ -1122,7 +1268,7 @@ const Test = () => {
         let zoom = newCanvas.getZoom();
         zoom *= 0.999 ** delta;
         if (zoom > 20) zoom = 20;
-        if (zoom < 0.01) zoom = 0.01;
+        if (zoom < 0.01) zoom = 0.01; //@ts-ignore
         newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
         setZoomValue(zoom);
         opt.e.preventDefault();
@@ -1136,6 +1282,8 @@ const Test = () => {
       newCanvas.off("selection:updated", handleObjectSelected);
 
       newCanvas.off("selection:cleared", handleObjectDeselected);
+
+      newCanvas.off("text:changed", handleTextChanged);
 
       // newCanvas.off("object:modified", handleObjectModified);
     };
@@ -1266,47 +1414,48 @@ const Test = () => {
         filtersList,
         "sharpen",
         new SharpenFilter({ SharpenValue: sharpenValue }),
-        sharpenValue !== 0
+        sharpenValue !== 0.5
       );
 
-      updateOrInsert(
-        filtersList,
-        "redThreshold",
-        new RedThresholdFilter({
-          red: {
-            threshold: red.threshold,
-            lower: red.below,
-            upper: red.above,
-          },
-        }),
-        enableRedThresholding
-      );
+      // deprecated rgb thresholding
+      // updateOrInsert(
+      //   filtersList,
+      //   "redThreshold",
+      //   new RedThresholdFilter({
+      //     red: {
+      //       threshold: red.threshold,
+      //       lower: red.below,
+      //       upper: red.above,
+      //     },
+      //   }),
+      //   enableRedThresholding
+      // );
 
-      updateOrInsert(
-        filtersList,
-        "greenThreshold",
-        new GreenThresholdFilter({
-          green: {
-            threshold: green.threshold,
-            lower: green.below,
-            upper: green.above,
-          },
-        }),
-        enableGreenThresholding
-      );
+      // updateOrInsert(
+      //   filtersList,
+      //   "greenThreshold",
+      //   new GreenThresholdFilter({
+      //     green: {
+      //       threshold: green.threshold,
+      //       lower: green.below,
+      //       upper: green.above,
+      //     },
+      //   }),
+      //   enableGreenThresholding
+      // );
 
-      updateOrInsert(
-        filtersList,
-        "blueThreshold",
-        new BlueThresholdFilter({
-          blue: {
-            threshold: blue.threshold,
-            lower: blue.below,
-            upper: blue.above,
-          },
-        }),
-        enableBlueThresholding
-      );
+      // updateOrInsert(
+      //   filtersList,
+      //   "blueThreshold",
+      //   new BlueThresholdFilter({
+      //     blue: {
+      //       threshold: blue.threshold,
+      //       lower: blue.below,
+      //       upper: blue.above,
+      //     },
+      //   }),
+      //   enableBlueThresholding
+      // );
 
       updateOrInsert(
         filtersList,
@@ -1331,15 +1480,115 @@ const Test = () => {
 
       updateOrInsert(
         filtersList,
-        "reflect",
+        "leftToRight",
         new ReflectFilter({
-          reflectType: "left",
+          reflectType: "leftToRight",
         }),
-        enableLeftReflect
+        enableLeftToRightReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "rightToLeft",
+        new ReflectFilter({
+          reflectType: "rightToLeft",
+        }),
+        enableRightToLeftReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "bottomToTop",
+        new ReflectFilter({
+          reflectType: "bottomToTop",
+        }),
+        enableBottomToTopReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "topToBottom",
+        new ReflectFilter({
+          reflectType: "topToBottom",
+        }),
+        enableTopToBottomReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "topLeft",
+        new ReflectFilter({
+          reflectType: "topLeft",
+        }),
+        enableTopLeftReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "topRight",
+        new ReflectFilter({
+          reflectType: "topRight",
+        }),
+        enableTopRightReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "bottomRight",
+        new ReflectFilter({
+          reflectType: "bottomRight",
+        }),
+        enableBottomRightReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "bottomLeft",
+        new ReflectFilter({
+          reflectType: "bottomLeft",
+        }),
+        enableBottomLeftReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "leftDiagonal",
+        new ReflectFilter({
+          reflectType: "leftDiagonal",
+        }),
+        enableLeftDiagonalReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "rightDiagonal",
+        new ReflectFilter({
+          reflectType: "rightDiagonal",
+        }),
+        enableRightDiagonalReflect
+      );
+
+      updateOrInsert(
+        filtersList,
+        "medianFilter",
+        new MedianFilter({ matrixSize: medianFilterMatrixSize }),
+        enableMedianFilter
+      );
+
+      updateOrInsert(
+        filtersList,
+        "bilateralFilter",
+        new BilateralFilter({
+          sigmaS: bilateralSigmaS,
+          sigmaC: bilateralSigmaC,
+          kernelSize: bilateralKernelSize,
+        }),
+        enableBilateralFilter
       );
 
       console.log("new", filtersList);
       const filterInstances = filtersList.map(
+        //@ts-ignore
         (tempFilter) => tempFilter.instance
       );
 
@@ -1383,9 +1632,9 @@ const Test = () => {
     red,
     green,
     blue,
-    enableRedThresholding,
-    enableBlueThresholding,
-    enableGreenThresholding,
+    // enableRedThresholding,
+    // enableBlueThresholding,
+    // enableGreenThresholding,
     enableGaussianBlur,
     gaussianSigma,
     gaussianMatrixSize,
@@ -1394,8 +1643,22 @@ const Test = () => {
     softness,
     darkFocus,
     sharpenValue,
-
-    enableLeftReflect,
+    enableLeftToRightReflect,
+    enableRightToLeftReflect,
+    enableTopToBottomReflect,
+    enableBottomToTopReflect,
+    enableTopLeftReflect,
+    enableTopRightReflect,
+    enableBottomLeftReflect,
+    enableBottomRightReflect,
+    enableLeftDiagonalReflect,
+    enableRightDiagonalReflect,
+    enableMedianFilter,
+    enableBilateralFilter,
+    bilateralSigmaS,
+    bilateralSigmaC,
+    bilateralKernelSize,
+    medianFilterMatrixSize,
   ]);
 
   // this only runs if we load a project from the database else it does not do anything
@@ -1632,67 +1895,68 @@ const Test = () => {
             );
 
             break;
-          case "redThreshold":
-            setEnableRedThresholding(true);
-            setRed({
-              threshold: filterData.red.threshold,
-              below: filterData.red.lower,
-              above: filterData.red.upper,
-            });
-            updateOrInsert(
-              filtersList,
-              "redThreshold",
-              new RedThresholdFilter({
-                red: {
-                  threshold: filterData.red.threshold,
-                  lower: filterData.red.below,
-                  upper: filterData.red.above,
-                },
-              }),
-              true
-            );
-            break;
 
-          case "blueThreshold":
-            setEnableBlueThresholding(true);
-            setBlue({
-              threshold: filterData.blue.threshold,
-              below: filterData.blue.lower,
-              above: filterData.blue.upper,
-            });
-            updateOrInsert(
-              filtersList,
-              "blueThreshold",
-              new BlueThresholdFilter({
-                blue: {
-                  threshold: filterData.blue.threshold,
-                  lower: filterData.blue.below,
-                  upper: filterData.blue.above,
-                },
-              }),
-              true
-            );
-            break;
-          case "greenThreshold":
-            setEnableGreenThresholding(true);
-            setGreen({
-              threshold: filterData.green.threshold,
-              below: filterData.green.lower,
-              above: filterData.green.upper,
-            });
-            updateOrInsert(
-              filtersList,
-              "greenThreshold",
-              new GreenThresholdFilter({
-                green: {
-                  threshold: filterData.green.threshold,
-                  lower: filterData.green.below,
-                  upper: filterData.green.above,
-                },
-              }),
-              true
-            );
-            break;
+          // case "redThreshold":
+          //   setEnableRedThresholding(true);
+          //   setRed({
+          //     threshold: filterData.red.threshold,
+          //     below: filterData.red.lower,
+          //     above: filterData.red.upper,
+          //   });
+          //   updateOrInsert(
+          //     filtersList,
+          //     "redThreshold",
+          //     new RedThresholdFilter({
+          //       red: {
+          //         threshold: filterData.red.threshold,
+          //         lower: filterData.red.below,
+          //         upper: filterData.red.above,
+          //       },
+          //     }),
+          //     true
+          //   );
+          //   break;
+          // case "blueThreshold":
+          //   setEnableBlueThresholding(true);
+          //   setBlue({
+          //     threshold: filterData.blue.threshold,
+          //     below: filterData.blue.lower,
+          //     above: filterData.blue.upper,
+          //   });
+          //   updateOrInsert(
+          //     filtersList,
+          //     "blueThreshold",
+          //     new BlueThresholdFilter({
+          //       blue: {
+          //         threshold: filterData.blue.threshold,
+          //         lower: filterData.blue.below,
+          //         upper: filterData.blue.above,
+          //       },
+          //     }),
+          //     true
+          //   );
+          //   break;
+          // case "greenThreshold":
+          //   setEnableGreenThresholding(true);
+          //   setGreen({
+          //     threshold: filterData.green.threshold,
+          //     below: filterData.green.lower,
+          //     above: filterData.green.upper,
+          //   });
+          //   updateOrInsert(
+          //     filtersList,
+          //     "greenThreshold",
+          //     new GreenThresholdFilter({
+          //       green: {
+          //         threshold: filterData.green.threshold,
+          //         lower: filterData.green.below,
+          //         upper: filterData.green.above,
+          //       },
+          //     }),
+          //     true
+          //   );
+          //   break;
+
           case "gaussianBlur":
             setEnableGaussianBlur(true);
             setGaussianSigma(filterData.sigma);
@@ -1719,6 +1983,155 @@ const Test = () => {
                 radius: filterData.radius,
                 softness: filterData.softness,
                 dark: filterData.dark,
+              }),
+              true
+            );
+            break;
+          case "leftToRight":
+            setEnableLeftToRightReflect(true);
+            updateOrInsert(
+              filtersList,
+              "leftToRight",
+              new ReflectFilter({
+                reflectType: "leftToRight",
+              }),
+              true
+            );
+            break;
+
+          case "rightToLeft":
+            setEnableRightToLeftReflect(true);
+            updateOrInsert(
+              filtersList,
+              "rightToLeft",
+              new ReflectFilter({
+                reflectType: "rightToLeft",
+              }),
+              true
+            );
+            break;
+
+          case "bottomToTop":
+            setEnableBottomToTopReflect(true);
+            updateOrInsert(
+              filtersList,
+              "bottomToTop",
+              new ReflectFilter({
+                reflectType: "bottomToTop",
+              }),
+              true
+            );
+            break;
+
+          case "topToBottom":
+            setEnableTopToBottomReflect(true);
+            updateOrInsert(
+              filtersList,
+              "topToBottom",
+              new ReflectFilter({
+                reflectType: "topToBottom",
+              }),
+              true
+            );
+            break;
+
+          case "topRight":
+            setEnableTopRightReflect(true);
+            updateOrInsert(
+              filtersList,
+              "topRight",
+              new ReflectFilter({
+                reflectType: "topRight",
+              }),
+              true
+            );
+
+            break;
+
+          case "topLeft":
+            setEnableTopLeftReflect(true);
+            updateOrInsert(
+              filtersList,
+              "topLeft",
+              new ReflectFilter({
+                reflectType: "topLeft",
+              }),
+              true
+            );
+            break;
+
+          case "bottomRight":
+            setEnableBottomRightReflect(true);
+            updateOrInsert(
+              filtersList,
+              "bottomRight",
+              new ReflectFilter({
+                reflectType: "bottomRight",
+              }),
+              true
+            );
+
+            break;
+          case "bottomLeft":
+            setEnableBottomLeftReflect(true);
+            updateOrInsert(
+              filtersList,
+              "bottomLeft",
+              new ReflectFilter({
+                reflectType: "bottomLeft",
+              }),
+              true
+            );
+            break;
+
+          case "leftDiagonal":
+            setEnableLeftDiagonalReflect(true);
+            updateOrInsert(
+              filtersList,
+              "leftDiagonal",
+              new ReflectFilter({
+                reflectType: "leftDiagonal",
+              }),
+              true
+            );
+            break;
+
+          case "rightDiagonal":
+            setEnableRightDiagonalReflect(true);
+            updateOrInsert(
+              filtersList,
+              "rightDiagonal",
+              new ReflectFilter({
+                reflectType: "rightDiagonal",
+              }),
+              true
+            );
+            break;
+
+          case "medianFilter":
+            setEnableMedianFilter(true);
+            setMedianFilterMatrixSize(filterData.matrixSize);
+            updateOrInsert(
+              filtersList,
+              "medianFilter",
+              new MedianFilter({ matrixSize: filterData.matrixSize }),
+              true
+            );
+            break;
+
+          case "bilateralFilter":
+            setEnableBilateralFilter(true);
+            setBilateralSigmaS(filterData.sigmaS);
+            setBilateralSigmaC(filterData.sigmaC);
+            setBilateralKernelSize(filterData.kernelSize);
+
+            updateOrInsert(
+              filtersList,
+              "bilateralFilter",
+              new BilateralFilter({
+                sigmaS: filterData.sigmaS,
+                sigmaC: filterData.sigmaC,
+                kernelSize: filterData.kernelSize,
               }),
               true
             );
@@ -1789,7 +2202,7 @@ const Test = () => {
 
             <IconComponent
               icon={<ListPlus />}
-              iconName="Fun"
+              iconName="Morph"
               sidebarName={sidebarName}
               setSidebarName={setSidebarName}
             />
@@ -1886,10 +2299,10 @@ const Test = () => {
               </div>
             )}
 
-            {sidebarName === "Fun" && (
+            {sidebarName === "Morph" && (
               <div className="w-full h-full">
                 <div className="w-full abosulte py-3 text-center italic text-xl font-bold text-slate-800 dark:text-slate-300 top-0 left-0 hidden md:block">
-                  fun
+                  Morph
                 </div>
                 <div className="max-h-[580px] overflow-hidden  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <AdjustSidebarAdvanced

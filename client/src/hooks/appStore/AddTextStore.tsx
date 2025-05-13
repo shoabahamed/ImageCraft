@@ -14,6 +14,12 @@ interface AddTextStore {
   isBold: boolean;
   isUnderLine: boolean;
   charSpacing: number;
+  // Shadow properties
+  shadowEnabled: boolean;
+  shadowColor: string;
+  shadowBlur: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
   setTextValue: (value: string) => void;
   setTextColorValue: (value: string) => void;
   setTextFont: (value: string) => void;
@@ -26,6 +32,12 @@ interface AddTextStore {
   setBold: (value: boolean) => void;
   setUnderLine: (value: boolean) => void;
   setCharSpacing: (value: number) => void;
+  // Shadow setters
+  setShadowEnabled: (value: boolean) => void;
+  setShadowColor: (value: string) => void;
+  setShadowBlur: (value: number) => void;
+  setShadowOffsetX: (value: number) => void;
+  setShadowOffsetY: (value: number) => void;
 }
 
 const useAddTextStore = create<AddTextStore>((set) => ({
@@ -41,6 +53,12 @@ const useAddTextStore = create<AddTextStore>((set) => ({
   isBold: false,
   isUnderLine: false,
   charSpacing: 1,
+  // Shadow properties
+  shadowEnabled: false,
+  shadowColor: "rgba(0,0,0,0.3)",
+  shadowBlur: 10,
+  shadowOffsetX: 5,
+  shadowOffsetY: 5,
   setTextValue: (value) => set({ textValue: value }),
   setTextColorValue: (value) => set({ textColorValue: value }),
   setTextFont: (value) => set({ textFont: value }),
@@ -53,6 +71,12 @@ const useAddTextStore = create<AddTextStore>((set) => ({
   setBold: (value) => set({ isBold: value }),
   setUnderLine: (value) => set({ isUnderLine: value }),
   setCharSpacing: (value) => set({ charSpacing: value }),
+  // Shadow setters
+  setShadowEnabled: (value) => set({ shadowEnabled: value }),
+  setShadowColor: (value) => set({ shadowColor: value }),
+  setShadowBlur: (value) => set({ shadowBlur: value }),
+  setShadowOffsetX: (value) => set({ shadowOffsetX: value }),
+  setShadowOffsetY: (value) => set({ shadowOffsetY: value }),
 }));
 
 export default useAddTextStore;

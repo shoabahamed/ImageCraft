@@ -5,7 +5,7 @@ import * as fabric from "fabric";
 
 function isBase64(input) {
   // Regular expression to check if the input is a valid base64 string
-  const base64Pattern = /^([A-Za-z0-9+/=]|\r|\n)*$/;
+  // const base64Pattern = /^([A-Za-z0-9+/=]|\r|\n)*$/;
   
   // Check if the input starts with "data:" (base64) or "http://" or "https://" (URL)
   if (input.startsWith('data:')) {
@@ -77,7 +77,7 @@ function getRotatedBoundingBox(obj: fabric.Object) {
 const getCanvasDataUrl = (  canvas: fabric.Canvas,
   image: fabric.FabricImage, downloadFrame:boolean=false, changeAngle:boolean=false) => {
 
-
+    
     const currentAngle = image.angle
     if(changeAngle) {image.angle = 0}
     
@@ -115,7 +115,7 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
 
     console.log(bounds);
     // TODO: since scale has changed I also need to scale other objects too
-
+    // @ts-ignore
     dataURL = canvas.toDataURL({
       format: "png",
       left: bounds.left,
@@ -161,7 +161,8 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     filterName: string,
     instance: any,
     shouldApply: boolean
-  ) => {
+  ) => {                                     
+    //@ts-ignore
     const index = filtersList.findIndex((f) => f.filterName === filterName);
     if (shouldApply) {
       if (index !== -1) {

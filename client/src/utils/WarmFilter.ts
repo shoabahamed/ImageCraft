@@ -64,14 +64,38 @@ export class WarmFilter extends filters.BaseFilter<'WarmFilter', WarmFilterOwnPr
     return false
   }
 
-  applyTo2d({ imageData: { data, width, height } }: T2DPipelineState) {
-    const kernel = [
-      0, -1,  0,
-     -1,  4, -1,
-      0, -1,  0
-    ];
-   
-     
+  applyTo2d({ imageData: { data } }: T2DPipelineState) {
+    // Define the polynomial transformation function
+    const transform = (x: number, coeffs: number[]) => {
+      return (
+        coeffs[0] * Math.pow(x, 3) +
+        coeffs[1] * Math.pow(x, 2) +
+        coeffs[2] * x +
+        coeffs[3]
+      );
+    };
+  
+    // Coefficients matching the shader
+    const dec_coeffs = [0.000007, -0.000817, 0.724952, 0.000000];
+    const inc_coeffs = [-0.000012, 0.002894, 1.035397, -0.000000];
+  
+    for (let i = 0; i < data.length; i += 4) {
+      // Read RGB values (0–255)
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+  
+      // Apply the shader logic (inverse of cold filter)
+      const newR = transform(r, inc_coeffs);  // Increase red
+      const newB = transform(b, dec_coeffs);  // Decrease blue
+  
+      // Clamp results between 0–255
+      data[i] = Math.min(Math.max(newR, 0), 255);
+      data[i + 1] = g; // Green channel stays the same
+      data[i + 2] = Math.min(Math.max(newB, 0), 255);
+      data[i + 3] = a; // Alpha channel stays the same
+    }
   }
 
 

@@ -131,9 +131,10 @@ def signup():
 
         # create a specific directory for the user using user id
 
-        USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
-        create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
-        
+        if(os.getenv("DEPOLY_PRODUCTION").lower() == 'false'):
+            USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
+            create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
+            
  
      
         return jsonify({"success": True, "message": "User added successfully", "data": response}), 201

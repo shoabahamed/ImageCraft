@@ -91,8 +91,50 @@ type AdjustStore = {
   setSoftness: (value: number) => void;
   setDarkFocus: (value: boolean) => void;
 
-  enableLeftReflect: boolean;
-  setEnableLeftReflect: (value: boolean) => void;
+  enableLeftToRightReflect: boolean;
+  setEnableLeftToRightReflect: (value: boolean) => void;
+
+  enableRightToLeftReflect: boolean;
+  setEnableRightToLeftReflect: (value: boolean) => void;
+
+  enableTopToBottomReflect: boolean;
+  setEnableTopToBottomReflect: (value: boolean) => void;
+
+  enableBottomToTopReflect: boolean;
+  setEnableBottomToTopReflect: (value: boolean) => void;
+
+  enableTopLeftReflect: boolean;
+  setEnableTopLeftReflect: (value: boolean) => void;
+
+  enableTopRightReflect: boolean;
+  setEnableTopRightReflect: (value: boolean) => void;
+
+  enableBottomLeftReflect: boolean;
+  setEnableBottomLeftReflect: (value: boolean) => void;
+
+  enableBottomRightReflect: boolean;
+  setEnableBottomRightReflect: (value: boolean) => void;
+
+  enableLeftDiagonalReflect: boolean;
+  setEnableLeftDiagonalReflect: (value: boolean) => void;
+
+  enableRightDiagonalReflect: boolean;
+  setEnableRightDiagonalReflect: (value: boolean) => void;
+
+  enableMedianFilter: boolean;
+  setEnableMedianFilter: (value: boolean) => void;
+
+  medianFilterMatrixSize: number;
+  setMedianFilterMatrixSize: (value: number) => void;
+
+  enableBilateralFilter: boolean;
+  setEnableBilateralFilter: (value: boolean) => void;
+  bilateralSigmaS: number;
+  bilateralSigmaC: number;
+  bilateralKernelSize: number;
+  setBilateralSigmaS: (value: number) => void;
+  setBilateralSigmaC: (value: number) => void;
+  setBilateralKernelSize: (value: number) => void;
 
   resetFilters: () => void;
 };
@@ -160,6 +202,9 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   enableGreenThresholding: false,
   enableRedThresholding: false,
 
+  enableMedianFilter: false,
+  setEnableMedianFilter: (value) => set({ enableMedianFilter: value }),
+
   setRed: (value) =>
     set((state) => ({
       red: { ...state.red, ...value },
@@ -195,8 +240,49 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
 
   setDarkFocus: (value) => set({ darkFocus: value }),
 
-  enableLeftReflect: false,
-  setEnableLeftReflect: (value) => set({ enableLeftReflect: value }),
+  enableLeftToRightReflect: false,
+  enableRightToLeftReflect: false,
+  enableTopToBottomReflect: false,
+  enableBottomToTopReflect: false,
+  enableTopLeftReflect: false,
+  enableTopRightReflect: false,
+  enableBottomLeftReflect: false,
+  enableBottomRightReflect: false,
+
+  enableLeftDiagonalReflect: false,
+  enableRightDiagonalReflect: false,
+
+  setEnableLeftDiagonalReflect: (value) =>
+    set({ enableLeftDiagonalReflect: value }),
+  setEnableRightDiagonalReflect: (value) =>
+    set({ enableRightDiagonalReflect: value }),
+
+  setEnableLeftToRightReflect: (value) =>
+    set({ enableLeftToRightReflect: value }),
+  setEnableRightToLeftReflect: (value) =>
+    set({ enableRightToLeftReflect: value }),
+  setEnableTopToBottomReflect: (value) =>
+    set({ enableTopToBottomReflect: value }),
+  setEnableBottomToTopReflect: (value) =>
+    set({ enableBottomToTopReflect: value }),
+  setEnableTopLeftReflect: (value) => set({ enableTopLeftReflect: value }),
+  setEnableTopRightReflect: (value) => set({ enableTopRightReflect: value }),
+  setEnableBottomLeftReflect: (value) =>
+    set({ enableBottomLeftReflect: value }),
+  setEnableBottomRightReflect: (value) =>
+    set({ enableBottomRightReflect: value }),
+
+  enableBilateralFilter: false,
+  setEnableBilateralFilter: (value) => set({ enableBilateralFilter: value }),
+  bilateralSigmaS: 1.0,
+  bilateralSigmaC: 1.0,
+  bilateralKernelSize: 5,
+  setBilateralSigmaS: (value) => set({ bilateralSigmaS: value }),
+  setBilateralSigmaC: (value) => set({ bilateralSigmaC: value }),
+  setBilateralKernelSize: (value) => set({ bilateralKernelSize: value }),
+
+  medianFilterMatrixSize: 3,
+  setMedianFilterMatrixSize: (value) => set({ medianFilterMatrixSize: value }),
 
   resetFilters: () =>
     set({
@@ -233,5 +319,18 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       enableGaussianBlur: false,
 
       enableFocusFilter: false,
+
+      enableLeftToRightReflect: false,
+      enableRightToLeftReflect: false,
+      enableTopToBottomReflect: false,
+      enableBottomToTopReflect: false,
+      enableTopLeftReflect: false,
+      enableTopRightReflect: false,
+      enableBottomLeftReflect: false,
+      enableBottomRightReflect: false,
+      enableLeftDiagonalReflect: false,
+      enableRightDiagonalReflect: false,
+      enableMedianFilter: false,
+      enableBilateralFilter: false,
     }),
 }));

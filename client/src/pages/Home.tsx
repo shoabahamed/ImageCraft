@@ -43,18 +43,11 @@ const Home = () => {
               </button>
             </Link>
           ) : (
-            <button
-              className="px-8 py-3 bg-white hover:bg-gray-50 text-blue-600 font-medium rounded-lg shadow-lg hover:shadow-gray-400/30 transition-all duration-300 border border-blue-200 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-gray-700"
-              onClick={() =>
-                toast({
-                  description: "You need to log in first",
-                  className: "bg-blue-500 text-white",
-                  duration: 5000,
-                })
-              }
-            >
-              Gallery
-            </button>
+            <Link to="/gallery">
+              <button className="px-8 py-3 bg-white hover:bg-gray-50 text-blue-600 font-medium rounded-lg shadow-lg hover:shadow-gray-400/30 transition-all duration-300 border border-blue-200 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-gray-700">
+                Gallery
+              </button>
+            </Link>
           )}
         </div>
       </div>

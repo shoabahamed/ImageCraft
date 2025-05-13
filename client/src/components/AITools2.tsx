@@ -18,9 +18,6 @@ import { ToastAction } from "./ui/toast";
 import {
   base64ToFile,
   getCanvasDataUrl,
-  getRotatedBoundingBox,
-  isBase64,
-  urlToBase64,
   urlToFile,
 } from "@/utils/commonFunctions";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
@@ -64,7 +61,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const removeTempStylizeImage = () => {
     // @ts-ignore
     const tempImg: FabricImage = canvas
-      .getObjects()
+      .getObjects() //@ts-ignore
       .find((obj) => obj.name && obj.name === "style_temp_img");
     if (tempImg) canvas.remove(tempImg);
   };

@@ -9,7 +9,7 @@ export const subscribeToAdjustStore = (canvas: Canvas, image: FabricImage, curre
   return useAdjustStore.subscribe(
     (state) => {
       
-  const brightnessValue =  state.brightnessValue
+
   const contrastValue =  state.contrastValue
   const saturationValue =  state.saturationValue
   const vibranceValue =  state.vibranceValue
@@ -41,9 +41,10 @@ export const subscribeToAdjustStore = (canvas: Canvas, image: FabricImage, curre
 
       
 
-      let filtersList = [...(currentFiltersRef.current || [])];
+      const filtersList = [...(currentFiltersRef.current || [])];
       console.log("old", filtersList)
       const updateOrInsert = (filterName: string, instance: any, shouldApply: boolean) => {
+        //@ts-ignore
         const index = filtersList.findIndex((f) => f.filterName === filterName);
         if (shouldApply) {
           if (index !== -1) {
@@ -87,7 +88,7 @@ export const subscribeToAdjustStore = (canvas: Canvas, image: FabricImage, curre
    
       image.set("opacity", opacityValue);
     
-      console.log("new", filtersList)
+      console.log("new", filtersList)//@ts-ignore
       const filterInstances = filtersList.map(tempFilter => tempFilter.instance)
       image.filters = filterInstances;
       image.applyFilters();

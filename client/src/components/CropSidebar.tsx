@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 import { Canvas, FabricImage, Rect, Circle, Triangle, Ellipse } from "fabric";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
 
@@ -44,12 +44,12 @@ const CropSidebar = ({ canvas, image }: Props) => {
   const { addLog } = useLogContext();
   const { selectedObject, setSelectedObject, selectedRatio, setSelectedRatio } =
     useCanvasObjects();
-  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
+  // const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  // const [backgroundImage, setBackgroundImage] = useState<null | FabricImage>();
 
   useEffect(() => {
     const frameObject = canvas
-      .getObjects()
+      .getObjects() // @ts-ignore
       .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
 
     if (frameObject) {
@@ -59,7 +59,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
 
     return () => {
       const frameObject = canvas
-        .getObjects()
+        .getObjects() // @ts-ignore
         .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
 
       if (frameObject && image.clipPath) {
@@ -210,7 +210,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
     const shape = getShape(shapeType);
 
     const frameObject = canvas
-      .getObjects()
+      .getObjects() // @ts-ignore
       .find((obj) => obj.name?.toLowerCase().startsWith("frame"));
 
     if (frameObject) {
@@ -508,7 +508,7 @@ const CropSidebar = ({ canvas, image }: Props) => {
             </div>
 
             <button className="w-full custom-button" onClick={handleShapeClip}>
-              CUT
+              CROP
             </button>
           </CardContent>
         </Card>

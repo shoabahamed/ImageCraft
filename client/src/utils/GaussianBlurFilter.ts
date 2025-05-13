@@ -115,38 +115,91 @@ void main() {
     vec4 final = vec4(blurred, 1.0);
     gl_FragColor = final;
 }
+  `,
+  conv_11: `
+  precision highp float;
+uniform sampler2D uTexture;
+varying vec2 vTexCoord;
+uniform float uStepW;
+uniform float uStepH;
+uniform float uKernel[121];
+
+void main() {
+    vec2 stepSize = vec2(uStepW, uStepH);
+    vec4 sample;
+    vec2 offset;
+    vec3 blurred = vec3(0.0, 0.0, 0.0);
+
+    for(int y = -5; y <= 5; y++) {
+        for(int x = -5; x <= 5; x++) {
+            offset = vec2(float(x), float(y)) * stepSize;
+            sample = texture2D(uTexture, vTexCoord + offset);
+            
+            blurred += sample.rgb * uKernel[(y + 5) * 11 + (x + 5)];
+        }
+    }
+
+    vec4 final = vec4(blurred, 1.0);
+    gl_FragColor = final;
+}
+  `,
+  conv_13: `
+  precision highp float;
+uniform sampler2D uTexture;
+varying vec2 vTexCoord;
+uniform float uStepW;
+uniform float uStepH;
+uniform float uKernel[169];
+
+void main() {
+    vec2 stepSize = vec2(uStepW, uStepH);
+    vec4 sample;
+    vec2 offset;
+    vec3 blurred = vec3(0.0, 0.0, 0.0);
+
+    for(int y = -6; y <= 6; y++) {
+        for(int x = -6; x <= 6; x++) {
+            offset = vec2(float(x), float(y)) * stepSize;
+            sample = texture2D(uTexture, vTexCoord + offset);
+            
+            blurred += sample.rgb * uKernel[(y + 6) * 13 + (x + 6)];
+        }
+    }
+
+    vec4 final = vec4(blurred, 1.0);
+    gl_FragColor = final;
+}
+  `,
+  conv_15: `
+  precision highp float;
+uniform sampler2D uTexture;
+varying vec2 vTexCoord;
+uniform float uStepW;
+uniform float uStepH;
+uniform float uKernel[225];
+
+void main() {
+    vec2 stepSize = vec2(uStepW, uStepH);
+    vec4 sample;
+    vec2 offset;
+    vec3 blurred = vec3(0.0, 0.0, 0.0);
+
+    for(int y = -7; y <= 7; y++) {
+        for(int x = -7; x <= 7; x++) {
+            offset = vec2(float(x), float(y)) * stepSize;
+            sample = texture2D(uTexture, vTexCoord + offset);
+            
+            blurred += sample.rgb * uKernel[(y + 7) * 15 + (x + 7)];
+        }
+    }
+
+    vec4 final = vec4(blurred, 1.0);
+    gl_FragColor = final;
+}
   `
 }  
 
 
-// const fragmentSource = `
-// precision highp float;
-// uniform sampler2D uTexture;
-// varying vec2 vTexCoord;
-// uniform float uStepW;
-// uniform float uStepH;
-// uniform float uKernel[25];
-
-// void main() {
-//     vec2 stepSize = vec2(uStepW, uStepH);
-//     vec4 sample;
-//     vec2 offset;
-//     vec3 blurred = vec3(0.0, 0.0, 0.0);
-
-//     for(int y = -2; y <= 2; y++) {
-//         for(int x = -2; x <= 2; x++) {
-//             offset = vec2(float(x), float(y)) * stepSize;
-//             sample = texture2D(uTexture, vTexCoord + offset);
-            
-//             blurred += sample.rgb * uKernel[(y + 2) * 5 + (x + 2)];
-//         }
-//     }
-
-
-//     vec4 final = vec4(blurred, 1.0);
-//     gl_FragColor = final;
-// }
-// `;
 
 
 type GaussianBlurFilterOwnProps = {
@@ -159,7 +212,7 @@ type GaussianBlurFilterOwnProps = {
 
 type TWebGLUniformLocationMap = Record<string, WebGLUniformLocation | null>
 
-export class GaussianBlurFilter extends filters.BaseFilter<'SobelFilter', GaussianBlurFilterOwnProps >{
+export class GaussianBlurFilter extends filters.BaseFilter<'GaussianBlurilter', GaussianBlurFilterOwnProps >{
   static type = "GaussianFilter"
   static defaults = {sigma: 1.0, matrixSize: 5}
   static uniformLocations = ['uHalfSize', 'uSize', 'uKernel']
@@ -168,7 +221,6 @@ export class GaussianBlurFilter extends filters.BaseFilter<'SobelFilter', Gaussi
 
 
   getCacheKey() {
-    console.log(this.matrixSize)
     return `conv_${this.matrixSize}` as keyof typeof fragmentSource;
   }
 
@@ -181,8 +233,41 @@ export class GaussianBlurFilter extends filters.BaseFilter<'SobelFilter', Gaussi
   }
 
   applyTo2d({ imageData: { data, width, height } }: T2DPipelineState) {
-  
-   
+    const kernel = this.getGaussianKernel(this.sigma, this.matrixSize);
+    const k = Math.floor(this.matrixSize / 2);
+    const tempData = new Uint8ClampedArray(data.length);
+    
+    // Copy original data to temp array
+    tempData.set(data);
+
+    // Apply convolution
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0;
+        
+        // Apply kernel to each pixel
+        for (let ky = -k; ky <= k; ky++) {
+          for (let kx = -k; kx <= k; kx++) {
+            const posX = Math.min(Math.max(x + kx, 0), width - 1);
+            const posY = Math.min(Math.max(y + ky, 0), height - 1);
+            const idx = (posY * width + posX) * 4;
+            const kernelIdx = (ky + k) * this.matrixSize + (kx + k);
+            
+            r += tempData[idx] * kernel[kernelIdx];
+            g += tempData[idx + 1] * kernel[kernelIdx];
+            b += tempData[idx + 2] * kernel[kernelIdx];
+            a += tempData[idx + 3] * kernel[kernelIdx];
+          }
+        }
+
+        // Set the result
+        const outIdx = (y * width + x) * 4;
+        data[outIdx] = r;
+        data[outIdx + 1] = g;
+        data[outIdx + 2] = b;
+        data[outIdx + 3] = a;
+      }
+    }
   }
 
   getGaussianKernel(sigma: number, kernelSize: number = 5): number[] {

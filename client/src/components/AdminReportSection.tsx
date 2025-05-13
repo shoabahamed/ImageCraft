@@ -80,8 +80,8 @@ const AdminReportSection = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [pendingReports, setPendingReports] = useState<Report[] | []>([]);
-  const [resolvedReports, setResolvedReports] = useState<Report[] | []>([]);
+  const [pendingReports, setPendingReports] = useState<Report[]>([]);
+  const [resolvedReports, setResolvedReports] = useState<Report[]>([]);
   const [messageContent, setMessageContent] = useState("");
   const [messageTitle, setMessageTitle] = useState("");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);

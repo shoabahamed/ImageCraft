@@ -101,54 +101,37 @@ export class FocusFilter extends filters.BaseFilter<'FocusFilter', FocusFilterOw
   }
 
   applyTo2d({ imageData: { data, width, height } }: T2DPipelineState) {
-    const kernelX = [
-      -1, 0, 1,
-      -2, 0, 2,
-      -1, 0, 1
-    ];
-    const kernelY = [
-      -1, -2, -1,
-       0,  0,  0,
-       1,  2,  1
-    ];
-    const kernelSize = 3;
-    const halfKernel = Math.floor(kernelSize / 2);
-  
-    // Create a copy of the original data to avoid overwriting during convolution
-    const originalData = new Uint8ClampedArray(data);
-  
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+    const radius = this.radius * maxDist;
+    const softness = this.softness * maxDist;
+
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        let gx = 0;
-        let gy = 0;
-  
-        // Apply the Sobel kernels
-        for (let ky = -halfKernel; ky <= halfKernel; ky++) {
-          for (let kx = -halfKernel; kx <= halfKernel; kx++) {
-            const pixelX = Math.min(width - 1, Math.max(0, x + kx));
-            const pixelY = Math.min(height - 1, Math.max(0, y + ky));
-            const pixelIndex = (pixelY * width + pixelX) * 4;
-            const kernelIndex = (ky + halfKernel) * kernelSize + (kx + halfKernel);
-  
-            const kernelValueX = kernelX[kernelIndex];
-            const kernelValueY = kernelY[kernelIndex];
-  
-            // Since the image is already grayscale, use the red channel only
-            const grayValue = originalData[pixelIndex]; // Red channel
-            gx += grayValue * kernelValueX;
-            gy += grayValue * kernelValueY;
-          }
-        }
-  
-        // Compute the gradient magnitude
         const index = (y * width + x) * 4;
-        const magnitude = Math.min(255, Math.sqrt(gx * gx + gy * gy));
-        data[index] = magnitude;     // R
-        data[index + 1] = magnitude; // G
-        data[index + 2] = magnitude; // B
+        const dist = Math.sqrt(
+          Math.pow(x - centerX, 2) + 
+          Math.pow(y - centerY, 2)
+        );
+
+        // Calculate vignette effect
+        const vignette = this.smoothstep(radius, radius + softness, dist);
+        const factor = this.dark ? (1.0 - vignette) : (1.0 + vignette);
+
+        // Apply the vignette effect to each color channel
+        data[index] = Math.min(255, Math.max(0, data[index] * factor));     // R
+        data[index + 1] = Math.min(255, Math.max(0, data[index + 1] * factor)); // G
+        data[index + 2] = Math.min(255, Math.max(0, data[index + 2] * factor)); // B
         // Alpha channel remains unchanged
       }
     }
+  }
+
+  // Helper function to match GLSL smoothstep behavior
+  private smoothstep(edge0: number, edge1: number, x: number): number {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
   }
 
   sendUniformData(gl: WebGLRenderingContext, uniformLocations: TWebGLUniformLocationMap) {

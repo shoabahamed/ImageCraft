@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { Canvas, Rect, Circle, Triangle, Line } from "fabric";
 import {
@@ -27,61 +27,30 @@ type Props = {
 };
 
 const AddShape = ({ canvasRef }: Props) => {
-  const { selectedObject, setSelectedObject, disableSavingIntoStackRef } =
-    useCanvasObjects();
+  const { selectedObject, disableSavingIntoStackRef } = useCanvasObjects();
   const { addLog } = useLogContext();
 
-  const {
-    // Rectangle properties
-    rectWidth,
-    rectHeight,
-    rectFill,
-    rectStroke,
-    rectStrokeWidth,
-    rectOpacity,
-    setRectWidth,
-    setRectHeight,
-    setRectFill,
-    setRectStroke,
-    setRectStrokeWidth,
-    setRectOpacity,
+  const shapeType = useShapeStore((state) => state.shapeType);
+  const setShapeType = useShapeStore((state) => state.setShapeType);
 
-    // Circle properties
-    circleRadius,
-    circleFill,
-    circleStroke,
-    circleStrokeWidth,
-    circleOpacity,
-    setCircleRadius,
-    setCircleFill,
-    setCircleStroke,
-    setCircleStrokeWidth,
-    setCircleOpacity,
+  const rectFill = useShapeStore((state) => state.rectFill);
+  const circleFill = useShapeStore((state) => state.circleFill);
+  const triangleFill = useShapeStore((state) => state.triangleFill);
+  const lineStroke = useShapeStore((state) => state.lineStroke);
 
-    // Triangle properties
-    triangleWidth,
-    triangleHeight,
-    triangleFill,
-    triangleStroke,
-    triangleStrokeWidth,
-    triangleOpacity,
-    setTriangleWidth,
-    setTriangleHeight,
-    setTriangleFill,
-    setTriangleStroke,
-    setTriangleStrokeWidth,
-    setTriangleOpacity,
+  const circleStroke = useShapeStore((state) => state.circleStroke);
+  const circleStrokeWidth = useShapeStore((state) => state.circleStrokeWidth);
 
-    // Line properties
-    lineStroke,
-    lineStrokeWidth,
-    lineOpacity,
-    setLineStroke,
-    setLineStrokeWidth,
-    setLineOpacity,
-  } = useShapeStore();
+  const rectStroke = useShapeStore((state) => state.rectStroke);
+  const rectStrokeWidth = useShapeStore((state) => state.rectStrokeWidth);
 
-  const [shapeType, setShapeType] = useState("");
+  const triangleStroke = useShapeStore((state) => state.triangleStroke);
+  const triangleStrokeWidth = useShapeStore(
+    (state) => state.triangleStrokeWidth
+  );
+
+  const lineStrokeWidth = useShapeStore((state) => state.lineStrokeWidth);
+
   const lineRef = useRef<Line | null>(null);
   const circleRef = useRef<Circle | null>(null);
   const rectRef = useRef<Rect | null>(null);
@@ -111,6 +80,8 @@ const AddShape = ({ canvasRef }: Props) => {
       height: 1,
       fill: rectFill,
       selectable: false,
+      stroke: rectStroke,
+      strokeWidth: rectStrokeWidth,
     });
     disableSavingIntoStackRef.current = true;
     rectRef.current = rect;
@@ -192,7 +163,7 @@ const AddShape = ({ canvasRef }: Props) => {
     const pointer = canvasRef.current.getScenePoint(o.e);
 
     const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-      strokeWidth: 3,
+      strokeWidth: lineStrokeWidth,
       stroke: lineStroke,
       selectable: false,
     });
@@ -279,6 +250,8 @@ const AddShape = ({ canvasRef }: Props) => {
       originX: "center",
       originY: "center",
       selectable: false,
+      stroke: circleStroke,
+      strokeWidth: circleStrokeWidth,
     });
 
     disableSavingIntoStackRef.current = true;
@@ -367,6 +340,8 @@ const AddShape = ({ canvasRef }: Props) => {
       height: 1,
       fill: triangleFill,
       selectable: false,
+      stroke: triangleStroke,
+      strokeWidth: triangleStrokeWidth,
     });
 
     disableSavingIntoStackRef.current = true;

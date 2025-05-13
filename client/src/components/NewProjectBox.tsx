@@ -1,5 +1,5 @@
 import { useDropzone } from "react-dropzone";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -19,6 +19,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+interface ProjectJson {
+  project_data: any;
+  project_logs: any;
+  project_name: string;
+  final_image_shape: { imageWidth: number; imageHeight: number };
+  original_image_shape: { imageWidth: number; imageHeight: number };
+  download_image_shape: { imageWidth: number; imageHeight: number };
+  imageUrl: string;
+  filter_names: string[];
+  all_filters_applied: any;
+}
+
 const NewProjectBox = (props: {
   extraStyles?: string;
   useButton?: boolean;
@@ -33,7 +45,7 @@ const NewProjectBox = (props: {
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("local");
 
-  const [jsonFile, setJsonFile] = useState<null | object>(null);
+  const [jsonFile, setJsonFile] = useState<ProjectJson | null>(null);
 
   // Create a new dropzone for JSON files
   const onDropJson = useCallback((acceptedFiles) => {
@@ -44,6 +56,7 @@ const NewProjectBox = (props: {
     reader.onerror = () => console.log("file reading has failed");
     reader.onload = () => {
       try {
+        //@ts-ignore
         const jsonData = JSON.parse(reader.result);
         setJsonFile(jsonData);
       } catch (error) {

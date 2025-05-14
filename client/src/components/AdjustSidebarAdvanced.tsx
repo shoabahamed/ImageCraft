@@ -10,7 +10,7 @@ import { Canvas, FabricImage } from "fabric";
 import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 
-import { getRotatedBoundingBox } from "@/utils/commonFunctions";
+import { getRotatedBoundingBox, updateOrInsert } from "@/utils/commonFunctions";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
 import {
@@ -32,6 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { ReflectFilter } from "@/utils/ReflectFilter";
+import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
+import { MedianFilter } from "@/utils/MedianFilter";
+import { BilateralFilter } from "@/utils/BilteralFilter";
+import { Slider } from "./ui/slider";
 
 type AdjustSidebarProps = {
   canvas: Canvas;
@@ -51,6 +56,8 @@ const AdjustSidebarAdvanced = ({
   const { addLog } = useLogContext(); // Use log context
   const { disableSavingIntoStackRef, allFiltersRef } = useCanvasObjects();
   const currentFilters = useCommonProps((state) => state.currentFilters);
+  const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
+  const { currentFiltersRef } = useCanvasObjects();
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
@@ -181,16 +188,160 @@ const AdjustSidebarAdvanced = ({
     (state) => state.setMedianFilterMatrixSize
   );
 
-  const handleGaussianMatrixSizeChange = (size) => {
-    const newSize = parseInt(size);
-    setGaussianMatrixSize(newSize);
-  };
+  const handleReflectFilter = (filterName: string, value: boolean) => {
+    addLog({
+      section: "adjust",
+      tab: "filter",
+      event: "update",
+      message: `${filterName} filter ${value ? "enabled" : "disabled"}`,
+    });
 
-  const handleBilateralKernelSizeChange = (size) => {
-    const newSize = parseInt(size);
-    setBilateralKernelSize(newSize);
-  };
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
 
+    switch (filterName) {
+      case "leftToRight":
+        setEnableLeftToRightReflect(value);
+        updateOrInsert(
+          filtersList,
+          "leftToRight",
+          new ReflectFilter({
+            reflectType: "leftToRight",
+          }),
+          value
+        );
+        break;
+
+      case "rightToLeft":
+        setEnableRightToLeftReflect(value);
+        updateOrInsert(
+          filtersList,
+          "rightToLeft",
+          new ReflectFilter({
+            reflectType: "rightToLeft",
+          }),
+          value
+        );
+        break;
+
+      case "bottomToTop":
+        setEnableBottomToTopReflect(value);
+        updateOrInsert(
+          filtersList,
+          "bottomToTop",
+          new ReflectFilter({
+            reflectType: "bottomToTop",
+          }),
+          value
+        );
+        break;
+
+      case "topToBottom":
+        setEnableTopToBottomReflect(value);
+        updateOrInsert(
+          filtersList,
+          "topToBottom",
+          new ReflectFilter({
+            reflectType: "topToBottom",
+          }),
+          value
+        );
+        break;
+
+      case "topRight":
+        setEnableTopRightReflect(value);
+        updateOrInsert(
+          filtersList,
+          "topRight",
+          new ReflectFilter({
+            reflectType: "topRight",
+          }),
+          value
+        );
+
+        break;
+
+      case "topLeft":
+        setEnableTopLeftReflect(value);
+        updateOrInsert(
+          filtersList,
+          "topLeft",
+          new ReflectFilter({
+            reflectType: "topLeft",
+          }),
+          value
+        );
+        break;
+
+      case "bottomRight":
+        setEnableBottomRightReflect(value);
+        updateOrInsert(
+          filtersList,
+          "bottomRight",
+          new ReflectFilter({
+            reflectType: "bottomRight",
+          }),
+          value
+        );
+
+        break;
+      case "bottomLeft":
+        setEnableBottomLeftReflect(value);
+        updateOrInsert(
+          filtersList,
+          "bottomLeft",
+          new ReflectFilter({
+            reflectType: "bottomLeft",
+          }),
+          value
+        );
+        break;
+
+      case "leftDiagonal":
+        setEnableLeftDiagonalReflect(value);
+        updateOrInsert(
+          filtersList,
+          "leftDiagonal",
+          new ReflectFilter({
+            reflectType: "leftDiagonal",
+          }),
+          value
+        );
+        break;
+
+      case "rightDiagonal":
+        setEnableRightDiagonalReflect(value);
+        updateOrInsert(
+          filtersList,
+          "rightDiagonal",
+          new ReflectFilter({
+            reflectType: "rightDiagonal",
+          }),
+          value
+        );
+        break;
+
+      default:
+        break;
+    }
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
   const handleReflectFilterReset = () => {
     addLog({
       section: "adjust",
@@ -209,6 +360,470 @@ const AdjustSidebarAdvanced = ({
     setEnableBottomRightReflect(false);
     setEnableLeftDiagonalReflect(false);
     setEnableRightDiagonalReflect(false);
+
+    const filtersList = [...(currentFilters || [])];
+
+    updateOrInsert(
+      filtersList,
+      "leftToRight",
+      new ReflectFilter({ reflectType: "leftToRight" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "rightToLeft",
+      new ReflectFilter({ reflectType: "rightToLeft" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "topToBottom",
+      new ReflectFilter({ reflectType: "topToBottom" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "bottomToTop",
+      new ReflectFilter({ reflectType: "bottomToTop" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "topLeft",
+      new ReflectFilter({ reflectType: "topLeft" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "topRight",
+      new ReflectFilter({ reflectType: "topRight" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "bottomLeft",
+      new ReflectFilter({ reflectType: "bottomLeft" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "bottomRight",
+      new ReflectFilter({ reflectType: "bottomRight" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "leftDiagonal",
+      new ReflectFilter({ reflectType: "leftDiagonal" }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "rightDiagonal",
+      new ReflectFilter({ reflectType: "rightDiagonal" }),
+      false
+    );
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+    imageRef.current.applyFilters();
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleGaussianBlurFilterToggle = (value: boolean) => {
+    const filterName = "Gaussian Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: value
+        ? `enabled ${filterName} filter`
+        : `disabled ${filterName} scale filter`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "gaussianBlur",
+      new GaussianBlurFilter({
+        sigma: gaussianSigma,
+        matrixSize: gaussianMatrixSize,
+      }),
+      value
+    );
+
+    setEnableGaussianBlur(value);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleGaussianBlurSigmaChange = (newSigma: number) => {
+    const filterName = "Gaussian Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter sigma changed from ${gaussianSigma} to ${newSigma}`,
+    });
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "gaussianBlur",
+      new GaussianBlurFilter({
+        sigma: newSigma,
+        matrixSize: gaussianMatrixSize,
+      }),
+      enableGaussianBlur
+    );
+
+    setGaussianSigma(newSigma);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+  };
+  const handleGaussianMatrixSizeChange = (size) => {
+    const newSize = parseInt(size);
+
+    const filterName = "Gaussian Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter matrix size changed from ${gaussianMatrixSize} to ${newSize}`,
+    });
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "gaussianBlur",
+      new GaussianBlurFilter({
+        sigma: gaussianSigma,
+        matrixSize: newSize,
+      }),
+      enableGaussianBlur
+    );
+
+    setGaussianMatrixSize(newSize);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    setGaussianMatrixSize(newSize);
+
+    canvas.fire("object:modified");
+  };
+
+  const handleMedianFilterToggle = (value: boolean) => {
+    const filterName = "Median Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: value
+        ? `enabled ${filterName} filter`
+        : `disabled ${filterName} filter`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "medianFilter",
+      new MedianFilter({
+        matrixSize: medianFilterMatrixSize,
+      }),
+      value
+    );
+
+    setEnableMedianFilter(value);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleMedianFilterMatrixSizeChange = (size) => {
+    const newSize = parseInt(size);
+
+    const filterName = "Median Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter matrix size changed from ${medianFilterMatrixSize} to ${newSize}`,
+    });
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "medianBlur",
+      new MedianFilter({
+        matrixSize: newSize,
+      }),
+      enableMedianFilter
+    );
+
+    setMedianFilterMatrixSize(newSize);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleBilateralFilterToggle = (value: boolean) => {
+    const filterName = "Bilateral Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: value
+        ? `enabled ${filterName} filter`
+        : `disabled ${filterName} filter`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "bilateralFilter",
+      new BilateralFilter({
+        sigmaS: bilateralSigmaS,
+        sigmaC: bilateralSigmaC,
+      }),
+      value
+    );
+
+    setEnableBilateralFilter(value);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleBilateralFilterKernelSizeChange = (size) => {
+    const newSize = parseInt(size);
+
+    const filterName = "Bilateral Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter kernel size changed from ${bilateralKernelSize} to ${newSize}`,
+    });
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "bilateralFilter",
+      new BilateralFilter({
+        sigmaS: bilateralSigmaS,
+        sigmaC: bilateralSigmaC,
+        kernelSize: newSize,
+      }),
+      enableBilateralFilter
+    );
+
+    setBilateralKernelSize(newSize);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleBilateralFilterSigmaSChange = (size) => {
+    const newSize = parseInt(size);
+
+    const filterName = "Bilateral Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter sigmaS changed from ${bilateralSigmaS} to ${newSize}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "bilateralFilter",
+      new BilateralFilter({
+        sigmaS: newSize,
+        sigmaC: bilateralSigmaC,
+        kernelSize: bilateralKernelSize,
+      }),
+      enableBilateralFilter
+    );
+
+    setBilateralSigmaS(newSize);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+  };
+
+  const handleBilateralFilterSigmaCChange = (size) => {
+    const newSize = parseInt(size);
+
+    const filterName = "Bilateral Blur";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter sigmaC changed from ${bilateralSigmaC} to ${newSize}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "bilateralBlur",
+      new BilateralFilter({
+        sigmaS: bilateralSigmaS,
+        sigmaC: newSize,
+        kernelSize: bilateralKernelSize,
+      }),
+      enableBilateralFilter
+    );
+
+    setBilateralSigmaC(newSize);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
   };
 
   const handleApplyFilter = () => {
@@ -327,7 +942,7 @@ const AdjustSidebarAdvanced = ({
           </TabsList>
         </div>
 
-        {/* Preset Filters Tab */}
+        {/* Reflect Filters Tab */}
         <TabsContent
           value="reflect"
           className="flex-1 flex flex-col justify-center items-center"
@@ -343,7 +958,10 @@ const AdjustSidebarAdvanced = ({
                 <div className="grid grid-cols-3 gap-4">
                   <div
                     onClick={() =>
-                      setEnableLeftToRightReflect(!enableLeftToRightReflect)
+                      handleReflectFilter(
+                        "leftToRight",
+                        !enableLeftToRightReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableLeftToRightReflect
@@ -372,7 +990,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableRightToLeftReflect(!enableRightToLeftReflect)
+                      handleReflectFilter(
+                        "rightToLeft",
+                        !enableRightToLeftReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableRightToLeftReflect
@@ -401,7 +1022,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableTopToBottomReflect(!enableTopToBottomReflect)
+                      handleReflectFilter(
+                        "topToBottom",
+                        !enableTopToBottomReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableTopToBottomReflect
@@ -430,7 +1054,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableBottomToTopReflect(!enableBottomToTopReflect)
+                      handleReflectFilter(
+                        "bottomToTop",
+                        !enableBottomToTopReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableBottomToTopReflect
@@ -459,7 +1086,7 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableTopLeftReflect(!enableTopLeftReflect)
+                      handleReflectFilter("topLeft", !enableTopLeftReflect)
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableTopLeftReflect
@@ -488,7 +1115,7 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableTopRightReflect(!enableTopRightReflect)
+                      handleReflectFilter("topRight", !enableTopRightReflect)
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableTopRightReflect
@@ -517,7 +1144,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableBottomLeftReflect(!enableBottomLeftReflect)
+                      handleReflectFilter(
+                        "bottomLeft",
+                        !enableBottomLeftReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableBottomLeftReflect
@@ -546,7 +1176,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableBottomRightReflect(!enableBottomRightReflect)
+                      handleReflectFilter(
+                        "bottomRight",
+                        !enableBottomRightReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableBottomRightReflect
@@ -575,7 +1208,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableLeftDiagonalReflect(!enableLeftDiagonalReflect)
+                      handleReflectFilter(
+                        "leftDiagonal",
+                        !enableLeftDiagonalReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableLeftDiagonalReflect
@@ -611,7 +1247,10 @@ const AdjustSidebarAdvanced = ({
 
                   <div
                     onClick={() =>
-                      setEnableRightDiagonalReflect(!enableRightDiagonalReflect)
+                      handleReflectFilter(
+                        "rightDiagonal",
+                        !enableRightDiagonalReflect
+                      )
                     }
                     className={`flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer ${
                       enableRightDiagonalReflect
@@ -678,17 +1317,7 @@ const AdjustSidebarAdvanced = ({
                     <Switch
                       checked={enableGaussianBlur}
                       onCheckedChange={() => {
-                        const filterName = "Gaussian Blur";
-                        addLog({
-                          section: "adjust",
-                          tab: "threshold",
-                          event: "update",
-                          message: !enableGaussianBlur
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-
-                        setEnableGaussianBlur(!enableGaussianBlur);
+                        handleGaussianBlurFilterToggle(!enableGaussianBlur);
                       }}
                     />
                   </div>
@@ -718,18 +1347,25 @@ const AdjustSidebarAdvanced = ({
                       </Select>
                     </div>
 
-                    <CustomSlider
-                      sliderName="Sigma"
-                      min={0}
-                      max={10}
-                      step={0.01}
-                      sliderValue={gaussianSigma}
-                      defaultValue={gaussianSigma}
-                      setSliderValue={setGaussianSigma}
-                      section="adjust"
-                      tab="gaussian_blur"
-                      disabled={!enableGaussianBlur}
-                    />
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-center text-slate-400 text-sm">
+                        <p>Sigma</p>
+                        <p>{gaussianSigma}</p>
+                      </div>
+
+                      <Slider
+                        value={[gaussianSigma]}
+                        min={0}
+                        max={10}
+                        step={0.01}
+                        onValueChange={(e) => {
+                          handleGaussianBlurSigmaChange(e[0]);
+                        }}
+                        onValueCommit={() => {
+                          canvas.fire("object:modified");
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -742,17 +1378,7 @@ const AdjustSidebarAdvanced = ({
                     <Switch
                       checked={enableBilateralFilter}
                       onCheckedChange={() => {
-                        const filterName = "Bilateral Blur";
-                        addLog({
-                          section: "adjust",
-                          tab: "blur",
-                          event: "update",
-                          message: !enableBilateralFilter
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-
-                        setEnableBilateralFilter(!enableBilateralFilter);
+                        handleBilateralFilterToggle(!enableBilateralFilter);
                       }}
                     />
                   </div>
@@ -764,7 +1390,7 @@ const AdjustSidebarAdvanced = ({
                       </label>
                       <Select
                         value={bilateralKernelSize.toString()}
-                        onValueChange={handleBilateralKernelSizeChange}
+                        onValueChange={handleBilateralFilterKernelSizeChange}
                         disabled={!enableBilateralFilter}
                       >
                         <SelectTrigger className="w-24">
@@ -781,30 +1407,45 @@ const AdjustSidebarAdvanced = ({
                       </Select>
                     </div>
 
-                    <CustomSlider
-                      sliderName="Spatial Sigma"
-                      min={1}
-                      max={100}
-                      step={1}
-                      sliderValue={bilateralSigmaS}
-                      defaultValue={bilateralSigmaS}
-                      setSliderValue={setBilateralSigmaS}
-                      section="adjust"
-                      tab="blur"
-                      disabled={!enableBilateralFilter}
-                    />
-                    <CustomSlider
-                      sliderName="Color Sigma"
-                      min={1}
-                      max={100}
-                      step={1}
-                      sliderValue={bilateralSigmaC}
-                      defaultValue={bilateralSigmaC}
-                      setSliderValue={setBilateralSigmaC}
-                      section="adjust"
-                      tab="blur"
-                      disabled={!enableBilateralFilter}
-                    />
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-center text-slate-400 text-sm">
+                        <p>Spatial Sigma</p>
+                        <p>{bilateralSigmaS}</p>
+                      </div>
+
+                      <Slider
+                        value={[bilateralSigmaS]}
+                        min={1}
+                        max={100}
+                        step={1}
+                        onValueChange={(e) => {
+                          handleBilateralFilterSigmaSChange(e[0]);
+                        }}
+                        onValueCommit={() => {
+                          canvas.fire("object:modified");
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-center text-slate-400 text-sm">
+                        <p>Color Sigma</p>
+                        <p>{bilateralSigmaC}</p>
+                      </div>
+
+                      <Slider
+                        value={[bilateralSigmaC]}
+                        min={1}
+                        max={100}
+                        step={1}
+                        onValueChange={(e) => {
+                          handleBilateralFilterSigmaCChange(e[0]);
+                        }}
+                        onValueCommit={() => {
+                          canvas.fire("object:modified");
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -817,17 +1458,7 @@ const AdjustSidebarAdvanced = ({
                     <Switch
                       checked={enableMedianFilter}
                       onCheckedChange={() => {
-                        const filterName = "Median Filter";
-                        addLog({
-                          section: "adjust",
-                          tab: "blur",
-                          event: "update",
-                          message: !enableMedianFilter
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-
-                        setEnableMedianFilter(!enableMedianFilter);
+                        handleMedianFilterToggle(!enableMedianFilter);
                       }}
                     />
                   </div>
@@ -839,9 +1470,7 @@ const AdjustSidebarAdvanced = ({
                       </label>
                       <Select
                         value={medianFilterMatrixSize.toString()}
-                        onValueChange={(size) =>
-                          setMedianFilterMatrixSize(parseInt(size))
-                        }
+                        onValueChange={handleMedianFilterMatrixSizeChange}
                         disabled={!enableMedianFilter}
                       >
                         <SelectTrigger className="w-24">

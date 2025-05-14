@@ -5,19 +5,26 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 
-import CustomSlider from "@/components/custom-slider";
-import { Canvas, FabricImage } from "fabric";
+import { Canvas, FabricImage, filters } from "fabric";
 import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
+import { SharpenFilter } from "@/utils/SharpenFilter";
 
-import { getRotatedBoundingBox } from "@/utils/commonFunctions";
+import { getRotatedBoundingBox, updateOrInsert } from "@/utils/commonFunctions";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
 import { Sparkles, Wand2, Moon, Palette, Sun } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
-
+import { ColdFilter } from "@/utils/ColdFilter";
+import { SobelFilter } from "@/utils/SobelFilter";
+import { WarmFilter } from "@/utils/WarmFilter";
+import { FocusFilter } from "@/utils/FocusFilter";
+import { Slider } from "./ui/slider";
+import { RBrightness } from "@/utils/RedBrightnessFilter";
+import { GBrightness } from "@/utils/GreenBrightnessValue";
+import { BBrightness } from "@/utils/BlueBrightnessFilter";
 type AdjustSidebarProps = {
   canvas: Canvas;
   image: FabricImage;
@@ -36,6 +43,10 @@ const AdjustSidebar = ({
   const { addLog } = useLogContext(); // Use log context
   const { disableSavingIntoStackRef, allFiltersRef } = useCanvasObjects();
   const currentFilters = useCommonProps((state) => state.currentFilters);
+  const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
+  const { currentFiltersRef } = useCanvasObjects();
+
+  // states from adjust store
 
   const redBrightnessValue = useAdjustStore(
     (state) => state.redBrightnessValue
@@ -115,9 +126,6 @@ const AdjustSidebar = ({
   );
 
   // Set functions for each value
-  const setBrightnessValue = useAdjustStore(
-    (state) => state.setBrightnessValue
-  );
   const setContrastValue = useAdjustStore((state) => state.setContrastValue);
   const setSaturationValue = useAdjustStore(
     (state) => state.setSaturationValue
@@ -135,6 +143,517 @@ const AdjustSidebar = ({
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
+  // const red = useAdjustStore((state) => state.red);
+  // const setRed = useAdjustStore((state) => state.setRed);
+
+  // const green = useAdjustStore((state) => state.green);
+  // const setGreen = useAdjustStore((state) => state.setGreen);
+
+  // const blue = useAdjustStore((state) => state.blue);
+  // const setBlue = useAdjustStore((state) => state.setBlue);
+
+  // const enableBlueThresholding = useAdjustStore(
+  //   (state) => state.enableBlueThresholding
+  // );
+
+  // const enableGreenThresholding = useAdjustStore(
+  //   (state) => state.enableGreenThresholding
+  // );
+
+  // const enableRedThresholding = useAdjustStore(
+  //   (state) => state.enableRedThresholding
+  // );
+  // const setEnableRedThresholding = useAdjustStore(
+  //   (state) => state.setEnableRedThresholding
+  // );
+
+  // const setEnableGreenThresholding = useAdjustStore(
+  //   (state) => state.setEnableGreenThresholding
+  // );
+
+  // const setEnableBlueThresholding = useAdjustStore(
+  //   (state) => state.setEnableBlueThresholding
+  // );
+
+  const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
+  const radius = useAdjustStore((state) => state.radius);
+  const softness = useAdjustStore((state) => state.softness);
+
+  const darkFocus = useAdjustStore((state) => state.darkFocus);
+
+  const setEnableFocusFilter = useAdjustStore(
+    (state) => state.setEnableFocusFilter
+  );
+
+  const setRadius = useAdjustStore((state) => state.setRadius);
+  const setSoftness = useAdjustStore((state) => state.setSoftness);
+
+  const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
+
+  const handlePredefinedFilter = (filterName: string, value: boolean) => {
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: value
+        ? `enabled ${filterName} filter`
+        : `disabled ${filterName} scale filter`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+    switch (filterName) {
+      case "grayscale":
+        updateOrInsert(
+          filtersList,
+          "grayscale",
+          new filters.Grayscale(),
+          value
+        );
+        setEnableGrayScale(value);
+        break;
+      case "sepia":
+        updateOrInsert(filtersList, "sepia", new filters.Sepia(), value);
+        setEnableSepia(value);
+        break;
+
+      case "kodachrome":
+        updateOrInsert(
+          filtersList,
+          "kodachrome",
+          new filters.Kodachrome(),
+          value
+        );
+        setEnableKodachrome(value);
+        break;
+
+      case "technicolor":
+        updateOrInsert(
+          filtersList,
+          "technicolor",
+          new filters.Technicolor(),
+          value
+        );
+        setEnableTechnicolor(value);
+        break;
+
+      case "invert":
+        updateOrInsert(filtersList, "invert", new filters.Invert(), value);
+        setEnableInvert(value);
+        break;
+
+      case "sobeledge":
+        updateOrInsert(filtersList, "sobeledge", new SobelFilter(), value);
+        setEnableEdgeDetection(value);
+        break;
+
+      case "cold":
+        updateOrInsert(filtersList, "cold", new ColdFilter(), value);
+        setEnableColdFilter(value);
+        break;
+
+      case "warm":
+        updateOrInsert(filtersList, "warm", new WarmFilter(), value);
+        setEnableWarmFilter(value);
+        break;
+      default:
+        break;
+    }
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleFocusFilterToggle = (value: boolean) => {
+    const filterName = "focus";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: value
+        ? `enabled ${filterName} filter`
+        : `disabled ${filterName} scale filter`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "focusFilter",
+      new FocusFilter({
+        radius: radius,
+        softness: softness,
+        dark: darkFocus,
+      }),
+      value
+    );
+
+    setEnableFocusFilter(value);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleFocusRadiusChange = (newRadius: number) => {
+    const filterName = "focus";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter radius changed from ${radius} to ${newRadius}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "focusFilter",
+      new FocusFilter({
+        radius: newRadius,
+        softness: softness,
+        dark: darkFocus,
+      }),
+      enableFocusFilter
+    );
+
+    setRadius(newRadius);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+  };
+
+  const handleFocusSoftnessChange = (newSoftness: number) => {
+    const filterName = "focus";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter softness changed from ${softness} to ${newSoftness}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "focusFilter",
+      new FocusFilter({
+        radius: radius,
+        softness: newSoftness,
+        dark: darkFocus,
+      }),
+      enableFocusFilter
+    );
+
+    setSoftness(newSoftness);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+  };
+
+  const handleFocusReverseToggle = (newDarkFocus: boolean) => {
+    const filterName = "focus";
+    addLog({
+      section: "adjust",
+      tab: "filters",
+      event: "update",
+      message: `${filterName} filter dark focus changed from ${darkFocus} to ${newDarkFocus}`,
+    });
+
+    setDarkFocus(newDarkFocus);
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    updateOrInsert(
+      filtersList,
+      "focusFilter",
+      new FocusFilter({
+        radius: radius,
+        softness: softness,
+        dark: newDarkFocus,
+      }),
+      enableFocusFilter
+    );
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  const handleColorFilters = (filterName: string, value: number) => {
+    addLog({
+      section: "adjust",
+      tab: "color",
+      event: "update",
+      message: `${filterName} filter value changed from ${value} to ${value}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    switch (filterName) {
+      case "brightnessRed":
+        console.log("brightnessRed", value);
+        updateOrInsert(
+          filtersList,
+          "rbrightness",
+          new RBrightness({ RBrightness: value }),
+          value !== 0
+        );
+        setRedBrightnessValue(value);
+        break;
+      case "brightnessGreen":
+        updateOrInsert(
+          filtersList,
+          "gbrightness",
+          new GBrightness({ GBrightness: value }),
+          value !== 0
+        );
+        setGreenBrightnessValue(value);
+        break;
+
+      case "brightnessBlue":
+        updateOrInsert(
+          filtersList,
+          "bbrightness",
+          new BBrightness({ BBrightness: value }),
+          value !== 0
+        );
+        setBlueBrightnessValue(value);
+        break;
+
+      case "gammaRed":
+        updateOrInsert(
+          filtersList,
+          "gamma",
+          new filters.Gamma({ gamma: [value, gammaGreen, gammaBlue] }),
+          value !== 1
+        );
+        setGammaRedValue(value);
+        break;
+
+      case "gammaGreen":
+        updateOrInsert(
+          filtersList,
+          "gamma",
+          new filters.Gamma({ gamma: [gammaRed, value, gammaBlue] }),
+          value !== 1
+        );
+        setGammaGreenValue(value);
+        break;
+
+      case "gammaBlue":
+        updateOrInsert(
+          filtersList,
+          "gamma",
+          new filters.Gamma({ gamma: [gammaRed, gammaGreen, value] }),
+          value !== 1
+        );
+        setGammaBlueValue(value);
+        break;
+
+      case "contrast":
+        updateOrInsert(
+          filtersList,
+          "contrast",
+          new filters.Contrast({ contrast: value }),
+          value !== 0
+        );
+        setContrastValue(value);
+        break;
+
+      case "saturation":
+        updateOrInsert(
+          filtersList,
+          "saturation",
+          new filters.Saturation({ saturation: value }),
+          value !== 0
+        );
+        setSaturationValue(value);
+        break;
+
+      case "vibrance":
+        updateOrInsert(
+          filtersList,
+          "vibrance",
+          new filters.Vibrance({ vibrance: value }),
+          value !== 0
+        );
+        setVibranceValue(value);
+        break;
+
+      case "hueRotation":
+        updateOrInsert(
+          filtersList,
+          "hueRotation",
+          new filters.HueRotation({ rotation: value }),
+          value !== 0
+        );
+        setHueValue(value);
+        break;
+      default:
+        break;
+    }
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+  };
+
+  const handleDetailsFilters = (filterName: string, value: number) => {
+    addLog({
+      section: "adjust",
+      tab: "detail",
+      event: "update",
+      message: `${filterName} filter value changed from ${value} to ${value}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+    console.log("old filters", filtersList);
+
+    switch (filterName) {
+      case "opacity":
+        imageRef.current.set("opacity", value);
+        setOpacityValue(value);
+        break;
+
+      case "blur":
+        updateOrInsert(
+          filtersList,
+          "blur",
+          new filters.Blur({ blur: value }),
+          value !== 0
+        );
+        setBlurValue(value);
+        break;
+
+      case "noise":
+        updateOrInsert(
+          filtersList,
+          "noise",
+          new filters.Noise({ noise: value }),
+          value !== 0
+        );
+        setNoiseValue(value);
+        break;
+
+      case "pixelate":
+        updateOrInsert(
+          filtersList,
+          "pixelate",
+          new filters.Pixelate({ blocksize: value }),
+          value !== 0
+        );
+        setPixelateValue(value);
+        break;
+
+      case "sharpen":
+        updateOrInsert(
+          filtersList,
+          "sharpen",
+          new SharpenFilter({ SharpenValue: value }),
+          value !== 0.5
+        );
+        setSharpenValue(value);
+        break;
+
+      default:
+        break;
+    }
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+  };
+
   const handleColorReset = () => {
     addLog({
       section: "adjust",
@@ -143,7 +662,6 @@ const AdjustSidebar = ({
       message: `reseted all image color related properties `,
     });
 
-    setBrightnessValue(0);
     setRedBrightnessValue(0);
     setBlueBrightnessValue(0);
     setGreenBrightnessValue(0);
@@ -154,6 +672,74 @@ const AdjustSidebar = ({
     setContrastValue(0);
     setSaturationValue(0);
     setHueValue(0);
+
+    const filtersList = [...(currentFilters || [])];
+
+    updateOrInsert(
+      filtersList,
+      "rbrightness",
+      new RBrightness({ RBrightness: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "gbrightness",
+      new GBrightness({ GBrightness: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "bbrightness",
+      new BBrightness({ BBrightness: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "gamma",
+      new filters.Gamma({ gamma: [1, 1, 1] }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "contrast",
+      new filters.Contrast({ contrast: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "saturation",
+      new filters.Saturation({ saturation: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "hueRotation",
+      new filters.HueRotation({ rotation: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "vibrance",
+      new filters.Vibrance({ vibrance: 0 }),
+      false
+    );
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
   };
 
   const handleDetailReset = () => {
@@ -168,12 +754,50 @@ const AdjustSidebar = ({
     setPixelateValue(0);
     setNoiseValue(0);
     setBlurValue(0);
-    setEnableBlueThresholding(false);
-    setEnableRedThresholding(false);
-    setEnableGreenThresholding(false);
+    setSharpenValue(0.5);
+
+    const filtersList = [...(currentFilters || [])];
+    updateOrInsert(filtersList, "blur", new filters.Blur({ blur: 0 }), false);
+    updateOrInsert(
+      filtersList,
+      "noise",
+      new filters.Noise({ noise: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "pixelate",
+      new filters.Pixelate({ blocksize: 0 }),
+      false
+    );
+    updateOrInsert(
+      filtersList,
+      "sharpen",
+      new SharpenFilter({ SharpenValue: 0.5 }),
+      false
+    );
+
+    imageRef.current.set("opacity", 1);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
   };
 
-  const handleFilterReset = () => {
+  const handlePredefinedFilterReset = () => {
     addLog({
       section: "adjust",
       tab: "filter",
@@ -191,17 +815,45 @@ const AdjustSidebar = ({
     setEnableEdgeDetection(false);
     setEnableColdFilter(false);
     setEnableWarmFilter(false);
-  };
 
-  // const handleFullReset = () => {
-  //   addLog({
-  //     section: "adjust",
-  //     tab: "filter",
-  //     event: "deletion",
-  //     message: `removed all filters`,
-  //   });
-  //   resetFilters();
-  // };
+    const filtersList = [...(currentFilters || [])];
+
+    updateOrInsert(filtersList, "grayscale", new filters.Grayscale(), false);
+    updateOrInsert(filtersList, "sepia", new filters.Sepia(), false);
+    updateOrInsert(filtersList, "kodachrome", new filters.Kodachrome(), false);
+
+    updateOrInsert(
+      filtersList,
+      "technicolor",
+      new filters.Technicolor(),
+      false
+    );
+
+    updateOrInsert(filtersList, "invert", new filters.Invert(), false);
+
+    updateOrInsert(filtersList, "sobeledge", new SobelFilter(), false);
+
+    updateOrInsert(filtersList, "cold", new ColdFilter(), false);
+
+    updateOrInsert(filtersList, "warm", new WarmFilter(), false);
+
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
 
   const handleApplyFilter = () => {
     addLog({
@@ -306,53 +958,6 @@ const AdjustSidebar = ({
     });
   };
 
-  // const red = useAdjustStore((state) => state.red);
-  // const setRed = useAdjustStore((state) => state.setRed);
-
-  // const green = useAdjustStore((state) => state.green);
-  // const setGreen = useAdjustStore((state) => state.setGreen);
-
-  // const blue = useAdjustStore((state) => state.blue);
-  // const setBlue = useAdjustStore((state) => state.setBlue);
-
-  // const enableBlueThresholding = useAdjustStore(
-  //   (state) => state.enableBlueThresholding
-  // );
-
-  // const enableGreenThresholding = useAdjustStore(
-  //   (state) => state.enableGreenThresholding
-  // );
-
-  // const enableRedThresholding = useAdjustStore(
-  //   (state) => state.enableRedThresholding
-  // );
-  const setEnableRedThresholding = useAdjustStore(
-    (state) => state.setEnableRedThresholding
-  );
-
-  const setEnableGreenThresholding = useAdjustStore(
-    (state) => state.setEnableGreenThresholding
-  );
-
-  const setEnableBlueThresholding = useAdjustStore(
-    (state) => state.setEnableBlueThresholding
-  );
-
-  const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
-  const radius = useAdjustStore((state) => state.radius);
-  const softness = useAdjustStore((state) => state.softness);
-
-  const darkFocus = useAdjustStore((state) => state.darkFocus);
-
-  const setEnableFocusFilter = useAdjustStore(
-    (state) => state.setEnableFocusFilter
-  );
-
-  const setRadius = useAdjustStore((state) => state.setRadius);
-  const setSoftness = useAdjustStore((state) => state.setSoftness);
-
-  const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
-
   return (
     <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <Tabs
@@ -383,16 +988,7 @@ const AdjustSidebar = ({
                 <div className="grid grid-cols-3 md:grid-cols-2 gap-4">
                   <div
                     onClick={() => {
-                      const filterName = "gray scale";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableGrayScale
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableGrayScale(!enableGrayScale);
+                      handlePredefinedFilter("grayscale", !enableGrayScale);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -426,16 +1022,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "sepia";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableSepia
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableSepia(!enableSepia);
+                      handlePredefinedFilter("sepia", !enableSepia);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -469,16 +1056,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "kodachrome";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableKodachrome
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableKodachrome(!enableKodachrome);
+                      handlePredefinedFilter("kodachrome", !enableKodachrome);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -512,16 +1090,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "Technicolor";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableTechnicolor
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableTechnicolor(!enableTechnicolor);
+                      handlePredefinedFilter("technicolor", !enableTechnicolor);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -555,16 +1124,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "Invert";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableInvert
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableInvert(!enableInvert);
+                      handlePredefinedFilter("invert", !enableInvert);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -598,16 +1158,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "Sobel Edge Detection";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableEdgeDetection
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableEdgeDetection(!enableEdgeDetection);
+                      handlePredefinedFilter("sobeledge", !enableEdgeDetection);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -641,16 +1192,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "Cold";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableColdFilter
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableColdFilter(!enableColdFilter);
+                      handlePredefinedFilter("cold", !enableColdFilter);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -684,16 +1226,7 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      const filterName = "Warm";
-                      addLog({
-                        section: "adjust",
-                        tab: "filters",
-                        event: "update",
-                        message: !enableWarmFilter
-                          ? `enabled ${filterName} filter`
-                          : `disabled ${filterName} scale filter`,
-                      });
-                      setEnableWarmFilter(!enableWarmFilter);
+                      handlePredefinedFilter("warm", !enableWarmFilter);
                     }}
                     className={`
                     flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
@@ -728,7 +1261,7 @@ const AdjustSidebar = ({
 
                 <button
                   className="custom-button w-full"
-                  onClick={handleFilterReset}
+                  onClick={handlePredefinedFilterReset}
                 >
                   Reset
                 </button>
@@ -748,17 +1281,7 @@ const AdjustSidebar = ({
                       <Switch
                         checked={enableFocusFilter}
                         onCheckedChange={() => {
-                          const filterName = "Focus Filter";
-                          addLog({
-                            section: "adjust",
-                            tab: "threshold",
-                            event: "update",
-                            message: !enableFocusFilter
-                              ? `enabled ${filterName} filter`
-                              : `disabled ${filterName} filter`,
-                          });
-
-                          setEnableFocusFilter(!enableFocusFilter);
+                          handleFocusFilterToggle(!enableFocusFilter);
                         }}
                       />
                     </div>
@@ -769,33 +1292,43 @@ const AdjustSidebar = ({
                 <div className="flex flex-col justify-between items-center mb-3">
                   <div className="w-full flex  justify-between items-center space-x-2">
                     <div className="w-full flex flex-col gap-4 pt-2">
-                      <CustomSlider
-                        sliderName="radius"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        sliderValue={radius}
-                        defaultValue={radius}
-                        setSliderValue={setRadius}
-                        section="adjust"
-                        tab="focus"
-                        disabled={!enableFocusFilter}
-                      />
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-slate-400 text-sm">
+                          <p>Radius</p>
+                          <p>{radius}</p>
+                        </div>
+
+                        <Slider
+                          value={[radius]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={(e) => {
+                            handleFocusRadiusChange(e[0]);
+                          }}
+                          disabled={!enableFocusFilter}
+                        />
+                      </div>
                     </div>
 
                     <div className="w-full flex flex-col gap-4 pt-2">
-                      <CustomSlider
-                        sliderName="softness"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        sliderValue={softness}
-                        defaultValue={softness}
-                        setSliderValue={setSoftness}
-                        section="adjust"
-                        tab="softness"
-                        disabled={!enableFocusFilter}
-                      />
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-slate-400 text-sm">
+                          <p>Softness</p>
+                          <p>{softness}</p>
+                        </div>
+
+                        <Slider
+                          value={[softness]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={(e) => {
+                            handleFocusSoftnessChange(e[0]);
+                          }}
+                          disabled={!enableFocusFilter}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -807,18 +1340,9 @@ const AdjustSidebar = ({
                     <Switch
                       checked={darkFocus}
                       onCheckedChange={() => {
-                        const filterName = "Focus Reverse";
-                        addLog({
-                          section: "adjust",
-                          tab: "threshold",
-                          event: "update",
-                          message: !darkFocus
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-
-                        setDarkFocus(!darkFocus);
+                        handleFocusReverseToggle(!darkFocus);
                       }}
+                      disabled={!enableFocusFilter}
                     />
                   </div>
                 </div>
@@ -842,121 +1366,204 @@ const AdjustSidebar = ({
               <CardContent>
                 <div className="flex flex-col gap-4 w-full">
                   {/* test filters start */}
-                  <CustomSlider
-                    sliderName={"Brightness Red"}
-                    min={-1}
-                    max={1}
-                    sliderValue={redBrightnessValue}
-                    defaultValue={redBrightnessValue}
-                    step={0.01}
-                    setSliderValue={setRedBrightnessValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
 
-                  <CustomSlider
-                    sliderName={"Brightness Blue"}
-                    min={-1}
-                    max={1}
-                    sliderValue={blueBrightnessValue}
-                    defaultValue={blueBrightnessValue}
-                    step={0.01}
-                    setSliderValue={setBlueBrightnessValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
-                  <CustomSlider
-                    sliderName={"Brightness Green"}
-                    min={-1}
-                    max={1}
-                    sliderValue={greenBrightnessValue}
-                    defaultValue={greenBrightnessValue}
-                    step={0.01}
-                    setSliderValue={setGreenBrightnessValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Brightness Red</p>
+                      <p>{redBrightnessValue}</p>
+                    </div>
 
-                  <CustomSlider
-                    sliderName={"Gamma Red"}
-                    min={0.01}
-                    max={2.2}
-                    sliderValue={gammaRed}
-                    defaultValue={gammaRed}
-                    step={0.01}
-                    setSliderValue={setGammaRedValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
+                    <Slider
+                      value={[redBrightnessValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("brightnessRed", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
 
-                  <CustomSlider
-                    sliderName={"Gamma Blue"}
-                    min={0.01}
-                    max={2.2}
-                    sliderValue={gammaBlue}
-                    defaultValue={gammaBlue}
-                    step={0.01}
-                    setSliderValue={setGammaBlueValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Brightness Green</p>
+                      <p>{greenBrightnessValue}</p>
+                    </div>
 
-                  <CustomSlider
-                    sliderName={"Gamma Green"}
-                    min={0.01}
-                    max={2.2}
-                    sliderValue={gammaGreen}
-                    defaultValue={gammaGreen}
-                    step={0.01}
-                    setSliderValue={setGammaGreenValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
+                    <Slider
+                      value={[greenBrightnessValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("brightnessGreen", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
 
-                  <CustomSlider
-                    sliderName={"Contrast"}
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    sliderValue={contrastValue}
-                    defaultValue={contrastValue}
-                    setSliderValue={setContrastValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
-                  <CustomSlider
-                    sliderName={"Saturation"}
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    sliderValue={saturationValue}
-                    defaultValue={saturationValue}
-                    setSliderValue={setSaturationValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
-                  <CustomSlider
-                    sliderName={"Vibrance"}
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    sliderValue={vibranceValue}
-                    defaultValue={vibranceValue}
-                    setSliderValue={setVibranceValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
-                  <CustomSlider
-                    sliderName={"Hue"}
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    sliderValue={hueValue}
-                    defaultValue={hueValue}
-                    setSliderValue={setHueValue}
-                    section={"adjust"}
-                    tab={"color"}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Brightness Blue </p>
+                      <p>{blueBrightnessValue}</p>
+                    </div>
+
+                    <Slider
+                      value={[blueBrightnessValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("brightnessBlue", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Gamma Red</p>
+                      <p>{gammaRed}</p>
+                    </div>
+
+                    <Slider
+                      value={[gammaRed]}
+                      min={0.01}
+                      max={2.2}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("gammaRed", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Gamma Green</p>
+                      <p>{gammaGreen}</p>
+                    </div>
+
+                    <Slider
+                      value={[gammaGreen]}
+                      min={0.01}
+                      max={2.2}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("gammaGreen", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Gamma Blue</p>
+                      <p>{gammaBlue}</p>
+                    </div>
+
+                    <Slider
+                      value={[gammaBlue]}
+                      min={0.01}
+                      max={2.2}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("gammaBlue", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Contrast</p>
+                      <p>{contrastValue}</p>
+                    </div>
+
+                    <Slider
+                      value={[contrastValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("contrast", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Saturation</p>
+                      <p>{saturationValue}</p>
+                    </div>
+
+                    <Slider
+                      value={[saturationValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("saturation", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Vibrance</p>
+                      <p>{vibranceValue}</p>
+                    </div>
+
+                    <Slider
+                      value={[vibranceValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("vibrance", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Hue</p>
+                      <p>{hueValue}</p>
+                    </div>
+
+                    <Slider
+                      value={[hueValue]}
+                      min={-1}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleColorFilters("hueRotation", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
                   <button className="custom-button" onClick={handleColorReset}>
                     Reset
                   </button>
@@ -970,281 +1577,111 @@ const AdjustSidebar = ({
 
         <TabsContent
           value="details"
-          className="w-full flex flex-col justify-center items-center space-y-2"
+          className="w-full flex flex-col justify-center items-center"
         >
-          {/* <div className="w-[90%]">
-            <Card className="w-full">
-              <CardHeader>
-                <CardDescription className="">
-                  <div className="flex flex-row justify-between items-center">
-                    <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                      RGB Channel Threshold
-                    </span>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-8">
-                <div className="flex flex-col gap-6">
-                  <div className="flex flex-row justify-evenly items-center">
-                    <Switch
-                      checked={enableRedThresholding}
-                      onCheckedChange={() => {
-                        const filterName = "red threshold";
-                        addLog({
-                          section: "adjust",
-                          tab: "threshold",
-                          event: "update",
-                          message: !enableRedThresholding
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-                        setEnableRedThresholding(!enableRedThresholding);
-                      }}
-                    />
-                    <Switch
-                      checked={enableGreenThresholding}
-                      onCheckedChange={() => {
-                        const filterName = "green threshold";
-                        addLog({
-                          section: "adjust",
-                          tab: "threshold",
-                          event: "update",
-                          message: !enableRedThresholding
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-                        setEnableGreenThresholding(!enableGreenThresholding);
-                      }}
-                    />
-                    <Switch
-                      checked={enableBlueThresholding}
-                      onCheckedChange={() => {
-                        const filterName = "blue threshold";
-                        addLog({
-                          section: "adjust",
-                          tab: "threshold",
-                          event: "update",
-                          message: !enableRedThresholding
-                            ? `enabled ${filterName} filter`
-                            : `disabled ${filterName} filter`,
-                        });
-
-                        setEnableBlueThresholding(!enableBlueThresholding);
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4 border-t pt-4">
-                    <CustomSlider
-                      sliderName="Red"
-                      min={0}
-                      max={255}
-                      step={1}
-                      sliderValue={red.threshold}
-                      defaultValue={128}
-                      setSliderValue={(val: number) =>
-                        setRed({ ...red, threshold: val })
-                      }
-                      section="adjust"
-                      tab="threshold"
-                      disabled={!enableRedThresholding}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <CustomSlider
-                        sliderName="Red Lower"
-                        min={0}
-                        max={255}
-                        step={1}
-                        sliderValue={red.below}
-                        defaultValue={0}
-                        setSliderValue={(val: number) =>
-                          setRed({ ...red, below: val })
-                        }
-                        section="adjust"
-                        tab="threshold"
-                        disabled={!enableRedThresholding}
-                      />
-                      <CustomSlider
-                        sliderName="Red Upper"
-                        min={0}
-                        max={255}
-                        step={1}
-                        sliderValue={red.above}
-                        defaultValue={255}
-                        setSliderValue={(val: number) =>
-                          setRed({ ...red, above: val })
-                        }
-                        section="adjust"
-                        tab="threshold"
-                        disabled={!enableRedThresholding}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-4 border-t pt-4">
-                    <CustomSlider
-                      sliderName="Green"
-                      min={0}
-                      max={255}
-                      step={1}
-                      sliderValue={green.threshold}
-                      defaultValue={128}
-                      setSliderValue={(val: number) =>
-                        setGreen({ ...green, threshold: val })
-                      }
-                      section="adjust"
-                      tab="threshold"
-                      disabled={!enableGreenThresholding}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <CustomSlider
-                        sliderName="Green Lower"
-                        min={0}
-                        max={255}
-                        step={1}
-                        sliderValue={green.below}
-                        defaultValue={0}
-                        setSliderValue={(val: number) =>
-                          setGreen({ ...green, below: val })
-                        }
-                        section="adjust"
-                        tab="threshold"
-                        disabled={!enableGreenThresholding}
-                      />
-                      <CustomSlider
-                        sliderName="Green Upper"
-                        min={0}
-                        max={255}
-                        step={1}
-                        sliderValue={green.above}
-                        defaultValue={255}
-                        setSliderValue={(val: number) =>
-                          setGreen({ ...green, above: val })
-                        }
-                        section="adjust"
-                        tab="threshold"
-                        disabled={!enableGreenThresholding}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-4 border-t pt-4">
-                    <CustomSlider
-                      sliderName="Blue"
-                      min={0}
-                      max={255}
-                      step={1}
-                      sliderValue={blue.threshold}
-                      defaultValue={128}
-                      setSliderValue={(val: number) =>
-                        setBlue({ ...red, threshold: val })
-                      }
-                      section="adjust"
-                      tab="threshold"
-                      disabled={!enableBlueThresholding}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <CustomSlider
-                        sliderName="Blue Lower"
-                        min={0}
-                        max={255}
-                        step={1}
-                        sliderValue={blue.below}
-                        defaultValue={0}
-                        setSliderValue={(val: number) =>
-                          setBlue({ ...blue, below: val })
-                        }
-                        section="adjust"
-                        tab="threshold"
-                        disabled={!enableBlueThresholding}
-                      />
-                      <CustomSlider
-                        sliderName="Blue Upper"
-                        min={0}
-                        max={255}
-                        step={1}
-                        sliderValue={blue.above}
-                        defaultValue={255}
-                        setSliderValue={(val: number) =>
-                          setBlue({ ...blue, above: val })
-                        }
-                        section="adjust"
-                        tab="threshold"
-                        disabled={!enableBlueThresholding}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div> */}
-
           <div className="w-[90%]">
             <Card className="w-full">
               <CardHeader>
                 <CardDescription className="text-center">
-                  Color Adjustments
+                  Detail Adjustments
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-4 w-full">
-                  <CustomSlider
-                    sliderName={"Opacity"}
-                    min={0}
-                    max={1}
-                    sliderValue={opacityValue}
-                    defaultValue={1}
-                    setSliderValue={setOpacityValue}
-                    step={0.01}
-                    section={"adjust"}
-                    tab={"detail"}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Opacity</p>
+                      <p>{opacityValue}</p>
+                    </div>
+                    <Slider
+                      value={[opacityValue]}
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleDetailsFilters("opacity", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
 
-                  <CustomSlider
-                    sliderName={"Blur"}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    sliderValue={blurValue}
-                    defaultValue={blurValue + 1}
-                    setSliderValue={setBlurValue}
-                    section={"adjust"}
-                    tab={"detail"}
-                  />
-                  <CustomSlider
-                    sliderName={"Noise"}
-                    min={0}
-                    max={100}
-                    step={2}
-                    sliderValue={noiseValue}
-                    defaultValue={noiseValue}
-                    setSliderValue={setNoiseValue}
-                    section={"adjust"}
-                    tab={"detail"}
-                  />
-                  <CustomSlider
-                    sliderName={"Pixelate"}
-                    min={0}
-                    max={50}
-                    step={1}
-                    sliderValue={pixelateValue}
-                    defaultValue={pixelateValue}
-                    setSliderValue={setPixelateValue}
-                    section={"adjust"}
-                    tab={"detail"}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Blur</p>
+                      <p>{blurValue}</p>
+                    </div>
+                    <Slider
+                      value={[blurValue]}
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleDetailsFilters("blur", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
 
-                  <CustomSlider
-                    sliderName={"Sharpen"}
-                    min={0}
-                    max={2}
-                    step={0.01}
-                    sliderValue={sharpenValue}
-                    defaultValue={sharpenValue}
-                    setSliderValue={setSharpenValue}
-                    section={"adjust"}
-                    tab={"detail"}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Noise</p>
+                      <p>{noiseValue}</p>
+                    </div>
+                    <Slider
+                      value={[noiseValue]}
+                      min={0}
+                      max={100}
+                      step={2}
+                      onValueChange={(e) => {
+                        handleDetailsFilters("noise", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Pixelate</p>
+                      <p>{pixelateValue}</p>
+                    </div>
+                    <Slider
+                      value={[pixelateValue]}
+                      min={0}
+                      max={50}
+                      step={1}
+                      onValueChange={(e) => {
+                        handleDetailsFilters("pixelate", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center text-slate-400 text-sm">
+                      <p>Sharpen</p>
+                      <p>{sharpenValue}</p>
+                    </div>
+                    <Slider
+                      value={[sharpenValue]}
+                      min={0}
+                      max={2}
+                      step={0.01}
+                      onValueChange={(e) => {
+                        handleDetailsFilters("sharpen", e[0]);
+                      }}
+                      onValueCommit={() => {
+                        canvas.fire("object:modified");
+                      }}
+                    />
+                  </div>
 
                   <button className="custom-button" onClick={handleDetailReset}>
                     Reset

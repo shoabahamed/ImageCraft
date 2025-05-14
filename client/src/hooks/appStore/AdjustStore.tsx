@@ -313,12 +313,21 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       enableColdFilter: false,
       enableWarmFilter: false,
 
+      red: { threshold: 128, below: 0, above: 255 },
+      green: { threshold: 128, below: 0, above: 255 },
+      blue: { threshold: 128, below: 0, above: 255 },
       enableBlueThresholding: false,
       enableRedThresholding: false,
       enableGreenThresholding: false,
+
       enableGaussianBlur: false,
+      gaussianSigma: 1.0,
+      gaussianMatrixSize: 5,
 
       enableFocusFilter: false,
+      radius: 0.5,
+      softness: 0.5,
+      darkFocus: true,
 
       enableLeftToRightReflect: false,
       enableRightToLeftReflect: false,
@@ -330,7 +339,13 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       enableBottomRightReflect: false,
       enableLeftDiagonalReflect: false,
       enableRightDiagonalReflect: false,
+
       enableMedianFilter: false,
+      medianFilterMatrixSize: 3,
+
       enableBilateralFilter: false,
+      bilateralSigmaS: 1.0,
+      bilateralSigmaC: 1.0,
+      bilateralKernelSize: 5,
     }),
 }));

@@ -233,7 +233,6 @@ export class ReflectFilter extends filters.BaseFilter<'ReflectFilter', ReflectFi
 
 
   getCacheKey() {
-    console.log(this.reflectType)
     return `${this.reflectType}` as keyof typeof fragmentSource;
   }
 

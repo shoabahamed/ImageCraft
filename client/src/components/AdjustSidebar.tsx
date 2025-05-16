@@ -25,6 +25,7 @@ import { Slider } from "./ui/slider";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
 import { GBrightness } from "@/utils/GreenBrightnessValue";
 import { BBrightness } from "@/utils/BlueBrightnessFilter";
+import { CustomGrayScale } from "@/utils/CustomGrayScale";
 type AdjustSidebarProps = {
   canvas: Canvas;
   image: FabricImage;
@@ -204,12 +205,7 @@ const AdjustSidebar = ({
     console.log("old filters", filtersList);
     switch (filterName) {
       case "grayscale":
-        updateOrInsert(
-          filtersList,
-          "grayscale",
-          new filters.Grayscale(),
-          value
-        );
+        updateOrInsert(filtersList, "grayscale", new CustomGrayScale(), value);
         setEnableGrayScale(value);
         break;
       case "sepia":

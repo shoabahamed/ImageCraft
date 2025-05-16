@@ -5,8 +5,7 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 
-import CustomSlider from "@/components/custom-slider";
-import { Canvas, FabricImage } from "fabric";
+import { Canvas, FabricImage, filters } from "fabric";
 import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 
@@ -37,6 +36,23 @@ import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
 import { MedianFilter } from "@/utils/MedianFilter";
 import { BilateralFilter } from "@/utils/BilteralFilter";
 import { Slider } from "./ui/slider";
+import { useState } from "react";
+import { SobelFilter } from "@/utils/SobelFilter";
+import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
+import { VerticalEdgeFilter } from "@/utils/VerticalFilter";
+import { NonMaximumSupression } from "@/utils/NonMaximumSupression";
+import { CannySobelEdge } from "@/utils/CannySobelEdge";
+import { DoubleThresholding } from "@/utils/DoubleThresholding";
+import { Hysteris } from "@/utils/Hysteris";
+
+interface FilterEntry {
+  filterName: string;
+  instance: filters.BaseFilter<
+    string,
+    Record<string, unknown>,
+    Record<string, unknown>
+  >;
+}
 
 type AdjustSidebarProps = {
   canvas: Canvas;
@@ -53,11 +69,15 @@ const AdjustSidebarAdvanced = ({
   imageRef,
   setLoadState,
 }: AdjustSidebarProps) => {
-  const { addLog } = useLogContext(); // Use log context
+  const { addLog } = useLogContext();
   const { disableSavingIntoStackRef, allFiltersRef } = useCanvasObjects();
-  const currentFilters = useCommonProps((state) => state.currentFilters);
+  const currentFilters = useCommonProps(
+    (state) => state.currentFilters as FilterEntry[] | null
+  );
   const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
-  const { currentFiltersRef } = useCanvasObjects();
+  const { currentFiltersRef } = useCanvasObjects() as {
+    currentFiltersRef: React.MutableRefObject<FilterEntry[] | null>;
+  };
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
@@ -187,6 +207,11 @@ const AdjustSidebarAdvanced = ({
   const setMedianFilterMatrixSize = useAdjustStore(
     (state) => state.setMedianFilterMatrixSize
   );
+
+  // States for Edge Detection Tab
+  const [selectedEdgeType, setSelectedEdgeType] = useState<string>("none");
+  const [cannyLowerThreshold, setCannyLowerThreshold] = useState<number>(25);
+  const [cannyUpperThreshold, setCannyUpperThreshold] = useState<number>(50);
 
   const handleReflectFilter = (filterName: string, value: boolean) => {
     addLog({
@@ -326,7 +351,6 @@ const AdjustSidebarAdvanced = ({
     }
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -425,7 +449,6 @@ const AdjustSidebarAdvanced = ({
     );
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -467,7 +490,6 @@ const AdjustSidebarAdvanced = ({
     setEnableGaussianBlur(value);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -508,7 +530,6 @@ const AdjustSidebarAdvanced = ({
     setGaussianSigma(newSigma);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -548,7 +569,6 @@ const AdjustSidebarAdvanced = ({
     setGaussianMatrixSize(newSize);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -593,7 +613,6 @@ const AdjustSidebarAdvanced = ({
     setEnableMedianFilter(value);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
 
@@ -625,7 +644,7 @@ const AdjustSidebarAdvanced = ({
 
     updateOrInsert(
       filtersList,
-      "medianBlur",
+      "medianFilter",
       new MedianFilter({
         matrixSize: newSize,
       }),
@@ -635,7 +654,6 @@ const AdjustSidebarAdvanced = ({
     setMedianFilterMatrixSize(newSize);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -679,7 +697,6 @@ const AdjustSidebarAdvanced = ({
     setEnableBilateralFilter(value);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
 
@@ -723,7 +740,6 @@ const AdjustSidebarAdvanced = ({
     setBilateralKernelSize(newSize);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -768,7 +784,6 @@ const AdjustSidebarAdvanced = ({
     setBilateralSigmaS(newSize);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -811,7 +826,6 @@ const AdjustSidebarAdvanced = ({
     setBilateralSigmaC(newSize);
 
     const filterInstances = filtersList.map(
-      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     console.log("new filters", filterInstances);
@@ -837,8 +851,10 @@ const AdjustSidebarAdvanced = ({
     });
 
     disableSavingIntoStackRef.current = true;
-    //@ts-ignore
-    const filtersInCanvas: string[] = currentFilters.map((f) => f.filterName);
+    // currentFilters can be null, map is on array. filterName is valid on FilterEntry.
+    const filtersInCanvas: string[] = currentFilters
+      ? currentFilters.map((f) => f.filterName)
+      : [];
     allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
     setLoadState(true);
 
@@ -869,18 +885,19 @@ const AdjustSidebarAdvanced = ({
 
     canvas.setZoom(1);
     canvas
-      .getObjects() // @ts-ignore
+      .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
       .find((obj) => obj.setCoords());
 
     // Find the object named "Frame" or starting with "Frame"
     const bounds = getRotatedBoundingBox(image);
-    //@ts-ignore
+    // canvas.toDataURL is a valid method.
     const dataURL = canvas.toDataURL({
       format: "png",
       left: bounds.left,
       top: bounds.top,
       width: bounds.width,
       height: bounds.height,
+      multiplier: 1,
     });
 
     FabricImage.fromURL(dataURL).then((img) => {
@@ -916,7 +933,7 @@ const AdjustSidebarAdvanced = ({
       canvas.setViewportTransform(originalViewportTransform);
       canvas.setZoom(originalZoom);
       canvas
-        .getObjects() // @ts-ignore
+        .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
         .find((obj) => obj.setCoords());
 
       setTimeout(() => {
@@ -929,6 +946,191 @@ const AdjustSidebarAdvanced = ({
     });
   };
 
+  // Handler for Edge Detection Type Change
+  const handleEdgeTypeChange = (newType: string) => {
+    addLog({
+      section: "adjust",
+      tab: "edge",
+      event: "update",
+      message: `Selected edge type: ${newType}`,
+    });
+
+    const filtersList = [...(currentFilters || [])];
+
+    switch (newType) {
+      case "canny":
+        updateOrInsert(
+          filtersList,
+          "edge",
+          new filters.Composed({
+            subFilters: [
+              new CannySobelEdge(),
+              new NonMaximumSupression(),
+              new DoubleThresholding({
+                lowThreshold: cannyLowerThreshold,
+                highThreshold: cannyUpperThreshold,
+              }),
+              new Hysteris(),
+            ],
+          }),
+          true
+        );
+        break;
+      case "horizontal":
+        updateOrInsert(filtersList, "edge", new HorizontalEdgeFilter(), true);
+        break;
+      case "vertical":
+        updateOrInsert(filtersList, "edge", new VerticalEdgeFilter(), true);
+        break;
+      case "sobel":
+        updateOrInsert(filtersList, "edge", new SobelFilter(), true);
+        break;
+      default:
+        updateOrInsert(
+          filtersList,
+          "edge",
+          new filters.Composed({
+            subFilters: [new CannySobelEdge(), new NonMaximumSupression()],
+          }),
+          false
+        );
+        updateOrInsert(filtersList, "sobelFilter", new SobelFilter(), false);
+        updateOrInsert(
+          filtersList,
+          "horizontalEdgeFilter",
+          new HorizontalEdgeFilter(),
+          false
+        );
+        updateOrInsert(
+          filtersList,
+          "verticalEdgeFilter",
+          new VerticalEdgeFilter(),
+          false
+        );
+        break;
+    }
+
+    setSelectedEdgeType(newType);
+
+    const filterInstances = filtersList.map(
+      (tempFilter) => tempFilter.instance
+    );
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    canvas.fire("object:modified");
+  };
+
+  // Handlers for Canny Edge Thresholds
+  const handleCannyLowerChange = (value: number) => {
+    let newLower = value;
+    if (newLower >= cannyUpperThreshold) {
+      newLower = cannyUpperThreshold - 1; // Ensure lower < upper
+    }
+    if (newLower < 0) newLower = 0; // Min threshold
+
+    setCannyLowerThreshold(newLower);
+    addLog({
+      section: "adjust",
+      tab: "edge",
+      event: "update",
+      message: `Canny lower threshold changed to: ${newLower}`,
+    });
+    if (selectedEdgeType === "canny") {
+      const filtersList = [...(currentFilters || [])];
+      console.log("old filters", filtersList);
+      updateOrInsert(
+        filtersList,
+        "edge",
+        new filters.Composed({
+          subFilters: [
+            new CannySobelEdge(),
+            new NonMaximumSupression(),
+            new DoubleThresholding({
+              lowThreshold: newLower,
+              highThreshold: cannyUpperThreshold,
+            }),
+            new Hysteris(),
+          ],
+        }),
+        true
+      );
+
+      const filterInstances = filtersList.map(
+        (tempFilter) => tempFilter.instance
+      );
+      console.log("new filters", filterInstances);
+
+      imageRef.current.filters = filterInstances;
+
+      imageRef.current.applyFilters();
+
+      canvas.requestRenderAll();
+
+      setCurrentFilters(filtersList);
+      currentFiltersRef.current = filtersList;
+    }
+  };
+
+  const handleCannyUpperChange = (value: number) => {
+    let newUpper = value;
+    if (newUpper <= cannyLowerThreshold) {
+      newUpper = cannyLowerThreshold + 1; // Ensure upper > lower
+    }
+    if (newUpper > 255) newUpper = 255; // Max threshold
+
+    setCannyUpperThreshold(newUpper);
+    addLog({
+      section: "adjust",
+      tab: "edge",
+      event: "update",
+      message: `Canny upper threshold changed to: ${newUpper}`,
+    });
+
+    if (selectedEdgeType === "canny") {
+      const filtersList = [...(currentFilters || [])];
+      console.log("old filters", filtersList);
+      updateOrInsert(
+        filtersList,
+        "edge",
+        new filters.Composed({
+          subFilters: [
+            new CannySobelEdge(),
+            new NonMaximumSupression(),
+            new DoubleThresholding({
+              lowThreshold: cannyLowerThreshold,
+              highThreshold: newUpper,
+            }),
+            new Hysteris(),
+          ],
+        }),
+        true
+      );
+
+      const filterInstances = filtersList.map(
+        (tempFilter) => tempFilter.instance
+      );
+      console.log("new filters", filterInstances);
+
+      imageRef.current.filters = filterInstances;
+
+      imageRef.current.applyFilters();
+
+      canvas.requestRenderAll();
+
+      setCurrentFilters(filtersList);
+      currentFiltersRef.current = filtersList;
+    }
+  };
+
   return (
     <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <Tabs
@@ -936,9 +1138,10 @@ const AdjustSidebarAdvanced = ({
         className="w-full flex-1 flex flex-col rounded-none"
       >
         <div className="border-b border-gray-200 dark:border-gray-800">
-          <TabsList className="w-full grid grid-cols-4 rounded-none">
+          <TabsList className="w-full grid grid-cols-3 rounded-none">
             <TabsTrigger value="reflect">Reflect</TabsTrigger>
             <TabsTrigger value="blur">Blur</TabsTrigger>
+            <TabsTrigger value="edge">Edge</TabsTrigger>
           </TabsList>
         </div>
 
@@ -1484,6 +1687,96 @@ const AdjustSidebarAdvanced = ({
                       </Select>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent
+          value="edge"
+          className="w-full flex flex-col justify-center items-center space-y-2"
+        >
+          <div className="w-[90%]">
+            <Card className="w-full">
+              <CardHeader>
+                <CardDescription className="text-center text-base font-semibold">
+                  Edge Detection Controls
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-700/30 rounded-md">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                    <strong>Note:</strong> For edge detection, images should
+                    already be in gray scaled and blurrred. Canny edge detection
+                    is an approximation and may not produce results identical to
+                    server-side implementations.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      Edge Type
+                    </label>
+                    <Select
+                      value={selectedEdgeType}
+                      onValueChange={handleEdgeTypeChange}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="horizontal">
+                          Horizontal Edge
+                        </SelectItem>
+
+                        <SelectItem value="vertical">Vertical Edge</SelectItem>
+                        <SelectItem value="sobel">Sobel Edge</SelectItem>
+                        <SelectItem value="canny">Canny Edge</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Canny Edge Specific Options - Placeholder */}
+                  {selectedEdgeType === "canny" && (
+                    <div className="flex flex-col gap-4 px-2 border-t pt-4 mt-2">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Canny Edge Options
+                      </h3>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
+                          <p>Lower Threshold</p>
+                          <p>{cannyLowerThreshold}</p>
+                        </div>
+                        <Slider
+                          value={[cannyLowerThreshold]}
+                          min={0}
+                          max={255}
+                          step={1}
+                          onValueChange={(e) => handleCannyLowerChange(e[0])}
+                          onValueCommit={() => canvas.fire("object:modified")}
+                          disabled={selectedEdgeType !== "canny"}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
+                          <p>Upper Threshold</p>
+                          <p>{cannyUpperThreshold}</p>
+                        </div>
+                        <Slider
+                          value={[cannyUpperThreshold]}
+                          min={0}
+                          max={255}
+                          step={1}
+                          onValueChange={(e) => handleCannyUpperChange(e[0])}
+                          onValueCommit={() => canvas.fire("object:modified")}
+                          disabled={selectedEdgeType !== "canny"}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

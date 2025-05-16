@@ -112,34 +112,25 @@ uniform float uStepH;
 void main() {
     vec2 stepSize = vec2(uStepW, uStepH);
     
-    // Vertical edge detection kernel
+    // Vertical edge detection kernel (Sobel Gx)
+    // -1 -2 -1
+    //  0  0  0
+    //  1  2  1
     float uVKernel[9];
-    uVKernel[0] = -1.0;
-    uVKernel[1] = 0.0;
-    uVKernel[2] = 1.0;
-    uVKernel[3] =  -2.0;
-    uVKernel[4] =  0.0;
-    uVKernel[5] =  2.0;
-    uVKernel[6] =  -1.0;
-    uVKernel[7] =  0.0;
-    uVKernel[8] =  1.0;
+    uVKernel[0] = -1.0;  uVKernel[1] = -2.0;  uVKernel[2] = -1.0;
+    uVKernel[3] =  0.0;  uVKernel[4] =  0.0;  uVKernel[5] =  0.0;
+    uVKernel[6] =  1.0;  uVKernel[7] =  2.0;  uVKernel[8] =  1.0;
 
-    //   Horizontal edge detection kernel
+    // Horizontal edge detection kernel (Sobel Gy)
+    // -1   0  1
+    // -2   0  2
+    // -1   0  1
     float uHKernel[9];
-    uHKernel[0] = -1.0;
-    uHKernel[1] = -2.0;
-    uHKernel[2] = -1.0;
-    uHKernel[3] =  0.0;
-    uHKernel[4] =  0.0;
-    uHKernel[5] =  0.0;
-    uHKernel[6] =  1.0;
-    uHKernel[7] =  2.0;
-    uHKernel[8] =  1.0;
+    uHKernel[0] = -1.0;  uHKernel[1] =  0.0;  uHKernel[2] =  1.0;
+    uHKernel[3] = -2.0;  uHKernel[4] =  0.0;  uHKernel[5] =  2.0;
+    uHKernel[6] = -1.0;  uHKernel[7] =  0.0;  uHKernel[8] =  1.0;
 
 
-
-
-  
 
     // 2. Sobel Edge Detection on Blurred Image
     vec3 sumH = vec3(0.0);
@@ -151,7 +142,7 @@ void main() {
 
     for(int y = -1; y <= 1; y++) {
         for(int x = -1; x <= 1; x++) {
-            offset = vec2(float(x), float(y)) * stepSize;
+            offset = vec2(float(x), float(-y)) * stepSize;
             sample = texture2D(uTexture, vTexCoord + offset);
 
             

@@ -43,6 +43,7 @@ import { ReflectFilter } from "@/utils/ReflectFilter";
 import { MedianFilter } from "@/utils/MedianFilter";
 import { BilateralFilter } from "@/utils/BilteralFilter";
 import { updateOrInsert } from "@/utils/commonFunctions";
+import { CustomGrayScale } from "@/utils/CustomGrayScale";
 
 // TODO: in rotation set some presest 90/180 degree rotation
 // TODO: allow the user to apply the filters
@@ -115,43 +116,6 @@ const Test = () => {
 
   //adjust store values
 
-  const redBrightnessValue = useAdjustStore(
-    (state) => state.redBrightnessValue
-  );
-
-  const contrastValue = useAdjustStore((state) => state.contrastValue);
-  const saturationValue = useAdjustStore((state) => state.saturationValue);
-  const vibranceValue = useAdjustStore((state) => state.vibranceValue);
-  const opacityValue = useAdjustStore((state) => state.opacityValue);
-  const hueValue = useAdjustStore((state) => state.hueValue);
-  const blurValue = useAdjustStore((state) => state.blurValue);
-  const noiseValue = useAdjustStore((state) => state.noiseValue);
-  const pixelateValue = useAdjustStore((state) => state.pixelateValue);
-  const enableGrayScale = useAdjustStore((state) => state.enableGrayScale);
-  const enableVintage = useAdjustStore((state) => state.enableVintage);
-  const enableSepia = useAdjustStore((state) => state.enableSepia);
-  const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
-  const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
-  const enableSharpen = useAdjustStore((state) => state.enableSharpen);
-  const enableEdgeDetection = useAdjustStore(
-    (state) => state.enableEdgeDetection
-  );
-  const enableInvert = useAdjustStore((state) => state.enableInvert);
-
-  const enableWarmFilter = useAdjustStore((state) => state.enableWarmFilter);
-  const enableColdFilter = useAdjustStore((state) => state.enableColdFilter);
-
-  const blueBrightnessValue = useAdjustStore(
-    (state) => state.blueBrightnessValue
-  );
-  const greenBrightnessValue = useAdjustStore(
-    (state) => state.greenBrightnessValue
-  );
-
-  const gammaBlue = useAdjustStore((state) => state.gammaBlue);
-  const gammaGreen = useAdjustStore((state) => state.gammaGreen);
-  const gammaRed = useAdjustStore((state) => state.gammaRed);
-
   const setBlueBrightnessValue = useAdjustStore(
     (state) => state.setBlueBrightnessValue
   );
@@ -205,12 +169,6 @@ const Test = () => {
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
 
-  const red = useAdjustStore((state) => state.red);
-
-  const green = useAdjustStore((state) => state.green);
-
-  const blue = useAdjustStore((state) => state.blue);
-
   // const setRed = useAdjustStore((state) => state.setRed);
 
   // const setGreen = useAdjustStore((state) => state.setGreen);
@@ -243,29 +201,10 @@ const Test = () => {
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
-  const enableGaussianBlur = useAdjustStore(
-    (state) => state.enableGaussianBlur
-  );
-  const gaussianSigma = useAdjustStore((state) => state.gaussianSigma);
-  const setGaussianMatrixSize = useAdjustStore(
-    (state) => state.setGaussianMatrixSize
-  );
-
   const setEnableGaussianBlur = useAdjustStore(
     (state) => state.setEnableGaussianBlur
   );
   const setGaussianSigma = useAdjustStore((state) => state.setGaussianSigma);
-  const gaussianMatrixSize = useAdjustStore(
-    (state) => state.gaussianMatrixSize
-  );
-
-  const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
-
-  const radius = useAdjustStore((state) => state.radius);
-  const softness = useAdjustStore((state) => state.softness);
-  const darkFocus = useAdjustStore((state) => state.darkFocus);
-
-  const sharpenValue = useAdjustStore((state) => state.sharpenValue);
   const setSharpenValue = useAdjustStore((state) => state.setSharpenValue);
 
   const setEnableFocusFilter = useAdjustStore(
@@ -276,31 +215,6 @@ const Test = () => {
   const setSoftness = useAdjustStore((state) => state.setSoftness);
 
   const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
-
-  const enableLeftToRightReflect = useAdjustStore(
-    (state) => state.enableLeftToRightReflect
-  );
-  const enableRightToLeftReflect = useAdjustStore(
-    (state) => state.enableRightToLeftReflect
-  );
-  const enableTopToBottomReflect = useAdjustStore(
-    (state) => state.enableTopToBottomReflect
-  );
-  const enableBottomToTopReflect = useAdjustStore(
-    (state) => state.enableBottomToTopReflect
-  );
-  const enableTopLeftReflect = useAdjustStore(
-    (state) => state.enableTopLeftReflect
-  );
-  const enableTopRightReflect = useAdjustStore(
-    (state) => state.enableTopRightReflect
-  );
-  const enableBottomLeftReflect = useAdjustStore(
-    (state) => state.enableBottomLeftReflect
-  );
-  const enableBottomRightReflect = useAdjustStore(
-    (state) => state.enableBottomRightReflect
-  );
 
   const setEnableLeftToRightReflect = useAdjustStore(
     (state) => state.setEnableLeftToRightReflect
@@ -334,46 +248,10 @@ const Test = () => {
     (state) => state.setEnableRightDiagonalReflect
   );
 
-  const enableLeftDiagonalReflect = useAdjustStore(
-    (state) => state.enableLeftDiagonalReflect
-  );
-  const enableRightDiagonalReflect = useAdjustStore(
-    (state) => state.enableRightDiagonalReflect
-  );
-
-  const enableMedianFilter = useAdjustStore(
-    (state) => state.enableMedianFilter
-  );
-  const setEnableMedianFilter = useAdjustStore(
-    (state) => state.setEnableMedianFilter
-  );
-
-  const enableBilateralFilter = useAdjustStore(
-    (state) => state.enableBilateralFilter
-  );
-  const setEnableBilateralFilter = useAdjustStore(
-    (state) => state.setEnableBilateralFilter
-  );
-
-  const bilateralSigmaS = useAdjustStore((state) => state.bilateralSigmaS);
-  const setBilateralSigmaS = useAdjustStore(
-    (state) => state.setBilateralSigmaS
-  );
-  const bilateralSigmaC = useAdjustStore((state) => state.bilateralSigmaC);
-  const setBilateralSigmaC = useAdjustStore(
-    (state) => state.setBilateralSigmaC
-  );
-
-  const bilateralKernelSize = useAdjustStore(
-    (state) => state.bilateralKernelSize
-  );
   const setBilateralKernelSize = useAdjustStore(
     (state) => state.setBilateralKernelSize
   );
 
-  const medianFilterMatrixSize = useAdjustStore(
-    (state) => state.medianFilterMatrixSize
-  );
   const setMedianFilterMatrixSize = useAdjustStore(
     (state) => state.setMedianFilterMatrixSize
   );
@@ -1712,7 +1590,7 @@ const Test = () => {
             updateOrInsert(
               filtersList,
               "grayscale",
-              new filters.Grayscale(),
+              new CustomGrayScale(),
               true
             );
             break;

@@ -114,7 +114,7 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     }
 
     console.log(bounds);
-    // TODO: since scale has changed I also need to scale other objects too
+    // TODO: since scale has changed I also need to scale other objects too. No need as we never change the image size only scales changes which is show in ui
     // @ts-ignore
     dataURL = canvas.toDataURL({
       format: "png",

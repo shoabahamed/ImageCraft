@@ -208,10 +208,23 @@ const AdjustSidebarAdvanced = ({
     (state) => state.setMedianFilterMatrixSize
   );
 
-  // States for Edge Detection Tab
-  const [selectedEdgeType, setSelectedEdgeType] = useState<string>("none");
-  const [cannyLowerThreshold, setCannyLowerThreshold] = useState<number>(25);
-  const [cannyUpperThreshold, setCannyUpperThreshold] = useState<number>(50);
+  const selectedEdgeType = useAdjustStore((state) => state.selectedEdgeType);
+  const cannyLowerThreshold = useAdjustStore(
+    (state) => state.cannyLowerThreshold
+  );
+  const cannyUpperThreshold = useAdjustStore(
+    (state) => state.cannyUpperThreshold
+  );
+
+  const setSelectedEdgeType = useAdjustStore(
+    (state) => state.setSelectedEdgeType
+  );
+  const setCannyLowerThreshold = useAdjustStore(
+    (state) => state.setCannyLowerThreshold
+  );
+  const setCannyUpperThreshold = useAdjustStore(
+    (state) => state.setCannyUpperThreshold
+  );
 
   const handleReflectFilter = (filterName: string, value: boolean) => {
     addLog({

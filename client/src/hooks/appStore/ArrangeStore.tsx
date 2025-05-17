@@ -7,6 +7,8 @@ type ArrangeStroe = {
   setFlipX: (value: boolean) => void;
   setFlipY: (value: boolean) => void;
   setImageRotation: (value: number) => void;
+  backgroundColor: string;
+  setBackgroundColor: (value: string) => void;
 };
 
 export const useArrangeStore = create<ArrangeStroe>((set) => ({
@@ -16,4 +18,6 @@ export const useArrangeStore = create<ArrangeStroe>((set) => ({
   setFlipX: (value) => set({ flipX: value }),
   setFlipY: (value) => set({ flipY: value }),
   setImageRotation: (value) => set({ imageRotation: value }),
+  backgroundColor: "#111111",
+  setBackgroundColor: (value) => set({ backgroundColor: value }),
 }));

@@ -136,6 +136,14 @@ type AdjustStore = {
   setBilateralSigmaC: (value: number) => void;
   setBilateralKernelSize: (value: number) => void;
 
+  // States for Edge Detection Tab
+  selectedEdgeType: string;
+  cannyLowerThreshold: number;
+  cannyUpperThreshold: number;
+  setSelectedEdgeType: (value: string) => void;
+  setCannyLowerThreshold: (value: number) => void;
+  setCannyUpperThreshold: (value: number) => void;
+
   resetFilters: () => void;
 };
 
@@ -284,6 +292,13 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   medianFilterMatrixSize: 3,
   setMedianFilterMatrixSize: (value) => set({ medianFilterMatrixSize: value }),
 
+  selectedEdgeType: "none",
+  cannyLowerThreshold: 25,
+  cannyUpperThreshold: 50,
+  setSelectedEdgeType: (value) => set({ selectedEdgeType: value }),
+  setCannyLowerThreshold: (value) => set({ cannyLowerThreshold: value }),
+  setCannyUpperThreshold: (value) => set({ cannyUpperThreshold: value }),
+
   resetFilters: () =>
     set({
       brightnessValue: 0,
@@ -347,5 +362,9 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       bilateralSigmaS: 1.0,
       bilateralSigmaC: 1.0,
       bilateralKernelSize: 5,
+
+      selectedEdgeType: "none",
+      cannyLowerThreshold: 25,
+      cannyUpperThreshold: 50,
     }),
 }));

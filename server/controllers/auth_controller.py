@@ -18,6 +18,8 @@ import google.auth.transport.requests
 from dotenv import load_dotenv
 load_dotenv()
 
+# May be I should have added a password too for creating jwt token
+
 db = get_db()
 users_collection = db["Users"]
 

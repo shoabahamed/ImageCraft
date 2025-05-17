@@ -57,12 +57,23 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       imageWidth: bounds.width,
     });
 
+    const canvasRect = canvas
+      .getObjects()
+      .find((obj) => obj.name?.startsWith("canvasRect"));
+
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
     canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
+
+    canvasRect.set({
+      height: bounds.height,
+      width: bounds.width,
+    });
+
+    canvas.requestRenderAll();
 
     canvas.fire("object:modified");
   };
@@ -120,7 +131,6 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
 
     image.scaleX = scaleX;
     image.scaleY = scaleY;
-    canvas.renderAll();
 
     handleRenderingFinalDimension();
   };
@@ -176,7 +186,6 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
 
     image.scaleX = scaleX;
     image.scaleY = scaleY;
-    canvas.renderAll();
 
     handleRenderingFinalDimension();
   };

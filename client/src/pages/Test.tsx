@@ -44,9 +44,14 @@ import { MedianFilter } from "@/utils/MedianFilter";
 import { BilateralFilter } from "@/utils/BilteralFilter";
 import { updateOrInsert } from "@/utils/commonFunctions";
 import { CustomGrayScale } from "@/utils/CustomGrayScale";
+import { DoubleThresholding } from "@/utils/DoubleThresholding";
+import { NonMaximumSupression } from "@/utils/NonMaximumSupression";
+import { CannySobelEdge } from "@/utils/CannySobelEdge";
+import { Hysteris } from "@/utils/Hysteris";
+import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
+import { VerticalEdgeFilter } from "@/utils/VerticalFilter";
 
-// TODO: in rotation set some presest 90/180 degree rotation
-// TODO: allow the user to apply the filters
+// TODO: the whole update or insert here feels redunant when doing from database or history may be I should fix that
 
 // TODO: set the image size at max to be some value possibly 2048X2048
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
@@ -111,6 +116,11 @@ const Test = () => {
     currentFiltersRef,
   } = useCanvasObjects();
 
+  const backgroundColor = useArrangeStore((state) => state.backgroundColor);
+  const setBackgroundColor = useArrangeStore(
+    (state) => state.setBackgroundColor
+  );
+
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
 
@@ -140,10 +150,6 @@ const Test = () => {
   );
   const setEnableKodachrome = useAdjustStore(
     (state) => state.setEnableKodachrome
-  );
-
-  const setEnableEdgeDetection = useAdjustStore(
-    (state) => state.setEnableEdgeDetection
   );
 
   const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
@@ -255,6 +261,38 @@ const Test = () => {
   const setMedianFilterMatrixSize = useAdjustStore(
     (state) => state.setMedianFilterMatrixSize
   );
+
+  const setGaussianMatrixSize = useAdjustStore(
+    (state) => state.setGaussianMatrixSize
+  );
+
+  const setBilateralSigmaS = useAdjustStore(
+    (state) => state.setBilateralSigmaS
+  );
+
+  const setBilateralSigmaC = useAdjustStore(
+    (state) => state.setBilateralSigmaC
+  );
+
+  const setEnableBilateralFilter = useAdjustStore(
+    (state) => state.setEnableBilateralFilter
+  );
+
+  const setEnableMedianFilter = useAdjustStore(
+    (state) => state.setEnableMedianFilter
+  );
+
+  const setSelectedEdgeType = useAdjustStore(
+    (state) => state.setSelectedEdgeType
+  );
+  const setCannyLowerThreshold = useAdjustStore(
+    (state) => state.setCannyLowerThreshold
+  );
+  const setCannyUpperThreshold = useAdjustStore(
+    (state) => state.setCannyUpperThreshold
+  );
+
+  const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
 
   const { dbLoadingRef } = useCanvasObjects();
 
@@ -650,6 +688,15 @@ const Test = () => {
                 height: containerHeight,
               });
 
+              const canvasRect = initCanvas
+                .getObjects()
+                .find((obj) => obj.name?.startsWith("canvasRect"));
+
+              if (canvasRect) {
+                const fillColor = canvasRect.get("fill");
+                setBackgroundColor(fillColor);
+              }
+
               setImageRotation(imageObject.angle);
 
               // Calculate zoom to fit image in canvas while maintaining aspect ratio
@@ -700,7 +747,7 @@ const Test = () => {
               allFiltersRef.current = allFiltersApplied;
               dbLoadingRef.current = true;
               databaseFiltersNameRef.current = filterNames;
-              databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
+              databaseFiltersObjectRef.current = canvasJSON.objects[1].filters;
               // oldFiltersNameRef.current = filterNames;
               setFiltersUI(!filtersUI);
               setHistoryValue(allData);
@@ -808,6 +855,21 @@ const Test = () => {
               originX: "center",
               originY: "center",
             });
+
+            const canvasRect = new fabric.Rect({
+              width: img.width,
+              height: img.height,
+              fill: backgroundColor,
+              selectable: false,
+              hasControls: false,
+              name: "canvasRect",
+              originX: "center",
+              originY: "center",
+              top: img.height / 2,
+              left: img.width / 2,
+            });
+
+            initCanvas.add(canvasRect);
 
             // img.skewX = -3.5;
 
@@ -1097,8 +1159,17 @@ const Test = () => {
           dbLoadingRef.current = true;
           allFiltersRef.current = allFiltersApplied;
           databaseFiltersNameRef.current = filterNames;
-          databaseFiltersObjectRef.current = canvasJSON.objects[0].filters;
+          databaseFiltersObjectRef.current = canvasJSON.objects[1].filters;
           setFiltersUI(!filtersUI);
+        }
+
+        const canvasRect = newCanvas
+          .getObjects()
+          .find((obj) => obj.name?.startsWith("canvasRect"));
+
+        if (canvasRect) {
+          const fillColor = canvasRect.get("fill");
+          setBackgroundColor(fillColor);
         }
 
         if (frameObject && imageObject.clipPath) {
@@ -1580,6 +1651,9 @@ const Test = () => {
 
       // resetFilters();
 
+      const opacity = currentImageRef.current.get("opacity");
+      setOpacityValue(opacity);
+
       for (let idx = 0; idx < databaseFiltersName.length; idx++) {
         const filterName = databaseFiltersName[idx];
         const filterData: any = databaseFiltersObject[idx];
@@ -1587,208 +1661,194 @@ const Test = () => {
         switch (filterName) {
           case "grayscale":
             setEnableGrayScale(true);
-            updateOrInsert(
-              filtersList,
-              "grayscale",
-              new CustomGrayScale(),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "grayscale",
+            //   new CustomGrayScale(),
+            //   true
+            // );
             break;
           case "sepia":
             setEnableSepia(true);
-            updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
+            // updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
 
             break;
           case "vintage":
             setEnableVintage(true);
-            updateOrInsert(filtersList, "vintage", new filters.Vintage(), true);
+            // updateOrInsert(filtersList, "vintage", new filters.Vintage(), true);
             break;
           case "kodachrome":
             setEnableKodachrome(true);
-            updateOrInsert(
-              filtersList,
-              "kodachrome",
-              new filters.Kodachrome(),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "kodachrome",
+            //   new filters.Kodachrome(),
+            //   true
+            // );
 
             break;
           case "technicolor":
             setEnableTechnicolor(true);
-            updateOrInsert(
-              filtersList,
-              "technicolor",
-              new filters.Technicolor(),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "technicolor",
+            //   new filters.Technicolor(),
+            //   true
+            // );
 
             break;
 
-          case "sobeledge":
-            setEnableEdgeDetection(true);
-            updateOrInsert(
-              filtersList,
-              "sobeledge",
-              new filters.Composed({
-                subFilters: [
-                  new CustomGaussianSobelFilter(),
-                  new SobelFilter(),
-                ],
-              }),
-              true
-            );
-            break;
           case "sharpen":
             // setEnableSharpen(true);
             setSharpenValue(filterData.sharpenValue);
-            updateOrInsert(
-              filtersList,
-              "sharpen",
-              new SharpenFilter({ SharpenValue: filterData.sharpenValue }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "sharpen",
+            //   new SharpenFilter({ SharpenValue: filterData.sharpenValue }),
+            //   true
+            // );
 
             break;
 
           case "cold":
             setEnableColdFilter(true);
-            updateOrInsert(filtersList, "cold", new ColdFilter(), true);
+            // updateOrInsert(filtersList, "cold", new ColdFilter(), true);
 
             break;
 
           case "warm":
             setEnableWarmFilter(true);
 
-            updateOrInsert(filtersList, "warm", new WarmFilter(), true);
+            // updateOrInsert(filtersList, "warm", new WarmFilter(), true);
 
             break;
 
           case "invert":
             setEnableInvert(true);
-            updateOrInsert(
-              filtersList,
-              "invert",
-              new filters.Invert({ alpha: false }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "invert",
+            //   new filters.Invert({ alpha: false }),
+            //   true
+            // );
 
             break;
           case "gbrightness":
             setGreenBrightnessValue(filterData.GBrightness);
-            updateOrInsert(
-              filtersList,
-              "gbrightness",
-              new GBrightness({ GBrightness: filterData.GBrightness }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "gbrightness",
+            //   new GBrightness({ GBrightness: filterData.GBrightness }),
+            //   true
+            // );
 
             break;
           case "bbrightness":
             setBlueBrightnessValue(filterData.BBrightness);
-            updateOrInsert(
-              filtersList,
-              "bbrightness",
-              new BBrightness({ BBrightness: filterData.BBrightness }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "bbrightness",
+            //   new BBrightness({ BBrightness: filterData.BBrightness }),
+            //   true
+            // );
 
             break;
           case "rbrightness":
             setRedBrightnessValue(filterData.RBrightness);
-            updateOrInsert(
-              filtersList,
-              "rbrightness",
-              new RBrightness({ RBrightness: filterData.RBrightness }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "rbrightness",
+            //   new RBrightness({ RBrightness: filterData.RBrightness }),
+            //   true
+            // );
 
             break;
           case "gamma":
             setGammaRedValue(filterData.gamma[0]);
             setGammaGreenValue(filterData.gamma[1]);
             setGammaBlueValue(filterData.gamma[2]);
-            updateOrInsert(
-              filtersList,
-              "gamma",
-              new filters.Gamma({
-                gamma: [
-                  filterData.gamma[0],
-                  filterData.gamma[1],
-                  filterData.gamma[2],
-                ],
-              }),
-              true
-            );
+            // updateOrInsert(
+            // filtersList,
+            //   "gamma",
+            //   new filters.Gamma({
+            //     gamma: [
+            //       filterData.gamma[0],
+            //       filterData.gamma[1],
+            //       filterData.gamma[2],
+            //     ],
+            //   }),
+            //   true
+            // );
 
             break;
           case "contrast":
             setContrastValue(filterData.contrast);
-            updateOrInsert(
-              filtersList,
-              "contrast",
-              new filters.Contrast({ contrast: filterData.contrast }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "contrast",
+            //   new filters.Contrast({ contrast: filterData.contrast }),
+            //   true
+            // );
 
             break;
           case "saturation":
             setSaturationValue(filterData.saturation);
-            updateOrInsert(
-              filtersList,
-              "saturation",
-              new filters.Saturation({ saturation: filterData.saturation }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "saturation",
+            //   new filters.Saturation({ saturation: filterData.saturation }),
+            //   true
+            // );
 
             break;
           case "vibrance":
             setVibranceValue(filterData.vibrance);
-            updateOrInsert(
-              filtersList,
-              "vibrance",
-              new filters.Vibrance({ vibrance: filterData.vibrance }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "vibrance",
+            //   new filters.Vibrance({ vibrance: filterData.vibrance }),
+            //    true
+            // );
 
             break;
           case "blur":
             setBlurValue(filterData.blur);
-            updateOrInsert(
-              filtersList,
-              "blur",
-              new filters.Blur({ blur: filterData.blur }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "blur",
+            //   new filters.Blur({ blur: filterData.blur }),
+            //   true
+            // );
 
             break;
           case "hueRotation":
             setHueValue(filterData.rotation);
-            updateOrInsert(
-              filtersList,
-              "hueRotation",
-              new filters.HueRotation({ rotation: filterData.rotation }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "hueRotation",
+            //   new filters.HueRotation({ rotation: filterData.rotation }),
+            //   true
+            // );
 
             break;
           case "noise":
             setNoiseValue(filterData.noise);
-            updateOrInsert(
-              filtersList,
-              "noise",
-              new filters.Noise({ noise: filterData.noise }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "noise",
+            //   new filters.Noise({ noise: filterData.noise }),
+            //   true
+            // );
 
             break;
           case "pixelate":
             setPixelateValue(filterData.blocksize);
-            updateOrInsert(
-              filtersList,
-              "pixelate",
-              new filters.Pixelate({ blocksize: filterData.blocksize }),
-              pixelateValue !== 0
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "pixelate",
+            //   new filters.Pixelate({ blocksize: filterData.blocksize }),
+            //   true
+            // );
 
             break;
 
@@ -1858,162 +1918,162 @@ const Test = () => {
             setGaussianMatrixSize(filterData.matrixSize);
             setGaussianSigma(filterData.sigma);
 
-            updateOrInsert(
-              filtersList,
-              "gaussianBlur",
-              new GaussianBlurFilter({
-                sigma: filterData.sigma,
-                matrixSize: filterData.matrixSize,
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "gaussianBlur",
+            //   new GaussianBlurFilter({
+            //     sigma: filterData.sigma,
+            //     matrixSize: filterData.matrixSize,
+            //   }),
+            //   true
+            // );
             break;
           case "focusFilter":
             setEnableFocusFilter(true);
             setSoftness(filterData.softness);
             setRadius(filterData.radius);
             setDarkFocus(filterData.dark);
-            updateOrInsert(
-              filtersList,
-              "focusFilter",
-              new FocusFilter({
-                radius: filterData.radius,
-                softness: filterData.softness,
-                dark: filterData.dark,
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "focusFilter",
+            //   new FocusFilter({
+            //     radius: filterData.radius,
+            //     softness: filterData.softness,
+            //     dark: filterData.dark,
+            //   }),
+            //   true
+            // );
             break;
           case "leftToRight":
             setEnableLeftToRightReflect(true);
-            updateOrInsert(
-              filtersList,
-              "leftToRight",
-              new ReflectFilter({
-                reflectType: "leftToRight",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "leftToRight",
+            //   new ReflectFilter({
+            //     reflectType: "leftToRight",
+            //   }),
+            //   true
+            // );
             break;
 
           case "rightToLeft":
             setEnableRightToLeftReflect(true);
-            updateOrInsert(
-              filtersList,
-              "rightToLeft",
-              new ReflectFilter({
-                reflectType: "rightToLeft",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "rightToLeft",
+            //   new ReflectFilter({
+            //     reflectType: "rightToLeft",
+            //   }),
+            //   true
+            // );
             break;
 
           case "bottomToTop":
             setEnableBottomToTopReflect(true);
-            updateOrInsert(
-              filtersList,
-              "bottomToTop",
-              new ReflectFilter({
-                reflectType: "bottomToTop",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "bottomToTop",
+            //   new ReflectFilter({
+            //     reflectType: "bottomToTop",
+            //   }),
+            //   true
+            // );
             break;
 
           case "topToBottom":
             setEnableTopToBottomReflect(true);
-            updateOrInsert(
-              filtersList,
-              "topToBottom",
-              new ReflectFilter({
-                reflectType: "topToBottom",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "topToBottom",
+            //   new ReflectFilter({
+            //     reflectType: "topToBottom",
+            //   }),
+            //   true
+            // );
             break;
 
           case "topRight":
             setEnableTopRightReflect(true);
-            updateOrInsert(
-              filtersList,
-              "topRight",
-              new ReflectFilter({
-                reflectType: "topRight",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "topRight",
+            //   new ReflectFilter({
+            //     reflectType: "topRight",
+            //   }),
+            //   true
+            // );
 
             break;
 
           case "topLeft":
             setEnableTopLeftReflect(true);
-            updateOrInsert(
-              filtersList,
-              "topLeft",
-              new ReflectFilter({
-                reflectType: "topLeft",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "topLeft",
+            //   new ReflectFilter({
+            //     reflectType: "topLeft",
+            //   }),
+            //   true
+            // );
             break;
 
           case "bottomRight":
             setEnableBottomRightReflect(true);
-            updateOrInsert(
-              filtersList,
-              "bottomRight",
-              new ReflectFilter({
-                reflectType: "bottomRight",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "bottomRight",
+            //   new ReflectFilter({
+            //     reflectType: "bottomRight",
+            //   }),
+            //   true
+            // );
 
             break;
           case "bottomLeft":
             setEnableBottomLeftReflect(true);
-            updateOrInsert(
-              filtersList,
-              "bottomLeft",
-              new ReflectFilter({
-                reflectType: "bottomLeft",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "bottomLeft",
+            //   new ReflectFilter({
+            //     reflectType: "bottomLeft",
+            //   }),
+            //   true
+            // );
             break;
 
           case "leftDiagonal":
             setEnableLeftDiagonalReflect(true);
-            updateOrInsert(
-              filtersList,
-              "leftDiagonal",
-              new ReflectFilter({
-                reflectType: "leftDiagonal",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "leftDiagonal",
+            //   new ReflectFilter({
+            //     reflectType: "leftDiagonal",
+            //   }),
+            //   true
+            // );
             break;
 
           case "rightDiagonal":
             setEnableRightDiagonalReflect(true);
-            updateOrInsert(
-              filtersList,
-              "rightDiagonal",
-              new ReflectFilter({
-                reflectType: "rightDiagonal",
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "rightDiagonal",
+            //   new ReflectFilter({
+            //     reflectType: "rightDiagonal",
+            //   }),
+            //   true
+            // );
             break;
 
           case "medianFilter":
             setEnableMedianFilter(true);
             setMedianFilterMatrixSize(filterData.matrixSize);
-            updateOrInsert(
-              filtersList,
-              "medianFilter",
-              new MedianFilter({ matrixSize: filterData.matrixSize }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "medianFilter",
+            //   new MedianFilter({ matrixSize: filterData.matrixSize }),
+            //   true
+            // );
             break;
 
           case "bilateralFilter":
@@ -2022,20 +2082,68 @@ const Test = () => {
             setBilateralSigmaC(filterData.sigmaC);
             setBilateralKernelSize(filterData.kernelSize);
 
-            updateOrInsert(
-              filtersList,
-              "bilateralFilter",
-              new BilateralFilter({
-                sigmaS: filterData.sigmaS,
-                sigmaC: filterData.sigmaC,
-                kernelSize: filterData.kernelSize,
-              }),
-              true
-            );
+            // updateOrInsert(
+            //   filtersList,
+            //   "bilateralFilter",
+            //   new BilateralFilter({
+            //     sigmaS: filterData.sigmaS,
+            //     sigmaC: filterData.sigmaC,
+            //     kernelSize: filterData.kernelSize,
+            //   }),
+            //   true
+            // );
+            break;
+
+          case "edge":
+            console.log("from edge", filterData.type);
+            if (filterData.type === "HorizontalEdgeFilter") {
+              setSelectedEdgeType("horizontal");
+              // updateOrInsert(
+              //   filtersList,
+              //   "edge",
+              //   new HorizontalEdgeFilter(),
+              //   true
+              // );
+            } else if (filterData.type === "VerticalEdgeFilter") {
+              setSelectedEdgeType("vertical");
+              // updateOrInsert(
+              //   filtersList,
+              //   "edge",
+              //   new VerticalEdgeFilter(),
+              //   true
+              // );
+            } else if (filterData.type === "sobel") {
+              setSelectedEdgeType("sobel");
+              // updateOrInsert(filtersList, "edge", new SobelFilter(), true);
+            } else if (filterData.type === "Composed") {
+              setSelectedEdgeType("canny");
+              setCannyLowerThreshold(filterData.subFilters[2].lowThreshold);
+              setCannyUpperThreshold(filterData.subFilters[2].highThreshold);
+              // updateOrInsert(
+              //   filtersList,
+              //   "edge",
+              //   new filters.Composed({
+              //     subFilters: [
+              //       new CannySobelEdge(),
+              //       new NonMaximumSupression(),
+              //       new DoubleThresholding({
+              //         lowThreshold: filterData.lowThreshold,
+              //         highThreshold: filterData.highThreshold,
+              //       }),
+              //       new Hysteris(),
+              //     ],
+              //   }),
+              //   true
+              // );
+            } else {
+              setSelectedEdgeType("none");
+            }
+            console.log("from edge", filterData);
+
             break;
         }
       }
-      setCurrentFilters(filtersList);
+      // setCurrentFilters(filtersList);
     };
 
     loadDatabaseFilters();

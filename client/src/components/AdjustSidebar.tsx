@@ -1154,40 +1154,6 @@ const AdjustSidebar = ({
 
                   <div
                     onClick={() => {
-                      handlePredefinedFilter("sobeledge", !enableEdgeDetection);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableEdgeDetection
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableEdgeDetection
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableEdgeDetection
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Wand2 />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Sobel</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
                       handlePredefinedFilter("cold", !enableColdFilter);
                     }}
                     className={`

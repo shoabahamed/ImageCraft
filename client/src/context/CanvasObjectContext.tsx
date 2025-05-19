@@ -45,6 +45,11 @@ interface CanvasObjectsContextType {
   allFiltersRef: React.MutableRefObject<string[]>;
 
   currentFiltersRef: React.MutableRefObject<object[]>;
+
+  swirlRadiusRef: React.MutableRefObject<number>;
+  swirlAngleRef: React.MutableRefObject<number>;
+  bulgeRadiusRef: React.MutableRefObject<number>;
+  bulgeStrengthRef: React.MutableRefObject<number>;
 }
 
 // Create the context with a default value
@@ -106,6 +111,11 @@ export const CanvasObjectsProvider = ({
 
   const currentFiltersRef = useRef<object[]>([]);
 
+  const swirlRadiusRef = useRef(0.3);
+  const swirlAngleRef = useRef(1.0);
+  const bulgeRadiusRef = useRef(0.3);
+  const bulgeStrengthRef = useRef(0.5);
+
   return (
     <CanvasObjectsContext.Provider
       value={{
@@ -130,6 +140,10 @@ export const CanvasObjectsProvider = ({
         dbLoadingRef,
         allFiltersRef,
         currentFiltersRef,
+        swirlRadiusRef,
+        swirlAngleRef,
+        bulgeRadiusRef,
+        bulgeStrengthRef,
       }}
     >
       {children}

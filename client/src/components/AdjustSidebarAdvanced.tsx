@@ -36,7 +36,7 @@ import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
 import { MedianFilter } from "@/utils/MedianFilter";
 import { BilateralFilter } from "@/utils/BilteralFilter";
 import { Slider } from "./ui/slider";
-import { useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { SobelFilter } from "@/utils/SobelFilter";
 import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
 import { VerticalEdgeFilter } from "@/utils/VerticalFilter";
@@ -44,6 +44,9 @@ import { NonMaximumSupression } from "@/utils/NonMaximumSupression";
 import { CannySobelEdge } from "@/utils/CannySobelEdge";
 import { DoubleThresholding } from "@/utils/DoubleThresholding";
 import { Hysteris } from "@/utils/Hysteris";
+import { Swirl } from "@/utils/Swirl";
+import { BulgeFilter } from "@/utils/BulgeFilter";
+import { CircleDot as BulgeIcon, RotateCw as SwirlIcon } from "lucide-react";
 
 interface FilterEntry {
   filterName: string;
@@ -56,6 +59,7 @@ interface FilterEntry {
 
 type AdjustSidebarProps = {
   canvas: Canvas;
+  canvasRef: React.RefObject<Canvas>;
   image: FabricImage;
   imageRef: React.RefObject<FabricImage>;
   databaseFiltersName: string[] | null;
@@ -65,6 +69,7 @@ type AdjustSidebarProps = {
 
 const AdjustSidebarAdvanced = ({
   canvas,
+  canvasRef,
   image,
   imageRef,
   setLoadState,
@@ -225,6 +230,34 @@ const AdjustSidebarAdvanced = ({
   const setCannyUpperThreshold = useAdjustStore(
     (state) => state.setCannyUpperThreshold
   );
+
+  const { swirlAngleRef, swirlRadiusRef, bulgeRadiusRef, bulgeStrengthRef } =
+    useCanvasObjects();
+  const swirlRadius = useAdjustStore((state) => state.swirlRadius);
+  const setSwirlRadius = useAdjustStore((state) => state.setSwirlRadius);
+  const swirlAngle = useAdjustStore((state) => state.swirlAngle);
+  const setSwirlAngle = useAdjustStore((state) => state.setSwirlAngle);
+
+  const bulgeRadius = useAdjustStore((state) => state.bulgeRadius);
+  const setBulgeRadius = useAdjustStore((state) => state.setBulgeRadius);
+  const bulgeStrength = useAdjustStore((state) => state.bulgeStrength);
+  const setBulgeStrength = useAdjustStore((state) => state.setBulgeStrength);
+
+  const activateLiquidifyTool = useAdjustStore(
+    (state) => state.activateLiquidifyTool
+  );
+  const setActivateLiquidifyTool = useAdjustStore(
+    (state) => state.setActivateLiquidifyTool
+  );
+
+  useEffect(() => {
+    return () => {
+      console.log("deactivated liquidify tool from use Effect");
+      deactivateSwril();
+      deactivateBulge();
+      setActivateLiquidifyTool("");
+    };
+  }, []);
 
   const handleReflectFilter = (filterName: string, value: boolean) => {
     addLog({
@@ -965,7 +998,7 @@ const AdjustSidebarAdvanced = ({
       section: "adjust",
       tab: "edge",
       event: "update",
-      message: `Selected edge type: ${newType}`,
+      message: `Selected edge and applied edge type: ${newType}`,
     });
 
     const filtersList = [...(currentFilters || [])];
@@ -1144,16 +1177,268 @@ const AdjustSidebarAdvanced = ({
     }
   };
 
+  const startSwril = useCallback((o) => {
+    const pointer = canvasRef.current?.getScenePoint(o.e);
+    if (!pointer || !imageRef.current) return;
+
+    pointer.x = pointer.x / imageRef.current.width;
+    pointer.y = pointer.y / imageRef.current.height;
+    const filtersList = [...(currentFiltersRef.current || [])];
+    console.log("currentFilters", currentFiltersRef.current);
+
+    const index = filtersList.findIndex((f) => f.filterName === "swirl");
+
+    if (index !== -1) {
+      const swirlFilter = filtersList[index].instance as filters.Composed;
+      swirlFilter.subFilters.push(
+        new Swirl({
+          radius: swirlRadiusRef.current,
+          angle: swirlAngleRef.current,
+          center: { x: pointer.x, y: pointer.y },
+        })
+      );
+      console.log("swirlFilter", swirlFilter);
+      filtersList[index] = {
+        instance: swirlFilter,
+        filterName: `swirl`,
+      };
+    } else {
+      filtersList.push({
+        instance: new filters.Composed({
+          subFilters: [
+            new Swirl({
+              radius: swirlRadiusRef.current,
+              angle: swirlAngleRef.current,
+              center: { x: pointer.x, y: pointer.y },
+            }),
+          ],
+        }),
+        filterName: `swirl`,
+      });
+    }
+
+    const filterInstances = filtersList.map(
+      (tempFilter) => tempFilter.instance
+    );
+
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    console.log("new filters", filterInstances);
+
+    imageRef.current.filters = filterInstances;
+
+    imageRef.current.applyFilters();
+
+    canvasRef.current?.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    addLog({
+      section: "adjust",
+      tab: "swirl",
+      event: "create",
+      message: `added new swril`,
+    });
+  }, []);
+
+  const endSwril = useCallback(() => {
+    canvasRef.current?.fire("object:modified");
+  }, []);
+
+  const activateSwril = () => {
+    console.log("Activating swirl - adding event listeners");
+    addLog({
+      section: "adjust",
+      tab: "swirl",
+      event: "update",
+      message: `Selected swirl filter`,
+    });
+
+    canvasRef.current?.on("mouse:down", startSwril);
+    canvasRef.current?.on("mouse:up", endSwril);
+  };
+
+  const deactivateSwril = () => {
+    console.log("Deactivating swirl - removing event listeners");
+    addLog({
+      section: "adjust",
+      tab: "swirl",
+      event: "update",
+      message: `Deactivated swirl filter`,
+    });
+
+    if (canvasRef.current) {
+      canvasRef.current.off("mouse:down", startSwril);
+      canvasRef.current.off("mouse:up", endSwril);
+      console.log("Event listeners removed");
+    }
+  };
+
+  const activateBulge = () => {
+    console.log("started bulghe");
+    addLog({
+      section: "adjust",
+      tab: "bulge",
+      event: "update",
+      message: `Selected bulge filter`,
+    });
+
+    canvasRef.current?.on("mouse:down", startBulge);
+    canvasRef.current?.on("mouse:up", endBulge);
+  };
+
+  const deactivateBulge = () => {
+    console.log("deactivated bulge");
+    addLog({
+      section: "adjust",
+      tab: "bulge",
+      event: "update",
+      message: `Deactivated bulge filter`,
+    });
+
+    canvasRef.current?.off("mouse:down", startBulge);
+    canvasRef.current?.off("mouse:up", endBulge);
+  };
+
+  const startBulge = useCallback((o) => {
+    const pointer = canvasRef.current?.getScenePoint(o.e);
+    if (!pointer || !imageRef.current) return;
+
+    pointer.x = pointer.x / imageRef.current.width;
+    pointer.y = pointer.y / imageRef.current.height;
+    const filtersList = [...(currentFiltersRef.current || [])];
+
+    const index = filtersList.findIndex((f) => f.filterName === "bulge");
+
+    if (index !== -1) {
+      const bulgeFilter = filtersList[index].instance as filters.Composed;
+      bulgeFilter.subFilters.push(
+        new BulgeFilter({
+          radius: bulgeRadiusRef.current,
+          strength: bulgeStrengthRef.current,
+          center: { x: pointer.x, y: pointer.y },
+        })
+      );
+      filtersList[index] = {
+        instance: bulgeFilter,
+        filterName: `bulge`,
+      };
+    } else {
+      filtersList.push({
+        instance: new filters.Composed({
+          subFilters: [
+            new BulgeFilter({
+              radius: bulgeRadiusRef.current,
+              strength: bulgeStrengthRef.current,
+              center: { x: pointer.x, y: pointer.y },
+            }),
+          ],
+        }),
+        filterName: `bulge`,
+      });
+    }
+
+    const filterInstances = filtersList.map(
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+    imageRef.current.applyFilters();
+    canvasRef.current?.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+
+    addLog({
+      section: "adjust",
+      tab: "bulge",
+      event: "create",
+      message: `added new bulge`,
+    });
+  }, []);
+
+  const endBulge = useCallback(() => {
+    canvasRef.current?.fire("object:modified");
+  }, []);
+
+  const handleBulgeFilterReset = () => {
+    const filtersList = [...(currentFiltersRef.current || [])];
+    const index = filtersList.findIndex((f) => f.filterName === "bulge");
+    if (index !== -1) {
+      filtersList.splice(index, 1);
+    }
+
+    const filterInstances = filtersList.map(
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+    imageRef.current.applyFilters();
+    canvasRef.current?.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+    deactivateBulge();
+
+    setBulgeRadius(0.3);
+    setBulgeStrength(0.5);
+  };
+
+  const handleSwirlFilterReset = () => {
+    const filtersList = [...(currentFiltersRef.current || [])];
+    const index = filtersList.findIndex((f) => f.filterName === "swirl");
+    if (index !== -1) {
+      filtersList.splice(index, 1);
+    }
+
+    const filterInstances = filtersList.map(
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+    imageRef.current.applyFilters();
+    canvasRef.current?.requestRenderAll();
+
+    setCurrentFilters(filtersList);
+    currentFiltersRef.current = filtersList;
+    deactivateSwril();
+
+    setSwirlRadius(0.3);
+    setSwirlAngle(1.0);
+  };
+
+  const [activateTab, setActivateTab] = useState<string>("reflect");
+  const prevTabRef = useRef<string>(activateTab);
+
+  useEffect(() => {
+    console.log(prevTabRef.current, activateTab);
+    if (prevTabRef.current !== activateTab) {
+      if (prevTabRef.current === "morph") {
+        console.log("morph deactivated");
+        setActivateLiquidifyTool("");
+        deactivateBulge();
+        deactivateSwril();
+      }
+    }
+
+    prevTabRef.current = activateTab;
+  }, [activateTab]);
+
   return (
     <div className="max-h-full flex flex-col items-center justify-center w-full gap-4">
       <Tabs
         defaultValue="reflect"
+        value={activateTab}
+        onValueChange={(value) => setActivateTab(value)}
         className="w-full flex-1 flex flex-col rounded-none"
       >
         <div className="border-b border-gray-200 dark:border-gray-800">
           <TabsList className="w-full grid grid-cols-3 rounded-none">
             <TabsTrigger value="reflect">Reflect</TabsTrigger>
-            <TabsTrigger value="blur">Blur</TabsTrigger>
+            <TabsTrigger value="morph">Liquify</TabsTrigger>
             <TabsTrigger value="edge">Edge</TabsTrigger>
           </TabsList>
         </div>
@@ -1513,9 +1798,298 @@ const AdjustSidebarAdvanced = ({
         </TabsContent>
 
         <TabsContent
-          value="blur"
+          value="morph"
+          className="w-full flex flex-col justify-center items-center space-y-2"
+          onSelect={() => {
+            console.log("ksdf");
+          }}
+        >
+          <div className="w-[90%]">
+            <Card>
+              <CardHeader>
+                <CardDescription className="text-center">
+                  Liquify Controls
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="w-full flex flex-col gap-4">
+                {/* Tool Selection */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Swirl Tool */}
+                  <div
+                    className={`group relative flex flex-col items-center p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+                      activateLiquidifyTool === "swirl"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                    onClick={() => {
+                      if (activateLiquidifyTool === "swirl") {
+                        deactivateSwril();
+                        setActivateLiquidifyTool("");
+                      } else {
+                        // Deactivate other tools first
+                        if (activateLiquidifyTool === "bulge") {
+                          deactivateBulge();
+                        }
+                        activateSwril();
+                        setActivateLiquidifyTool("swirl");
+                      }
+                    }}
+                  >
+                    <div
+                      className={`p-3 rounded-full mb-2 transition-colors duration-200 ${
+                        activateLiquidifyTool === "swirl"
+                          ? "bg-blue-100 dark:bg-blue-800"
+                          : "bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
+                      }`}
+                    >
+                      <SwirlIcon
+                        size={24}
+                        className={`transition-colors duration-200 ${
+                          activateLiquidifyTool === "swirl"
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Swirl
+                    </span>
+                  </div>
+
+                  {/* Bulge Tool */}
+                  <div
+                    className={`group relative flex flex-col items-center p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+                      activateLiquidifyTool === "bulge"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                    onClick={() => {
+                      if (activateLiquidifyTool === "bulge") {
+                        deactivateBulge();
+                        setActivateLiquidifyTool("");
+                      } else {
+                        // Deactivate other tools first
+                        if (activateLiquidifyTool === "swirl") {
+                          deactivateSwril();
+                        }
+                        activateBulge();
+                        setActivateLiquidifyTool("bulge");
+                      }
+                    }}
+                  >
+                    <div
+                      className={`p-3 rounded-full mb-2 transition-colors duration-200 ${
+                        activateLiquidifyTool === "bulge"
+                          ? "bg-blue-100 dark:bg-blue-800"
+                          : "bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
+                      }`}
+                    >
+                      <BulgeIcon
+                        size={24}
+                        className={`transition-colors duration-200 ${
+                          activateLiquidifyTool === "bulge"
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Bulge
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tool Controls */}
+                <div className="space-y-4">
+                  {/* Swirl Controls */}
+                  {activateLiquidifyTool === "swirl" && (
+                    <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-slate-600 dark:text-slate-300 text-sm">
+                          <p>Radius</p>
+                          <p className="font-medium">
+                            {swirlRadius.toFixed(2)}
+                          </p>
+                        </div>
+                        <Slider
+                          value={[swirlRadius]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={(e) => {
+                            swirlRadiusRef.current = e[0];
+                            setSwirlRadius(e[0]);
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-slate-600 dark:text-slate-300 text-sm">
+                          <p>Angle</p>
+                          <p className="font-medium">{swirlAngle.toFixed(2)}</p>
+                        </div>
+                        <Slider
+                          value={[swirlAngle]}
+                          min={-3.14}
+                          max={3.14}
+                          step={0.01}
+                          onValueChange={(e) => {
+                            swirlAngleRef.current = e[0];
+                            setSwirlAngle(e[0]);
+                          }}
+                        />
+                      </div>
+                      <button
+                        className="w-full mt-2 p-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
+                        onClick={() => handleSwirlFilterReset()}
+                      >
+                        Reset All
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Bulge Controls */}
+                  {activateLiquidifyTool === "bulge" && (
+                    <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-slate-600 dark:text-slate-300 text-sm">
+                          <p>Radius</p>
+                          <p className="font-medium">
+                            {bulgeRadius.toFixed(2)}
+                          </p>
+                        </div>
+                        <Slider
+                          value={[bulgeRadius]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={(e) => {
+                            bulgeRadiusRef.current = e[0];
+                            setBulgeRadius(e[0]);
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-slate-600 dark:text-slate-300 text-sm">
+                          <p>Strength</p>
+                          <p className="font-medium">
+                            {bulgeStrength.toFixed(2)}
+                          </p>
+                        </div>
+                        <Slider
+                          value={[bulgeStrength]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={(e) => {
+                            bulgeStrengthRef.current = e[0];
+                            setBulgeStrength(e[0]);
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        className="w-full mt-2 p-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
+                        onClick={() => handleBulgeFilterReset()}
+                      >
+                        Reset All
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent
+          value="edge"
           className="w-full flex flex-col justify-center items-center space-y-2"
         >
+          <div className="w-[90%]">
+            <Card className="w-full">
+              <CardHeader>
+                <CardDescription className="text-center text-base font-semibold">
+                  Edge Detection Controls
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-700/30 rounded-md">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                    <strong>Note:</strong> For edge detection, images should
+                    already be in gray scaled and blurrred. Canny edge detection
+                    is an approximation and may not produce results identical to
+                    server-side implementations.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      Edge Type
+                    </label>
+                    <Select
+                      value={selectedEdgeType}
+                      onValueChange={handleEdgeTypeChange}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="horizontal">
+                          Horizontal Edge
+                        </SelectItem>
+
+                        <SelectItem value="vertical">Vertical Edge</SelectItem>
+                        <SelectItem value="sobel">Sobel Edge</SelectItem>
+                        <SelectItem value="canny">Canny Edge</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Canny Edge Specific Options - Placeholder */}
+                  {selectedEdgeType === "canny" && (
+                    <div className="flex flex-col gap-4 px-2 border-t pt-4 mt-2">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Canny Edge Options
+                      </h3>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
+                          <p>Lower Threshold</p>
+                          <p>{cannyLowerThreshold}</p>
+                        </div>
+                        <Slider
+                          value={[cannyLowerThreshold]}
+                          min={0}
+                          max={255}
+                          step={1}
+                          onValueChange={(e) => handleCannyLowerChange(e[0])}
+                          onValueCommit={() => canvas.fire("object:modified")}
+                          disabled={selectedEdgeType !== "canny"}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
+                          <p>Upper Threshold</p>
+                          <p>{cannyUpperThreshold}</p>
+                        </div>
+                        <Slider
+                          value={[cannyUpperThreshold]}
+                          min={0}
+                          max={255}
+                          step={1}
+                          onValueChange={(e) => handleCannyUpperChange(e[0])}
+                          onValueCommit={() => canvas.fire("object:modified")}
+                          disabled={selectedEdgeType !== "canny"}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           <div className="w-[90%]">
             <Card className="w-full">
               <CardHeader>
@@ -1700,96 +2274,6 @@ const AdjustSidebarAdvanced = ({
                       </Select>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent
-          value="edge"
-          className="w-full flex flex-col justify-center items-center space-y-2"
-        >
-          <div className="w-[90%]">
-            <Card className="w-full">
-              <CardHeader>
-                <CardDescription className="text-center text-base font-semibold">
-                  Edge Detection Controls
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-6">
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-700/30 rounded-md">
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                    <strong>Note:</strong> For edge detection, images should
-                    already be in gray scaled and blurrred. Canny edge detection
-                    is an approximation and may not produce results identical to
-                    server-side implementations.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      Edge Type
-                    </label>
-                    <Select
-                      value={selectedEdgeType}
-                      onValueChange={handleEdgeTypeChange}
-                    >
-                      <SelectTrigger className="w-36">
-                        <SelectValue placeholder="Select Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="horizontal">
-                          Horizontal Edge
-                        </SelectItem>
-
-                        <SelectItem value="vertical">Vertical Edge</SelectItem>
-                        <SelectItem value="sobel">Sobel Edge</SelectItem>
-                        <SelectItem value="canny">Canny Edge</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Canny Edge Specific Options - Placeholder */}
-                  {selectedEdgeType === "canny" && (
-                    <div className="flex flex-col gap-4 px-2 border-t pt-4 mt-2">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Canny Edge Options
-                      </h3>
-                      <div className="flex flex-col gap-3">
-                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
-                          <p>Lower Threshold</p>
-                          <p>{cannyLowerThreshold}</p>
-                        </div>
-                        <Slider
-                          value={[cannyLowerThreshold]}
-                          min={0}
-                          max={255}
-                          step={1}
-                          onValueChange={(e) => handleCannyLowerChange(e[0])}
-                          onValueCommit={() => canvas.fire("object:modified")}
-                          disabled={selectedEdgeType !== "canny"}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
-                          <p>Upper Threshold</p>
-                          <p>{cannyUpperThreshold}</p>
-                        </div>
-                        <Slider
-                          value={[cannyUpperThreshold]}
-                          min={0}
-                          max={255}
-                          step={1}
-                          onValueChange={(e) => handleCannyUpperChange(e[0])}
-                          onValueCommit={() => canvas.fire("object:modified")}
-                          disabled={selectedEdgeType !== "canny"}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

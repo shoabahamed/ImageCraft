@@ -144,6 +144,22 @@ type AdjustStore = {
   setCannyLowerThreshold: (value: number) => void;
   setCannyUpperThreshold: (value: number) => void;
 
+  swirlRadius: number;
+  swirlAngle: number;
+  setSwirlRadius: (value: number) => void;
+  setSwirlAngle: (value: number) => void;
+
+  enableSwirl: boolean;
+  setEnableSwirl: (value: boolean) => void;
+
+  bulgeRadius: number;
+  bulgeStrength: number;
+  setBulgeRadius: (value: number) => void;
+  setBulgeStrength: (value: number) => void;
+
+  activateLiquidifyTool: string;
+  setActivateLiquidifyTool: (value: string) => void;
+
   resetFilters: () => void;
 };
 
@@ -299,6 +315,22 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   setCannyLowerThreshold: (value) => set({ cannyLowerThreshold: value }),
   setCannyUpperThreshold: (value) => set({ cannyUpperThreshold: value }),
 
+  swirlRadius: 0.3,
+  swirlAngle: 1.0,
+  setSwirlRadius: (value) => set({ swirlRadius: value }),
+  setSwirlAngle: (value) => set({ swirlAngle: value }),
+
+  enableSwirl: false,
+  setEnableSwirl: (value) => set({ enableSwirl: value }),
+
+  bulgeRadius: 0.3,
+  bulgeStrength: 0.5,
+  setBulgeRadius: (value) => set({ bulgeRadius: value }),
+  setBulgeStrength: (value) => set({ bulgeStrength: value }),
+
+  activateLiquidifyTool: "",
+  setActivateLiquidifyTool: (value) => set({ activateLiquidifyTool: value }),
+
   resetFilters: () =>
     set({
       brightnessValue: 0,
@@ -366,5 +398,12 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       selectedEdgeType: "none",
       cannyLowerThreshold: 25,
       cannyUpperThreshold: 50,
+
+      swirlRadius: 0.3,
+      swirlAngle: 1.0,
+      enableSwirl: false,
+
+      bulgeRadius: 0.3,
+      bulgeStrength: 0.5,
     }),
 }));

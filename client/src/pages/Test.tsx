@@ -50,6 +50,8 @@ import { CannySobelEdge } from "@/utils/CannySobelEdge";
 import { Hysteris } from "@/utils/Hysteris";
 import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
 import { VerticalEdgeFilter } from "@/utils/VerticalFilter";
+import { Swirl } from "@/utils/Swirl";
+import { BulgeFilter } from "@/utils/BulgeFilter";
 
 // TODO: the whole update or insert here feels redunant when doing from database or history may be I should fix that
 
@@ -293,6 +295,17 @@ const Test = () => {
   );
 
   const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
+
+  const { swirlAngleRef, swirlRadiusRef } = useCanvasObjects();
+  const setSwirlRadius = useAdjustStore((state) => state.setSwirlRadius);
+  const setSwirlAngle = useAdjustStore((state) => state.setSwirlAngle);
+
+  const setBulgeRadius = useAdjustStore((state) => state.setBulgeRadius);
+  const setBulgeStrength = useAdjustStore((state) => state.setBulgeStrength);
+
+  const setActivateLiquidifyTool = useAdjustStore(
+    (state) => state.setActivateLiquidifyTool
+  );
 
   const { dbLoadingRef } = useCanvasObjects();
 
@@ -753,6 +766,20 @@ const Test = () => {
               setHistoryValue(allData);
             }
 
+            const canvasRect = initCanvas
+              .getObjects()
+              .find((obj) => obj.name?.startsWith("canvasRect"));
+
+            if (canvasRect) {
+              const fillColor = canvasRect.get("fill");
+
+              canvasRect.set({
+                selectable: false,
+                hasControls: false,
+              });
+              setBackgroundColor(fillColor);
+            }
+
             if (frameObject) {
               imageObject.clipPath = null;
               frameObject.absolutePositioned = true;
@@ -1037,6 +1064,7 @@ const Test = () => {
     setSpinnerLoading(true);
     setSelectedObject(null);
     setShapeType(null);
+    setActivateLiquidifyTool("");
 
     const canvasJSON = currentSnapshot.project_data;
     const finalImageShape: { imageWidth: number; imageHeight: number } =
@@ -1169,6 +1197,11 @@ const Test = () => {
 
         if (canvasRect) {
           const fillColor = canvasRect.get("fill");
+
+          canvasRect.set({
+            selectable: false,
+            hasControls: false,
+          });
           setBackgroundColor(fillColor);
         }
 
@@ -1240,393 +1273,6 @@ const Test = () => {
       // newCanvas.off("object:modified", handleObjectModified);
     };
   }, [currentHistoryIndex]);
-
-  //  the code below is responsible for handling all kinds of filters
-
-  // useEffect(() => {
-  //   if (currentImageRef.current && mainCanvasRef.current) {
-  //     if (dbLoadingRef.current) return;
-
-  //     isFilterUpdate.current = true;
-
-  //     // Clear any pending filter updates
-  //     if (filterUpdateTimeout.current) {
-  //       clearTimeout(filterUpdateTimeout.current);
-  //     }
-
-  //     // Batch filter updates
-  //     filterUpdateTimeout.current = setTimeout(() => {
-  //       const filtersList = [...(currentFilters || [])];
-
-  //       console.log("old, running from main", filtersList);
-  //       updateOrInsert(
-  //         filtersList,
-  //         "grayscale",
-  //         new filters.Grayscale(),
-  //         enableGrayScale
-  //       );
-  //       updateOrInsert(filtersList, "sepia", new filters.Sepia(), enableSepia);
-  //       updateOrInsert(
-  //         filtersList,
-  //         "vintage",
-  //         new filters.Vintage(),
-  //         enableVintage
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "kodachrome",
-  //         new filters.Kodachrome(),
-  //         enableKodachrome
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "technicolor",
-  //         new filters.Technicolor(),
-  //         enableTechnicolor
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "sobeledge",
-  //         new filters.Composed({
-  //           subFilters: [new CustomGaussianSobelFilter(), new SobelFilter()],
-  //         }),
-  //         enableEdgeDetection
-  //       );
-
-  //       updateOrInsert(filtersList, "cold", new ColdFilter(), enableColdFilter);
-
-  //       updateOrInsert(filtersList, "warm", new WarmFilter(), enableWarmFilter);
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "invert",
-  //         new filters.Invert({ alpha: false }),
-  //         enableInvert
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "rbrightness",
-  //         new RBrightness({ RBrightness: redBrightnessValue }),
-  //         redBrightnessValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "bbrightness",
-  //         new BBrightness({ BBrightness: blueBrightnessValue }),
-  //         blueBrightnessValue !== 0
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "gbrightness",
-  //         new GBrightness({ GBrightness: greenBrightnessValue }),
-  //         greenBrightnessValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "gamma",
-  //         new filters.Gamma({ gamma: [gammaRed, gammaGreen, gammaBlue] }),
-  //         gammaBlue !== 1 || gammaGreen !== 1 || gammaRed !== 1
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "contrast",
-  //         new filters.Contrast({ contrast: contrastValue }),
-  //         contrastValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "saturation",
-  //         new filters.Saturation({ saturation: saturationValue }),
-  //         saturationValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "vibrance",
-  //         new filters.Vibrance({ vibrance: vibranceValue }),
-  //         vibranceValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "blur",
-  //         new filters.Blur({ blur: blurValue }),
-  //         blurValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "hueRotation",
-  //         new filters.HueRotation({ rotation: hueValue }),
-  //         hueValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "noise",
-  //         new filters.Noise({ noise: noiseValue }),
-  //         noiseValue !== 0
-  //       );
-  //       updateOrInsert(
-  //         filtersList,
-  //         "pixelate",
-  //         new filters.Pixelate({ blocksize: pixelateValue }),
-  //         pixelateValue !== 0
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "sharpen",
-  //         new SharpenFilter({ SharpenValue: sharpenValue }),
-  //         sharpenValue !== 0.5
-  //       );
-
-  //       // deprecated rgb thresholding
-  //       // updateOrInsert(
-  //       //   filtersList,
-  //       //   "redThreshold",
-  //       //   new RedThresholdFilter({
-  //       //     red: {
-  //       //       threshold: red.threshold,
-  //       //       lower: red.below,
-  //       //       upper: red.above,
-  //       //     },
-  //       //   }),
-  //       //   enableRedThresholding
-  //       // );
-
-  //       // updateOrInsert(
-  //       //   filtersList,
-  //       //   "greenThreshold",
-  //       //   new GreenThresholdFilter({
-  //       //     green: {
-  //       //       threshold: green.threshold,
-  //       //       lower: green.below,
-  //       //       upper: green.above,
-  //       //     },
-  //       //   }),
-  //       //   enableGreenThresholding
-  //       // );
-
-  //       // updateOrInsert(
-  //       //   filtersList,
-  //       //   "blueThreshold",
-  //       //   new BlueThresholdFilter({
-  //       //     blue: {
-  //       //       threshold: blue.threshold,
-  //       //       lower: blue.below,
-  //       //       upper: blue.above,
-  //       //     },
-  //       //   }),
-  //       //   enableBlueThresholding
-  //       // );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "gaussianBlur",
-  //         new GaussianBlurFilter({
-  //           sigma: gaussianSigma,
-  //           matrixSize: gaussianMatrixSize,
-  //         }),
-  //         enableGaussianBlur
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "focusFilter",
-  //         new FocusFilter({
-  //           radius: radius,
-  //           softness: softness,
-  //           dark: darkFocus,
-  //         }),
-  //         enableFocusFilter
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "leftToRight",
-  //         new ReflectFilter({
-  //           reflectType: "leftToRight",
-  //         }),
-  //         enableLeftToRightReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "rightToLeft",
-  //         new ReflectFilter({
-  //           reflectType: "rightToLeft",
-  //         }),
-  //         enableRightToLeftReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "bottomToTop",
-  //         new ReflectFilter({
-  //           reflectType: "bottomToTop",
-  //         }),
-  //         enableBottomToTopReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "topToBottom",
-  //         new ReflectFilter({
-  //           reflectType: "topToBottom",
-  //         }),
-  //         enableTopToBottomReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "topLeft",
-  //         new ReflectFilter({
-  //           reflectType: "topLeft",
-  //         }),
-  //         enableTopLeftReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "topRight",
-  //         new ReflectFilter({
-  //           reflectType: "topRight",
-  //         }),
-  //         enableTopRightReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "bottomRight",
-  //         new ReflectFilter({
-  //           reflectType: "bottomRight",
-  //         }),
-  //         enableBottomRightReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "bottomLeft",
-  //         new ReflectFilter({
-  //           reflectType: "bottomLeft",
-  //         }),
-  //         enableBottomLeftReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "leftDiagonal",
-  //         new ReflectFilter({
-  //           reflectType: "leftDiagonal",
-  //         }),
-  //         enableLeftDiagonalReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "rightDiagonal",
-  //         new ReflectFilter({
-  //           reflectType: "rightDiagonal",
-  //         }),
-  //         enableRightDiagonalReflect
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "medianFilter",
-  //         new MedianFilter({ matrixSize: medianFilterMatrixSize }),
-  //         enableMedianFilter
-  //       );
-
-  //       updateOrInsert(
-  //         filtersList,
-  //         "bilateralFilter",
-  //         new BilateralFilter({
-  //           sigmaS: bilateralSigmaS,
-  //           sigmaC: bilateralSigmaC,
-  //           kernelSize: bilateralKernelSize,
-  //         }),
-  //         enableBilateralFilter
-  //       );
-
-  //       console.log("new", filtersList);
-  //       const filterInstances = filtersList.map(
-  //         //@ts-ignore
-  //         (tempFilter) => tempFilter.instance
-  //       );
-
-  //       currentImageRef.current.filters = filterInstances;
-
-  //       currentImageRef.current.applyFilters();
-  //       currentImageRef.current.set("opacity", opacityValue);
-
-  //       mainCanvasRef.current.requestRenderAll();
-
-  //       setCurrentFilters(filtersList);
-  //       currentFiltersRef.current = filtersList;
-
-  //       // Reset filter update flag after a short delay
-  //       setTimeout(() => {
-  //         isFilterUpdate.current = false;
-  //         mainCanvasRef.current.fire("object:modified");
-  //       }, 100);
-  //     }, 150); // Batch updates within 150ms window
-  //   }
-  // }, [
-  //   opacityValue,
-  //   enableGrayScale,
-  //   enableInvert,
-  //   enableKodachrome,
-  //   enableSepia,
-  //   enableSharpen,
-  //   enableTechnicolor,
-  //   enableVintage,
-  //   enableEdgeDetection,
-  //   redBrightnessValue,
-  //   greenBrightnessValue,
-  //   blueBrightnessValue,
-  //   gammaBlue,
-  //   gammaGreen,
-  //   gammaRed,
-  //   contrastValue,
-  //   hueValue,
-  //   blurValue,
-  //   noiseValue,
-  //   pixelateValue,
-  //   saturationValue,
-  //   vibranceValue,
-  //   enableColdFilter,
-  //   enableWarmFilter,
-  //   red,
-  //   green,
-  //   blue,
-  //   // enableRedThresholding,
-  //   // enableBlueThresholding,
-  //   // enableGreenThresholding,
-  //   enableGaussianBlur,
-  //   gaussianSigma,
-  //   gaussianMatrixSize,
-  //   enableFocusFilter,
-  //   radius,
-  //   softness,
-  //   darkFocus,
-  //   sharpenValue,
-  //   enableLeftToRightReflect,
-  //   enableRightToLeftReflect,
-  //   enableTopToBottomReflect,
-  //   enableBottomToTopReflect,
-  //   enableTopLeftReflect,
-  //   enableTopRightReflect,
-  //   enableBottomLeftReflect,
-  //   enableBottomRightReflect,
-  //   enableLeftDiagonalReflect,
-  //   enableRightDiagonalReflect,
-  //   enableMedianFilter,
-  //   enableBilateralFilter,
-  //   bilateralSigmaS,
-  //   bilateralSigmaC,
-  //   bilateralKernelSize,
-  //   medianFilterMatrixSize,
-  // ]);
 
   // this only runs if we load a project from the database else it does not do anything
   useEffect(() => {
@@ -2141,6 +1787,38 @@ const Test = () => {
             console.log("from edge", filterData);
 
             break;
+
+          case "swirl":
+            {
+              const swirlFilterComposed = filterData as filters.Composed;
+              const swirlFilter = swirlFilterComposed.subFilters[
+                swirlFilterComposed.subFilters.length - 1
+              ] as Swirl;
+              const radius = swirlFilter.radius;
+              const angle = swirlFilter.angle;
+
+              setSwirlRadius(radius);
+              setSwirlAngle(angle);
+              swirlRadiusRef.current = radius;
+              swirlAngleRef.current = angle;
+            }
+
+            break;
+
+          case "bulge":
+            {
+              const bulgeFilterComposed = filterData as filters.Composed;
+              const bulgeFilter = bulgeFilterComposed.subFilters[
+                bulgeFilterComposed.subFilters.length - 1
+              ] as BulgeFilter;
+              console.log(bulgeFilter);
+              const bulgeRadius = bulgeFilter.radius;
+              const bulgeStrength = bulgeFilter.strength;
+
+              setBulgeRadius(bulgeRadius);
+              setBulgeStrength(bulgeStrength);
+            }
+            break;
         }
       }
       // setCurrentFilters(filtersList);
@@ -2312,6 +1990,7 @@ const Test = () => {
                 <div className="max-h-[580px] overflow-hidden  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <AdjustSidebarAdvanced
                     canvas={mainCanvasRef.current!}
+                    canvasRef={mainCanvasRef}
                     image={currentImageRef.current!}
                     imageRef={currentImageRef!}
                     databaseFiltersName={databaseFiltersNameRef.current}

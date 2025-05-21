@@ -12,6 +12,7 @@ import AdminReportSection from "@/components/AdminReportSection";
 import { Link } from "react-router-dom";
 import AdminUsers from "@/components/AdminUsers";
 import Navbar from "@/components/Navbar";
+import TemplateSection from "@/components/TemplateSection";
 
 type userInfo = {
   username: string;
@@ -52,7 +53,7 @@ export default function AdminPanel() {
         <Tabs defaultValue="users" className="w-full">
           <TabsList
             className={`grid ${
-              user.role === "admin" ? "grid-cols-3" : "grid-cols-4"
+              user.role === "admin" ? "grid-cols-4" : "grid-cols-5"
             } mb-8`}
           >
             {user.role === "super admin" && (
@@ -69,6 +70,9 @@ export default function AdminPanel() {
             </TabsTrigger>
             <TabsTrigger value="assets" className="flex items-center gap-2">
               <ImagePlus size={18} /> Assets
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center gap-2">
+              <ImagePlus size={18} /> Templates
             </TabsTrigger>
           </TabsList>
 
@@ -92,6 +96,11 @@ export default function AdminPanel() {
           {/* Assets Tab */}
           <TabsContent value="assets">
             <StyleImageSection />
+          </TabsContent>
+
+          {/* Templates Tab */}
+          <TabsContent value="templates">
+            <TemplateSection />
           </TabsContent>
         </Tabs>
       </main>

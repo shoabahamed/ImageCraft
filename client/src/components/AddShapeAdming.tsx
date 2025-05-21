@@ -21,14 +21,14 @@ import {
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
 import Draw from "./Draw";
 import { ShapePropertiesSwitcher } from "./ShapeProperties";
+import DrawAdmin from "./DrawAdmin";
 
 type Props = {
   canvasRef: React.RefObject<Canvas>;
 };
 
-const AddShape = ({ canvasRef }: Props) => {
+const AddShapeAdmin = ({ canvasRef }: Props) => {
   const { selectedObject, disableSavingIntoStackRef } = useCanvasObjects();
-  const { addLog } = useLogContext();
 
   const shapeType = useShapeStore((state) => state.shapeType);
   const setShapeType = useShapeStore((state) => state.setShapeType);
@@ -111,13 +111,6 @@ const AddShape = ({ canvasRef }: Props) => {
     rectRef.current = null;
     disableSavingIntoStackRef.current = false;
     canvasRef.current.fire("object:modified");
-    addLog({
-      section: "shape",
-      tab: "shape",
-      event: "creation",
-      message: `created shape rect`,
-      objType: "rect",
-    });
   }, []);
 
   const activateAddingRect = () => {
@@ -192,13 +185,6 @@ const AddShape = ({ canvasRef }: Props) => {
     lineRef.current = null;
     disableSavingIntoStackRef.current = false;
     canvasRef.current.fire("object:modified");
-    addLog({
-      section: "shape",
-      tab: "shape",
-      event: "creation",
-      message: `created shape rect`,
-      objType: "line",
-    });
   }, []);
 
   const activateAddingLine = () => {
@@ -284,13 +270,6 @@ const AddShape = ({ canvasRef }: Props) => {
 
     disableSavingIntoStackRef.current = false;
     canvasRef.current.fire("object:modified");
-    addLog({
-      section: "shape",
-      tab: "shape",
-      event: "creation",
-      message: `created shape circle`,
-      objType: "circle",
-    });
   }, []);
 
   const activateAddingCircle = () => {
@@ -323,8 +302,8 @@ const AddShape = ({ canvasRef }: Props) => {
       }
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
-          selectable: false,
           hoverCursor: "default",
+          selectable: false,
         });
       }
     });
@@ -375,13 +354,6 @@ const AddShape = ({ canvasRef }: Props) => {
 
     disableSavingIntoStackRef.current = false;
     canvasRef.current.fire("object:modified");
-    addLog({
-      section: "shape",
-      tab: "shape",
-      event: "creation",
-      message: `created shape triangle`,
-      objType: "triangle",
-    });
   }, []);
 
   const activateAddingTriangle = () => {
@@ -535,14 +507,15 @@ const AddShape = ({ canvasRef }: Props) => {
             <ShapePropertiesSwitcher
               type={selectedObject.type}
               canvasRef={canvasRef}
+              role="admin"
             />
           </CardContent>
         </Card>
       ) : null}
 
-      {shapeType === "brush" && <Draw canvas={canvasRef.current} />}
+      {shapeType === "brush" && <DrawAdmin canvas={canvasRef.current} />}
     </div>
   );
 };
 
-export default AddShape;
+export default AddShapeAdmin;

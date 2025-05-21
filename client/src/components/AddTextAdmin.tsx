@@ -27,46 +27,23 @@ import {
   Layers,
 } from "lucide-react";
 
-import {
-  Canvas,
-  FabricImage,
-  Textbox,
-  Shadow,
-  util,
-  FabricObject,
-} from "fabric";
+import { Canvas, FabricImage, Textbox, Shadow } from "fabric";
 import { Textarea } from "./ui/textarea";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
 import useAddTextStore from "@/hooks/appStore/AddTextStore";
 import { Slider } from "./ui/slider";
 import { Switch } from "./ui/switch";
-import { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuthContext } from "@/hooks/useAuthContext";
-import apiClient from "@/utils/appClient";
-import TemplatePreview from "./TemplatePreview";
+
 // TODO: I need to export the isUpper, Id and Frame as extra values during saving
 // TODO: when
 
 type AddTextProps = {
   canvas: Canvas;
-  image: FabricImage;
 };
 
-type Template = {
-  template_id: string;
-  template_name: string;
-  template_data: object;
-  created_at?: Date;
-  updated_at?: Date;
-};
-
-const AddText = ({ canvas, image }: AddTextProps) => {
-  const { toast } = useToast();
-  const { user } = useAuthContext();
+const AddTextAdmin = ({ canvas }: AddTextProps) => {
   const { selectedObject, setSelectedObject } = useCanvasObjects();
-  const { addLog } = useLogContext();
 
   // Unpacking state values one by one
   const textValue = useAddTextStore((state) => state.textValue);
@@ -113,37 +90,15 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const setShadowOffsetX = useAddTextStore((state) => state.setShadowOffsetX);
   const setShadowOffsetY = useAddTextStore((state) => state.setShadowOffsetY);
 
-  const [templates, setTemplates] = useState<Template[] | []>([]);
-
-  useEffect(() => {
-    const get_templates = async () => {
-      try {
-        const response = await apiClient.get("/all_templates", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
-          },
-        });
-        const templates = response.data.data;
-        setTemplates(templates);
-      } catch (error) {
-        console.error("Failed to fetch templates:", error);
-        toast({ description: "Failed to load templates", duration: 3000 });
-      }
-    };
-
-    get_templates();
-  }, []);
-
   // Add text to canvas
   const addText = () => {
     const textId = crypto.randomUUID();
-    const baseFontSize = Math.round(image.width * image.scaleX * 0.05);
+    const baseFontSize = Math.round(canvas.width * 0.05);
     const charSpacing = Math.round(baseFontSize * 0.2);
 
     const text = new Textbox("Sample Text", {
-      left: image.left,
-      top: image.top,
+      left: canvas.width / 2,
+      top: canvas.height / 2,
       fill: textColorValue,
       fontSize: baseFontSize,
       fontFamily: textFont,
@@ -167,12 +122,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
     canvas.add(text);
 
     canvas.setActiveObject(text);
-    addLog({
-      section: "text",
-      tab: "text",
-      event: "create",
-      message: `Created text object with ID ${textId}`,
-    });
   };
 
   // Set up event listeners for object selection
@@ -180,13 +129,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   // Delete selected object
   const deleteSelectedObject = () => {
     if (selectedObject && selectedObject.type === "textbox") {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "deletion",
-        message: `deleted text ${selectedObject.text}`,
-      });
-
       canvas.remove(selectedObject);
       setSelectedObject(null); // Clear state after deletion
     }
@@ -195,26 +137,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextWeightChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      if (isBold) {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Changed text from bold to normal`,
-          param: "style",
-          objType: "text",
-        });
-      } else {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Changed text from normal to bold`,
-          param: "style",
-          objType: "text",
-        });
-      }
-
       selectedObject.set({
         fontWeight: value ? "bold" : "normal",
       });
@@ -231,26 +153,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextUnderlineChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      if (isUnderLine) {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Removed text Underline`,
-          param: "style",
-          objType: "text",
-        });
-      } else {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Added text Underline`,
-          param: "style",
-          objType: "text",
-        });
-      }
-
       selectedObject.set({
         underline: value,
       });
@@ -267,26 +169,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextItalicChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      if (isItalic) {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Changed text from italic to normal`,
-          param: "style",
-          objType: "text",
-        });
-      } else {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Changed text from normal to italic`,
-          param: "style",
-          objType: "text",
-        });
-      }
-
       selectedObject.set({
         fontStyle: value ? "italic" : "normal",
       });
@@ -303,26 +185,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextUpperChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      if (isUpper) {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Changed text from uppercase to lower case`,
-          param: "style",
-          objType: "text",
-        });
-      } else {
-        addLog({
-          section: "text",
-          tab: "text",
-          event: "update",
-          message: `${textValue} Changed text from lowercase to upper case`,
-          param: "style",
-          objType: "text",
-        });
-      }
-
       selectedObject.set({
         text: value ? textValue.toUpperCase() : textValue,
       });
@@ -339,15 +201,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleFontChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update", // @ts-expect-error selectedObject.text is defined in the context
-        message: `changed text ${selectedObject.text} font ${textFont} to ${value}`,
-        param: "font",
-        objType: "text",
-      });
-
       setTextFont(value);
       selectedObject.set({
         fontFamily: value,
@@ -362,15 +215,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextAlignChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `${textValue} changed Left Aligned to ${textAlignValue} Align`,
-        param: "alignment",
-        objType: "text",
-      });
-
       selectedObject.set({
         textAlign: value,
       });
@@ -387,14 +231,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextSizeChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text size changed from ${textSize} to ${value}`,
-        value: `${value}`,
-      });
-
       selectedObject.set({
         fontSize: value,
       });
@@ -411,14 +247,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextOpacityChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text opacity changed from ${textOpacity} to ${value}`,
-        value: `${value}`,
-      });
-
       selectedObject.set({
         opacity: value,
       });
@@ -435,14 +263,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextLineSpacingChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text line spacing changed from ${textLineSpacing} to ${value}`,
-        value: `${value}`,
-      });
-
       selectedObject.set({
         lineHeight: value,
       });
@@ -459,14 +279,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextCharSpacingChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text char spacing changed from ${charSpacing} to ${value}`,
-        value: `${value}`,
-      });
-
       selectedObject.set({
         charSpacing: value,
       });
@@ -483,17 +295,8 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleTextChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Changed text from ${textValue} to ${value}`,
-        param: "font",
-        objType: "text",
-      });
-
       selectedObject.set({
-        text: isUpper ? value.toUpperCase() : value,
+        text: isUpper ? textValue.toUpperCase() : textValue,
       });
 
       setTextValue(value);
@@ -508,15 +311,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleFillChange = (value) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `${textValue} changed text color from ${textColorValue} to ${value}`,
-        param: "color",
-        objType: "text",
-      });
-
       selectedObject.set({
         fill: value,
       });
@@ -533,15 +327,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleShadowToggle = (checked: boolean) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text shadow ${checked ? "enabled" : "disabled"}`,
-        param: "shadow",
-        objType: "text",
-      });
-
       if (checked) {
         const shadow = new Shadow({
           color: shadowColor,
@@ -564,15 +349,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleShadowColor = (value: string) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text shadow color changed to ${value}`,
-        param: "shadowColor",
-        objType: "text",
-      });
-
       const shadow = selectedObject.shadow;
       shadow.color = value;
       selectedObject.set("shadow", shadow);
@@ -586,15 +362,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleShadowBlur = (value: number) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text shadow blur changed to ${value}`,
-        param: "shadowBlur",
-        objType: "text",
-      });
-
       const shadow = selectedObject.shadow;
       shadow.blur = value;
       selectedObject.set("shadow", shadow);
@@ -608,15 +375,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleShadowOffsetX = (value: number) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text shadow offset X changed to ${value}`,
-        param: "shadowOffsetX",
-        objType: "text",
-      });
-
       const shadow = selectedObject.shadow;
       shadow.offsetX = value;
       selectedObject.set("shadow", shadow);
@@ -630,15 +388,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const handleShadowOffsetY = (value: number) => {
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
-      addLog({
-        section: "text",
-        tab: "text",
-        event: "update",
-        message: `Text shadow offset Y changed to ${value}`,
-        param: "shadowOffsetY",
-        objType: "text",
-      });
-
       const shadow = selectedObject.shadow;
       shadow.offsetY = value;
       selectedObject.set("shadow", shadow);
@@ -647,50 +396,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
       canvas.fire("object:modified");
       canvas.renderAll();
     }
-  };
-
-  const addSelectedTemplate = (template: Template) => {
-    const containerWidth = image.getScaledWidth();
-    const containerHeight = image.getScaledHeight();
-    util.enlivenObjects([template.template_data]).then(([fabricObject]) => {
-      const obj = fabricObject as FabricObject;
-      // Get the object's dimensions
-      const objWidth = obj.width;
-      const objHeight = obj.height;
-
-      // Calculate the aspect ratios
-      const containerAspect = containerWidth / containerHeight;
-      const objAspect = objWidth / objHeight;
-
-      // Add more padding for the right side
-      const horizontalPadding = containerWidth * 0.1; // 10% padding
-      const verticalPadding = containerHeight * 0.1; // 10% padding
-
-      let scale;
-      if (objAspect > containerAspect) {
-        // Object is wider than container
-        scale = (containerWidth - horizontalPadding * 2) / objWidth;
-      } else {
-        // Object is taller than container
-        scale = (containerHeight - verticalPadding * 2) / objHeight;
-      }
-
-      // Apply the scale
-      obj.scale(scale);
-
-      // Center the object with adjusted position
-      obj.set({
-        left: (containerWidth - objWidth * scale) / 2 + (objWidth * scale) / 2,
-        top:
-          (containerHeight - objHeight * scale) / 2 + (objHeight * scale) / 2,
-        originX: "center",
-        originY: "center",
-      });
-
-      canvas.add(...obj.removeAll());
-      obj.destroy();
-      canvas.requestRenderAll();
-    });
   };
 
   return (
@@ -709,30 +414,6 @@ const AddText = ({ canvas, image }: AddTextProps) => {
           </CardContent>
         </Card>
       </div>
-      {selectedObject === null && (
-        <div className="w-[90%]">
-          <Card>
-            <CardHeader>
-              <CardDescription>Templates</CardDescription>
-            </CardHeader>
-            <CardContent className="w-full">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {templates.map((template) => (
-                  <div
-                    key={template.template_id}
-                    className="h-[100px] max-h-[200px] w-full rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:shadow-md transition-shadow duration-200 overflow-hidden cursor-pointer"
-                    onClick={() => {
-                      addSelectedTemplate(template);
-                    }}
-                  >
-                    <TemplatePreview objects={template.template_data} />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {selectedObject && selectedObject.type === "textbox" && (
         <div className="w-[90%] flex flex-col items-center justify-center gap-2">
@@ -1077,4 +758,4 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   );
 };
 
-export default AddText;
+export default AddTextAdmin;

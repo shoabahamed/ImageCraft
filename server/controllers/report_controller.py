@@ -7,7 +7,9 @@ import datetime
 import os 
 from utils.common import get_user_paths, create_user_paths
 import shutil
-
+from utils.common import get_user_paths
+from cloudinary.uploader import upload
+import json
 load_dotenv()
 
 db = get_db()
@@ -16,6 +18,7 @@ projects_collection = db['Projects']
 users_collection = db["Users"]
 notice_collection = db['Notices']
 style_image_collection = db['StyleImage']
+templates_collection = db['Templates']
 STYLE_IMG_FOLDER = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
 
 # TODO: send notices to the user whole projects logs has been granted or delete or when an report has been deleted. Or what if admin has granted logs but now want to revoke it
@@ -534,5 +537,83 @@ def delete_user(user_id):
         else:
             return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
 
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 
+    
+    
+def save_template():
+    try:
+        role = g.role
+        user_id = str(g._id)  # Extracted by the middleware
+       
+        if(role.lower() == 'admin' or role.lower() == 'super admin'):
+            usename = request.form.get("username")
+            canvas_id = request.form.get('canvasId')
+            canvas_data = request.form.get('canvasData')
+            project_name = request.form.get("projectName")
+            
+    
+    
+            
+            if not canvas_data:
+                return jsonify({"success": False, "message": "Missing canvas data or image file"}), 400
+    
+            try:
+                canvas_data = json.loads(canvas_data)  # Convert the string to a JSON object
+            except json.JSONDecodeError:
+                return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
+            
+            print("after converting string to json")
+            
+
+
+
+
+
+            new_project = {
+                "user_id": user_id,
+                "username": usename,
+                "template_id": canvas_id,
+                "template_data": canvas_data,
+                "template_name": project_name,
+                "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
+                "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
+            }
+              
+        
+            
+
+            templates_collection.insert_one(new_project)
+            response_message = "Template created successfully"
+            status_code = 201
+
+
+            # Prepare the response
+            response = {"user_id": user_id, "project_id": canvas_id, "project_data": canvas_data}
+            return jsonify({"success": True, "message": response_message, "data": response}), status_code
+        else:
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
+    except Exception as e:
+
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+
+
+def get_all_templates():
+    try:
+        templates = list(templates_collection.find({}, {"_id": 0, "user_id": 0, "username": 0}))
+        return jsonify({"success": True, "data": templates}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 
+    
+    
+def delete_template(template_id):
+    try:
+        role = g.role
+        if(role.lower() == 'admin' or role.lower() == 'super admin'):
+            templates_collection.delete_one({"template_id": template_id})
+            return jsonify({"success": True, "message": "Template deleted successfully"}), 200
+        else:
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500

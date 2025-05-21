@@ -11,6 +11,7 @@ import Temp from "./pages/Temp";
 import UserProfilePage from "./pages/Profile";
 import Gallery from "./pages/Gallery";
 import AdminPanel from "./pages/Admin";
+import TemplateUpload from "./pages/TemplateUpload";
 
 export default function App() {
   const { user, loading } = useAuthContext();
@@ -46,6 +47,19 @@ export default function App() {
               path="/admin"
               element={
                 user && user.role.includes("admin") ? <AdminPanel /> : <Home />
+              }
+            />
+
+            <Route
+              path="/admin/templates/upload"
+              element={
+                user && user.role.includes("admin") ? (
+                  <CanvasObjectsProvider>
+                    <TemplateUpload />
+                  </CanvasObjectsProvider>
+                ) : (
+                  <Home />
+                )
               }
             />
 

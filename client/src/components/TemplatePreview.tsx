@@ -70,9 +70,8 @@ export default function TemplatePreview({ objects }) {
           originY: "center",
         });
 
-        fabricCanvas.clear();
         fabricCanvas.add(obj);
-        fabricCanvas.renderAll();
+        fabricCanvas.requestRenderAll();
       });
     };
 

@@ -10,12 +10,14 @@ import os
 import pathlib
 from utils.common import get_user_paths, create_user_paths
 import requests
-from flask import session, abort, redirect, request
+from flask import redirect, request
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from pip._vendor import cachecontrol
 import google.auth.transport.requests
 from dotenv import load_dotenv
+from cloudinary.uploader import upload
+
 load_dotenv()
 
 # May be I should have added a password too for creating jwt token
@@ -78,9 +80,9 @@ def callback():
             token = create_token(str(user.inserted_id), role=role)
             
             user_id = str(user.inserted_id)
-            USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
-            print(USER_PATH)
-            create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
+            if(os.getenv("DEPLOY_PRODUCTION").lower() == 'false'):
+                USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
+                create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
         
         
         else:
@@ -95,7 +97,7 @@ def callback():
             
         
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"http://localhost:5173/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}"
+        redirect_url = f"{os.getenv("AUTH_REDIRECT_URL")}/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}"
         return redirect(redirect_url)
 
     except Exception as e:
@@ -133,7 +135,7 @@ def signup():
 
         # create a specific directory for the user using user id
 
-        if(os.getenv("DEPOLY_PRODUCTION").lower() == 'false'):
+        if(os.getenv("DEPLOY_PRODUCTION").lower() == 'false'):
             USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH = get_user_paths(os.getenv("USER_COMMON_PATH"), str(user.inserted_id))
             create_user_paths(USER_PATH, ORG_PATH, CANVAS_PATH, INTER_PATH)
             
@@ -228,11 +230,23 @@ def update_profile_image(user_id):
             profile_image = request.files.get('profile_image')
             if profile_image:
                 filename = "profile_image.png"
-                USER_PATH, _, _, _ = get_user_paths(os.getenv("USER_COMMON_PATH"), user_id) 
-                USER_PATH = USER_PATH + filename # the actual path stored in the computer
-                image_save_path = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id  + "/" + filename # the path used by server to locate the image from database
+
+                if(os.getenv("DEPLOY_PRODUCTION").lower() == 'false'):
+                    USER_PATH, _, _, _ = get_user_paths(os.getenv("USER_COMMON_PATH"), user_id) 
+                    USER_PATH = USER_PATH + filename # the actual path stored in the computer
+                    image_save_path = os.getenv("BACKEND_SERVER") + "/server/static/" + user_id  + "/" + filename # the path used by server to locate the image from database
+                    profile_image.save(USER_PATH)
+                else:
+                    USER_PATH, _, _, _ = get_user_paths("", user_id) 
+                    USER_PATH = USER_PATH + filename # the actual path stored in the computer
+                    cloud_result = upload(
+                        profile_image,
+                        public_id=USER_PATH, # This sets the folder and filename
+                        overwrite=True  
+                    )
+                    image_save_path = cloud_result['secure_url']
+ 
                 
-                profile_image.save(USER_PATH)
                 update_data["image_url"] = image_save_path
                 response_data["image_url"] = image_save_path
                 response_data["message"] = "Profile image updated successfully"

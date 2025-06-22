@@ -27,6 +27,8 @@ import {
   Layers,
 } from "lucide-react";
 
+import { Template } from "@/hooks/appStore/AddTextStore";
+
 import {
   Canvas,
   FabricImage,
@@ -52,14 +54,6 @@ import TemplatePreview from "./TemplatePreview";
 type AddTextProps = {
   canvas: Canvas;
   image: FabricImage;
-};
-
-type Template = {
-  template_id: string;
-  template_name: string;
-  template_data: object;
-  created_at?: Date;
-  updated_at?: Date;
 };
 
 const AddText = ({ canvas, image }: AddTextProps) => {
@@ -113,7 +107,8 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   const setShadowOffsetX = useAddTextStore((state) => state.setShadowOffsetX);
   const setShadowOffsetY = useAddTextStore((state) => state.setShadowOffsetY);
 
-  const [templates, setTemplates] = useState<Template[] | []>([]);
+  const templates = useAddTextStore((state) => state.templates);
+  const setTemplates = useAddTextStore((state) => state.setTemplates);
 
   useEffect(() => {
     const get_templates = async () => {
@@ -127,12 +122,14 @@ const AddText = ({ canvas, image }: AddTextProps) => {
         const templates = response.data.data;
         setTemplates(templates);
       } catch (error) {
-        console.error("Failed to fetch templates:", error);
-        toast({ description: "Failed to load templates", duration: 3000 });
+        console.error("Failed to fetch text templates:", error);
+        toast({ description: "Failed to load text templates", duration: 3000 });
       }
     };
 
-    get_templates();
+    if (templates.length === 0) {
+      get_templates();
+    }
   }, []);
 
   // Add text to canvas

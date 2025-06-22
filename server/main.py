@@ -8,8 +8,6 @@ from routes.text_proc_routes import text_proc_routes
 from dotenv import load_dotenv
 import os 
 import cloudinary
-from cloudinary.uploader import upload
-from flask.json import jsonify
 
 load_dotenv()
 
@@ -19,9 +17,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # ✅ Allow 50MB file uploads
 
 
-app.secret_key = os.getenv("APP_SECRET")
-app.config['STYLE_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/style'
-app.config['GENERAL_IMG_FOLDER'] = 'C:/Shoab/PROJECTS/StyleForge/server/static/general'
+# app.secret_key = os.getenv("APP_SECRET")
 
 
 cloudinary.config( 
@@ -67,12 +63,14 @@ def get_user_inter_image(user_id, filename):
 # gets the style image from the static folder
 @app.route('/server/static/style/<string:filename>')
 def get_style_image(filename):
-    return send_from_directory(app.config['STYLE_IMG_FOLDER'], filename, as_attachment=False)
+    path = os.getenv("USER_COMMON_PATH") + "style/" 
+    return send_from_directory(path, filename, as_attachment=False)
 
 # gets the general image from the static folder
 @app.route('/api/server/static/general/<string:filename>')
 def get_general_image(filename):
-    return send_from_directory(app.config['GENERAL_IMG_FOLDER'], filename, as_attachment=False)
+    path = os.getenv("USER_COMMON_PATH") + "general/" 
+    return send_from_directory(path, filename, as_attachment=False)
 
 # gets the profile image from the static folder
 @app.route('/server/static/<string:user_id>/<string:filename>')
@@ -91,7 +89,7 @@ app.register_blueprint(text_proc_routes)
 
 # runs the server on port 5000
 if __name__ == "__main__":
-    if(os.getenv("DEPOLY_PRODUCTION").lower() == 'true'):
+    if(os.getenv("DEPLOY_PRODUCTION").lower() == 'true'):
         print("launching server in production mode")
         app.run(debug=False)
     else:

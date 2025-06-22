@@ -97,7 +97,7 @@ def callback():
             
         
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"{os.getenv("AUTH_REDIRECT_URL")}/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}"
+        redirect_url = f"{os.getenv('AUTH_REDIRECT_URL')}/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}"
         return redirect(redirect_url)
 
     except Exception as e:

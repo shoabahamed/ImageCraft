@@ -184,9 +184,16 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
 
 
 
+const setActiveToolNameRef = (ref: React.MutableRefObject<string>, name: string) => {
+  if (ref && typeof ref === "object") {
+    ref.current = name;
+  }
+};
 
 
-export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert}
+
+
+export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert, setActiveToolNameRef}
 
 
 

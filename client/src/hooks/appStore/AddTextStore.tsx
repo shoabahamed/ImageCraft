@@ -1,5 +1,13 @@
 import { create } from "zustand";
 
+export type Template = {
+  template_id: string;
+  template_name: string;
+  template_data: object;
+  created_at?: Date;
+  updated_at?: Date;
+};
+
 // Defining types for the store state
 interface AddTextStore {
   textValue: string;
@@ -38,6 +46,9 @@ interface AddTextStore {
   setShadowBlur: (value: number) => void;
   setShadowOffsetX: (value: number) => void;
   setShadowOffsetY: (value: number) => void;
+
+  templates: Template[];
+  setTemplates: (value: Template[]) => void;
 }
 
 const useAddTextStore = create<AddTextStore>((set) => ({
@@ -77,6 +88,9 @@ const useAddTextStore = create<AddTextStore>((set) => ({
   setShadowBlur: (value) => set({ shadowBlur: value }),
   setShadowOffsetX: (value) => set({ shadowOffsetX: value }),
   setShadowOffsetY: (value) => set({ shadowOffsetY: value }),
+
+  templates: [],
+  setTemplates: (value) => set({ templates: value }),
 }));
 
 export default useAddTextStore;

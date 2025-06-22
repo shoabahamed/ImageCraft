@@ -8,7 +8,7 @@ import os
 from utils.common import get_user_paths, create_user_paths
 import shutil
 from utils.common import get_user_paths
-from cloudinary.uploader import upload
+from cloudinary.uploader import upload, destroy
 import json
 load_dotenv()
 
@@ -380,27 +380,47 @@ def get_project_log(project_id):
 
 def add_style_img():
     try:
-        style_image = request.files.get('styleImage')
-        image_id = request.form.get("imageId")
-        image_name = request.form.get("imageName")
+        role = g.role
+        if(role.lower() == 'admin' or role.lower() == 'super admin'):
+            style_image = request.files.get('styleImage')
+            image_id = request.form.get("imageId")
+            image_name = request.form.get("imageName")
 
-        image_filename = secure_filename(f"{image_id}.png") 
-        image_path = f"{STYLE_IMG_FOLDER}/{image_filename}"
+            image_filename = secure_filename(f"{image_id}.png")
+            
+            if(os.getenv("DEPLOY_PRODUCTION").lower() == 'false'):
+                image_path = f"{STYLE_IMG_FOLDER}/{image_filename}"
+                style_image.save(image_path)
+                image_url = os.getenv("BACKEND_SERVER") + "/server/static/style/" + image_filename
+            else:
+                image_path = "style/" + image_filename
+                cloud_result = upload(
+                    style_image,
+                    public_id=image_path, # This sets the folder and filename
+                    overwrite=True  # Optional: allows overwriting if file with same ID exists
+                )
+                image_url = cloud_result['secure_url']
 
 
-        new_style_image = {
-            "image_id": image_id,
-            "image_name": image_name,
-            "image_url":os.getenv("BACKEND_SERVER") + "/server/static/style/" + image_filename,
-            "created_at": datetime.datetime.utcnow()
-        }
+            new_style_image = {
+                "image_id": image_id,
+                "image_name": image_name,
+                "image_url": image_url,
+                "created_at": datetime.datetime.utcnow()
+            }
 
-        style_image_collection.insert_one(new_style_image)
-   
-
-        style_image.save(image_path)
-
-        return jsonify({"success": True, "message": "successflly uploaded"}), 200
+            style_image_collection.insert_one(new_style_image)
+      
+            return jsonify({
+                "success": True, 
+                "message": "successfully uploaded", 
+                "data": {
+                    "image_id": image_id,
+                    "image_name": image_name,
+                    "image_url": image_url,
+                    "created_at": new_style_image["created_at"].isoformat()
+                }
+            }), 200
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
@@ -420,18 +440,30 @@ def delete_style_img(image_id):
         if not image_id:
             return jsonify({"error": "Image ID is required"}), 400
         
-        result = style_image_collection.delete_one({"image_id": image_id})
+        role = g.role
+        if(role.lower() == 'admin' or role.lower() == 'super admin'):
+            result = style_image_collection.delete_one({"image_id": image_id})
 
-        image_filename = secure_filename(f"{image_id}.png") 
-        image_path = f"{STYLE_IMG_FOLDER}/{image_filename}"
+            image_filename = secure_filename(f"{image_id}.png")
+            
+            if(os.getenv("DEPLOY_PRODUCTION").lower() == 'false'):
+                image_path = f"{STYLE_IMG_FOLDER}/{image_filename}"
+                os.remove(image_path)
+            else:
+                image_path = "style/" + image_filename
+                cloud_result = destroy(
+                    image_path
+                )
+                
+        
+            style_image_collection.delete_one({"image_id": image_id})
+            
 
-        os.remove(image_path)
-    
+            
+            return jsonify({"message": "Style image deleted successfully"}), 200
         
-        if result.deleted_count == 0:
-            return jsonify({"error": "Image not found"}), 404
-        
-        return jsonify({"message": "Style image deleted successfully"}), 200
+        else:
+            return jsonify({"error": "Unauthorized. Only admins are allowed"}), 403
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     

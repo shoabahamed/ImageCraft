@@ -72,6 +72,7 @@ const AddShape = ({ canvasRef }: Props) => {
   // code for adding circle
   const startAddingRect = useCallback((o) => {
     const pointer = canvasRef.current.getScenePoint(o.e);
+    const shapeId = crypto.randomUUID();
 
     const rect = new Rect({
       left: pointer.x,
@@ -83,6 +84,8 @@ const AddShape = ({ canvasRef }: Props) => {
       stroke: rectStroke,
       strokeWidth: rectStrokeWidth,
     });
+
+    rect.set("id", shapeId);
     disableSavingIntoStackRef.current = true;
     rectRef.current = rect;
     canvasRef.current.add(rect);
@@ -168,6 +171,10 @@ const AddShape = ({ canvasRef }: Props) => {
       stroke: lineStroke,
       selectable: false,
     });
+
+    const shapeId = crypto.randomUUID();
+    line.set("id", shapeId);
+
     disableSavingIntoStackRef.current = true;
     lineRef.current = line;
     canvasRef.current.add(line);
@@ -255,6 +262,9 @@ const AddShape = ({ canvasRef }: Props) => {
       stroke: circleStroke,
       strokeWidth: circleStrokeWidth,
     });
+
+    const shapeId = crypto.randomUUID();
+    circle.set("id", shapeId);
 
     disableSavingIntoStackRef.current = true;
     circleRef.current = circle;
@@ -346,6 +356,9 @@ const AddShape = ({ canvasRef }: Props) => {
       stroke: triangleStroke,
       strokeWidth: triangleStrokeWidth,
     });
+
+    const shapeId = crypto.randomUUID();
+    triangle.set("id", shapeId);
 
     disableSavingIntoStackRef.current = true;
     triangleRef.current = triangle;

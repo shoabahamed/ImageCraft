@@ -24,34 +24,34 @@ import Navbar from "@/components/Navbar";
 
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
-import { BBrightness } from "@/utils/BlueBrightnessFilter";
-import { SharpenFilter } from "@/utils/SharpenFilter";
-import { GBrightness } from "@/utils/GreenBrightnessValue";
-import { RBrightness } from "@/utils/RedBrightnessFilter";
 import { useLogContext } from "@/hooks/useLogContext";
 import useUndoRedo from "@/hooks/useUndoRedo";
-import { SobelFilter } from "@/utils/SobelFilter";
-import { ColdFilter } from "@/utils/ColdFilter";
-import { WarmFilter } from "@/utils/WarmFilter";
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
-import { CustomGaussianSobelFilter } from "@/utils/CustomGaussianBlur";
 import useAddTextStore from "@/hooks/appStore/AddTextStore";
-import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
-import { FocusFilter } from "@/utils/FocusFilter";
 import AdjustSidebarAdvanced from "@/components/AdjustSidebarAdvanced";
+
+import { Swirl } from "@/utils/Swirl";
+import { BulgeFilter } from "@/utils/BulgeFilter";
+import { updateOrInsert } from "@/utils/commonFunctions";
+import { CustomGrayScale } from "@/utils/CustomGrayScale";
+import { GaussianBlurFilter } from "@/utils/GaussianBlurFilter";
+import { RBrightness } from "@/utils/RedBrightnessFilter";
+import { GBrightness } from "@/utils/GreenBrightnessValue";
+import { BBrightness } from "@/utils/BlueBrightnessFilter";
+import { WarmFilter } from "@/utils/WarmFilter";
+import { ColdFilter } from "@/utils/ColdFilter";
+import { SharpenFilter } from "@/utils/SharpenFilter";
+import { FocusFilter } from "@/utils/FocusFilter";
 import { ReflectFilter } from "@/utils/ReflectFilter";
 import { MedianFilter } from "@/utils/MedianFilter";
 import { BilateralFilter } from "@/utils/BilteralFilter";
-import { updateOrInsert } from "@/utils/commonFunctions";
-import { CustomGrayScale } from "@/utils/CustomGrayScale";
-import { DoubleThresholding } from "@/utils/DoubleThresholding";
-import { NonMaximumSupression } from "@/utils/NonMaximumSupression";
 import { CannySobelEdge } from "@/utils/CannySobelEdge";
+import { NonMaximumSupression } from "@/utils/NonMaximumSupression";
+import { DoubleThresholding } from "@/utils/DoubleThresholding";
 import { Hysteris } from "@/utils/Hysteris";
-import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
+import { SobelFilter } from "@/utils/SobelFilter";
 import { VerticalEdgeFilter } from "@/utils/VerticalFilter";
-import { Swirl } from "@/utils/Swirl";
-import { BulgeFilter } from "@/utils/BulgeFilter";
+import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
 
 // TODO: the whole update or insert here feels redunant when doing from database or history may be I should fix that
 
@@ -66,14 +66,11 @@ const override: CSSProperties = {
 const Test = () => {
   const sidebarName = useCommonProps((state) => state.sidebarName);
   const { setLogs, addLog } = useLogContext();
-  const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
   const setSidebarName = useCommonProps((state) => state.setSidebarName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
   const setShowUpdateButton = useCommonProps(
     (state) => state.setShowUpdateButton
   );
-
-  const currentFilters = useCommonProps((state) => state.currentFilters);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -114,8 +111,10 @@ const Test = () => {
     originalImageDimensionsRef,
     downloadImageDimensionsRef,
     setSelectedObject,
+    selectedObject,
     allFiltersRef,
     currentFiltersRef,
+    activeToolNameRef,
   } = useCanvasObjects();
 
   const backgroundColor = useArrangeStore((state) => state.backgroundColor);
@@ -176,36 +175,6 @@ const Test = () => {
   const setBlurValue = useAdjustStore((state) => state.setBlurValue);
   const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
   const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
-
-  // const setRed = useAdjustStore((state) => state.setRed);
-
-  // const setGreen = useAdjustStore((state) => state.setGreen);
-
-  // const setBlue = useAdjustStore((state) => state.setBlue);
-
-  // const enableBlueThresholding = useAdjustStore(
-  //   (state) => state.enableBlueThresholding
-  // );
-
-  // const enableGreenThresholding = useAdjustStore(
-  //   (state) => state.enableGreenThresholding
-  // );
-
-  // const enableRedThresholding = useAdjustStore(
-  //   (state) => state.enableRedThresholding
-  // );
-
-  // const setEnableRedThresholding = useAdjustStore(
-  //   (state) => state.setEnableRedThresholding
-  // );
-
-  // const setEnableGreenThresholding = useAdjustStore(
-  //   (state) => state.setEnableGreenThresholding
-  // );
-
-  // const setEnableBlueThresholding = useAdjustStore(
-  //   (state) => state.setEnableBlueThresholding
-  // );
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
@@ -305,6 +274,10 @@ const Test = () => {
 
   const setActivateLiquidifyTool = useAdjustStore(
     (state) => state.setActivateLiquidifyTool
+  );
+
+  const activateLiquidifyTool = useAdjustStore(
+    (state) => state.activateLiquidifyTool
   );
 
   const { dbLoadingRef } = useCanvasObjects();
@@ -1029,6 +1002,7 @@ const Test = () => {
 
     const filterNames =
       currentFiltersRef.current?.map((filter) => filter.filterName) || [];
+
     const allData = {
       project_data: canvasData,
       final_image_shape: finalImageDimensionsRef.current,
@@ -1038,6 +1012,7 @@ const Test = () => {
       all_filters_applied: allFiltersRef.current,
       viewportTransform: mainCanvasRef.current.viewportTransform,
       zoomValue: zoomValue,
+      last_active_tool_name: activeToolNameRef.current,
     };
 
     setHistoryValue(allData);
@@ -1062,9 +1037,7 @@ const Test = () => {
     if (!isUndoRedoAction.current) return;
 
     setSpinnerLoading(true);
-    setSelectedObject(null);
     setShapeType(null);
-    setActivateLiquidifyTool("");
 
     const canvasJSON = currentSnapshot.project_data;
     const finalImageShape: { imageWidth: number; imageHeight: number } =
@@ -1075,6 +1048,7 @@ const Test = () => {
       currentSnapshot.original_image_shape;
     const filterNames = currentSnapshot.filter_names;
     const allFiltersApplied = currentSnapshot.all_filters_applied;
+    const lastActiveToolName = currentSnapshot.last_active_tool_name;
 
     console.log(currentHistoryIndex, "history index");
 
@@ -1215,6 +1189,31 @@ const Test = () => {
         // @ts-ignore
         currentImageRef.current = imageObject; // Store the Fabric.js image object reference
         mainCanvasRef.current = newCanvas; // Store the Fabric.js canvas reference
+
+        // If there was a previously selected object, restore its selection and update UI
+        if (selectedObject) {
+          const id = (selectedObject as any).id;
+          const previouslySelectedObject = newCanvas
+            .getObjects()
+            .find((obj) => (obj as any).id === id);
+
+          if (previouslySelectedObject) {
+            newCanvas.setActiveObject(previouslySelectedObject);
+            handleObjectSelected(); // This will update the UI state
+          }
+        }
+
+        // // Only activate the liquidify tool if it was active before
+        // // The filters themselves will be restored by the canvas state
+        activeToolNameRef.current = lastActiveToolName;
+
+        if (activateLiquidifyTool === "swirl") {
+          setActivateLiquidifyTool("swirl");
+        } else if (activateLiquidifyTool === "bulge") {
+          setActivateLiquidifyTool("bulge");
+        } else {
+          setActivateLiquidifyTool("");
+        }
       });
     } catch (error) {
       console.error("Failed to load canvas data:", error);
@@ -1298,6 +1297,7 @@ const Test = () => {
       // resetFilters();
 
       const opacity = currentImageRef.current.get("opacity");
+
       setOpacityValue(opacity);
 
       for (let idx = 0; idx < databaseFiltersName.length; idx++) {
@@ -1307,419 +1307,310 @@ const Test = () => {
         switch (filterName) {
           case "grayscale":
             setEnableGrayScale(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "grayscale",
-            //   new CustomGrayScale(),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "grayscale",
+              new CustomGrayScale(),
+              true
+            );
+
             break;
           case "sepia":
             setEnableSepia(true);
-            // updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
-
+            updateOrInsert(filtersList, "sepia", new filters.Sepia(), true);
             break;
           case "vintage":
             setEnableVintage(true);
-            // updateOrInsert(filtersList, "vintage", new filters.Vintage(), true);
+            updateOrInsert(filtersList, "vintage", new filters.Vintage(), true);
             break;
           case "kodachrome":
             setEnableKodachrome(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "kodachrome",
-            //   new filters.Kodachrome(),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "kodachrome",
+              new filters.Kodachrome(),
+              true
+            );
             break;
           case "technicolor":
             setEnableTechnicolor(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "technicolor",
-            //   new filters.Technicolor(),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "technicolor",
+              new filters.Technicolor(),
+              true
+            );
             break;
 
           case "sharpen":
-            // setEnableSharpen(true);
             setSharpenValue(filterData.sharpenValue);
-            // updateOrInsert(
-            //   filtersList,
-            //   "sharpen",
-            //   new SharpenFilter({ SharpenValue: filterData.sharpenValue }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "sharpen",
+              new SharpenFilter({ SharpenValue: filterData.sharpenValue }),
+              true
+            );
             break;
 
           case "cold":
             setEnableColdFilter(true);
-            // updateOrInsert(filtersList, "cold", new ColdFilter(), true);
-
+            updateOrInsert(filtersList, "cold", new ColdFilter(), true);
             break;
 
           case "warm":
             setEnableWarmFilter(true);
-
-            // updateOrInsert(filtersList, "warm", new WarmFilter(), true);
-
+            updateOrInsert(filtersList, "warm", new WarmFilter(), true);
             break;
 
           case "invert":
             setEnableInvert(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "invert",
-            //   new filters.Invert({ alpha: false }),
-            //   true
-            // );
-
+            updateOrInsert(filtersList, "invert", new filters.Invert(), true);
             break;
           case "gbrightness":
             setGreenBrightnessValue(filterData.GBrightness);
-            // updateOrInsert(
-            //   filtersList,
-            //   "gbrightness",
-            //   new GBrightness({ GBrightness: filterData.GBrightness }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "gbrightness",
+              new GBrightness({ GBrightness: filterData.GBrightness }),
+              true
+            );
             break;
           case "bbrightness":
             setBlueBrightnessValue(filterData.BBrightness);
-            // updateOrInsert(
-            //   filtersList,
-            //   "bbrightness",
-            //   new BBrightness({ BBrightness: filterData.BBrightness }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "bbrightness",
+              new BBrightness({ BBrightness: filterData.BBrightness }),
+              true
+            );
             break;
           case "rbrightness":
             setRedBrightnessValue(filterData.RBrightness);
-            // updateOrInsert(
-            //   filtersList,
-            //   "rbrightness",
-            //   new RBrightness({ RBrightness: filterData.RBrightness }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "rbrightness",
+              new RBrightness({ RBrightness: filterData.RBrightness }),
+              true
+            );
             break;
           case "gamma":
             setGammaRedValue(filterData.gamma[0]);
             setGammaGreenValue(filterData.gamma[1]);
             setGammaBlueValue(filterData.gamma[2]);
-            // updateOrInsert(
-            // filtersList,
-            //   "gamma",
-            //   new filters.Gamma({
-            //     gamma: [
-            //       filterData.gamma[0],
-            //       filterData.gamma[1],
-            //       filterData.gamma[2],
-            //     ],
-            //   }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "gamma",
+              new filters.Gamma({ gamma: filterData.gamma }),
+              true
+            );
             break;
           case "contrast":
             setContrastValue(filterData.contrast);
-            // updateOrInsert(
-            //   filtersList,
-            //   "contrast",
-            //   new filters.Contrast({ contrast: filterData.contrast }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "contrast",
+              new filters.Contrast({ contrast: filterData.contrast }),
+              true
+            );
             break;
           case "saturation":
             setSaturationValue(filterData.saturation);
-            // updateOrInsert(
-            //   filtersList,
-            //   "saturation",
-            //   new filters.Saturation({ saturation: filterData.saturation }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "saturation",
+              new filters.Saturation({ saturation: filterData.saturation }),
+              true
+            );
             break;
           case "vibrance":
             setVibranceValue(filterData.vibrance);
-            // updateOrInsert(
-            //   filtersList,
-            //   "vibrance",
-            //   new filters.Vibrance({ vibrance: filterData.vibrance }),
-            //    true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "vibrance",
+              new filters.Vibrance({ vibrance: filterData.vibrance }),
+              true
+            );
             break;
           case "blur":
             setBlurValue(filterData.blur);
-            // updateOrInsert(
-            //   filtersList,
-            //   "blur",
-            //   new filters.Blur({ blur: filterData.blur }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "blur",
+              new filters.Blur({ blur: filterData.blur }),
+              true
+            );
 
             break;
           case "hueRotation":
             setHueValue(filterData.rotation);
-            // updateOrInsert(
-            //   filtersList,
-            //   "hueRotation",
-            //   new filters.HueRotation({ rotation: filterData.rotation }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "hueRotation",
+              new filters.HueRotation({ rotation: filterData.rotation }),
+              true
+            );
 
             break;
           case "noise":
             setNoiseValue(filterData.noise);
-            // updateOrInsert(
-            //   filtersList,
-            //   "noise",
-            //   new filters.Noise({ noise: filterData.noise }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "noise",
+              new filters.Noise({ noise: filterData.noise }),
+              true
+            );
 
             break;
           case "pixelate":
             setPixelateValue(filterData.blocksize);
-            // updateOrInsert(
-            //   filtersList,
-            //   "pixelate",
-            //   new filters.Pixelate({ blocksize: filterData.blocksize }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "pixelate",
+              new filters.Pixelate({ blocksize: filterData.blocksize }),
+              true
+            );
             break;
-
-          // case "redThreshold":
-          //   setEnableRedThresholding(true);
-          //   setRed({
-          //     threshold: filterData.red.threshold,
-          //     below: filterData.red.lower,
-          //     above: filterData.red.upper,
-          //   });
-          //   updateOrInsert(
-          //     filtersList,
-          //     "redThreshold",
-          //     new RedThresholdFilter({
-          //       red: {
-          //         threshold: filterData.red.threshold,
-          //         lower: filterData.red.below,
-          //         upper: filterData.red.above,
-          //       },
-          //     }),
-          //     true
-          //   );
-          //   break;
-          // case "blueThreshold":
-          //   setEnableBlueThresholding(true);
-          //   setBlue({
-          //     threshold: filterData.blue.threshold,
-          //     below: filterData.blue.lower,
-          //     above: filterData.blue.upper,
-          //   });
-          //   updateOrInsert(
-          //     filtersList,
-          //     "blueThreshold",
-          //     new BlueThresholdFilter({
-          //       blue: {
-          //         threshold: filterData.blue.threshold,
-          //         lower: filterData.blue.below,
-          //         upper: filterData.blue.above,
-          //       },
-          //     }),
-          //     true
-          //   );
-          //   break;
-          // case "greenThreshold":
-          //   setEnableGreenThresholding(true);
-          //   setGreen({
-          //     threshold: filterData.green.threshold,
-          //     below: filterData.green.lower,
-          //     above: filterData.green.upper,
-          //   });
-          //   updateOrInsert(
-          //     filtersList,
-          //     "greenThreshold",
-          //     new GreenThresholdFilter({
-          //       green: {
-          //         threshold: filterData.green.threshold,
-          //         lower: filterData.green.below,
-          //         upper: filterData.green.above,
-          //       },
-          //     }),
-          //     true
-          //   );
-          //   break;
 
           case "gaussianBlur":
             setEnableGaussianBlur(true);
             setGaussianMatrixSize(filterData.matrixSize);
             setGaussianSigma(filterData.sigma);
 
-            // updateOrInsert(
-            //   filtersList,
-            //   "gaussianBlur",
-            //   new GaussianBlurFilter({
-            //     sigma: filterData.sigma,
-            //     matrixSize: filterData.matrixSize,
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "gaussianBlur",
+              new GaussianBlurFilter({
+                sigma: filterData.sigma,
+                matrixSize: filterData.matrixSize,
+              }),
+              true
+            );
             break;
           case "focusFilter":
             setEnableFocusFilter(true);
             setSoftness(filterData.softness);
             setRadius(filterData.radius);
             setDarkFocus(filterData.dark);
-            // updateOrInsert(
-            //   filtersList,
-            //   "focusFilter",
-            //   new FocusFilter({
-            //     radius: filterData.radius,
-            //     softness: filterData.softness,
-            //     dark: filterData.dark,
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "focusFilter",
+
+              new FocusFilter({
+                radius: filterData.radius,
+                softness: filterData.softness,
+                dark: filterData.dark,
+              }),
+              true
+            );
             break;
           case "leftToRight":
             setEnableLeftToRightReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "leftToRight",
-            //   new ReflectFilter({
-            //     reflectType: "leftToRight",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "leftToRight" }),
+              true
+            );
             break;
 
           case "rightToLeft":
             setEnableRightToLeftReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "rightToLeft",
-            //   new ReflectFilter({
-            //     reflectType: "rightToLeft",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "rightToLeft" }),
+              true
+            );
             break;
 
           case "bottomToTop":
             setEnableBottomToTopReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "bottomToTop",
-            //   new ReflectFilter({
-            //     reflectType: "bottomToTop",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "bottomToTop" }),
+              true
+            );
             break;
 
           case "topToBottom":
             setEnableTopToBottomReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "topToBottom",
-            //   new ReflectFilter({
-            //     reflectType: "topToBottom",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "topToBottom" }),
+              true
+            );
             break;
 
           case "topRight":
             setEnableTopRightReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "topRight",
-            //   new ReflectFilter({
-            //     reflectType: "topRight",
-            //   }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "topRight" }),
+              true
+            );
             break;
 
           case "topLeft":
             setEnableTopLeftReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "topLeft",
-            //   new ReflectFilter({
-            //     reflectType: "topLeft",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "topLeft" }),
+              true
+            );
             break;
 
           case "bottomRight":
             setEnableBottomRightReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "bottomRight",
-            //   new ReflectFilter({
-            //     reflectType: "bottomRight",
-            //   }),
-            //   true
-            // );
-
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "bottomRight" }),
+              true
+            );
             break;
           case "bottomLeft":
             setEnableBottomLeftReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "bottomLeft",
-            //   new ReflectFilter({
-            //     reflectType: "bottomLeft",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "bottomLeft" }),
+              true
+            );
             break;
 
           case "leftDiagonal":
             setEnableLeftDiagonalReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "leftDiagonal",
-            //   new ReflectFilter({
-            //     reflectType: "leftDiagonal",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "leftDiagonal" }),
+              true
+            );
             break;
 
           case "rightDiagonal":
             setEnableRightDiagonalReflect(true);
-            // updateOrInsert(
-            //   filtersList,
-            //   "rightDiagonal",
-            //   new ReflectFilter({
-            //     reflectType: "rightDiagonal",
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "reflect",
+              new ReflectFilter({ reflectType: "rightDiagonal" }),
+              true
+            );
             break;
 
           case "medianFilter":
             setEnableMedianFilter(true);
             setMedianFilterMatrixSize(filterData.matrixSize);
-            // updateOrInsert(
-            //   filtersList,
-            //   "medianFilter",
-            //   new MedianFilter({ matrixSize: filterData.matrixSize }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "medianFilter",
+              new MedianFilter({ matrixSize: filterData.matrixSize }),
+              true
+            );
             break;
 
           case "bilateralFilter":
@@ -1727,101 +1618,141 @@ const Test = () => {
             setBilateralSigmaS(filterData.sigmaS);
             setBilateralSigmaC(filterData.sigmaC);
             setBilateralKernelSize(filterData.kernelSize);
-
-            // updateOrInsert(
-            //   filtersList,
-            //   "bilateralFilter",
-            //   new BilateralFilter({
-            //     sigmaS: filterData.sigmaS,
-            //     sigmaC: filterData.sigmaC,
-            //     kernelSize: filterData.kernelSize,
-            //   }),
-            //   true
-            // );
+            updateOrInsert(
+              filtersList,
+              "bilateralFilter",
+              new BilateralFilter({
+                sigmaS: filterData.sigmaS,
+                sigmaC: filterData.sigmaC,
+                kernelSize: filterData.kernelSize,
+              }),
+              true
+            );
             break;
 
           case "edge":
             console.log("from edge", filterData.type);
             if (filterData.type === "HorizontalEdgeFilter") {
+              updateOrInsert(
+                filtersList,
+                "edge",
+                new HorizontalEdgeFilter(),
+                true
+              );
               setSelectedEdgeType("horizontal");
-              // updateOrInsert(
-              //   filtersList,
-              //   "edge",
-              //   new HorizontalEdgeFilter(),
-              //   true
-              // );
             } else if (filterData.type === "VerticalEdgeFilter") {
               setSelectedEdgeType("vertical");
-              // updateOrInsert(
-              //   filtersList,
-              //   "edge",
-              //   new VerticalEdgeFilter(),
-              //   true
-              // );
+              updateOrInsert(
+                filtersList,
+                "edge",
+                new VerticalEdgeFilter(),
+                true
+              );
             } else if (filterData.type === "sobel") {
               setSelectedEdgeType("sobel");
-              // updateOrInsert(filtersList, "edge", new SobelFilter(), true);
+              updateOrInsert(filtersList, "edge", new SobelFilter(), true);
             } else if (filterData.type === "Composed") {
               setSelectedEdgeType("canny");
-              setCannyLowerThreshold(filterData.subFilters[2].lowThreshold);
-              setCannyUpperThreshold(filterData.subFilters[2].highThreshold);
-              // updateOrInsert(
-              //   filtersList,
-              //   "edge",
-              //   new filters.Composed({
-              //     subFilters: [
-              //       new CannySobelEdge(),
-              //       new NonMaximumSupression(),
-              //       new DoubleThresholding({
-              //         lowThreshold: filterData.lowThreshold,
-              //         highThreshold: filterData.highThreshold,
-              //       }),
-              //       new Hysteris(),
-              //     ],
-              //   }),
-              //   true
-              // );
+              const cannyLowerThreshold = filterData.subFilters[2].lowThreshold;
+              const cannyUpperThreshold =
+                filterData.subFilters[2].highThreshold;
+              setCannyLowerThreshold(cannyLowerThreshold);
+              setCannyUpperThreshold(cannyUpperThreshold);
+
+              updateOrInsert(
+                filtersList,
+                "edge",
+                new filters.Composed({
+                  subFilters: [
+                    new CannySobelEdge(),
+                    new NonMaximumSupression(),
+                    new DoubleThresholding({
+                      lowThreshold: cannyLowerThreshold,
+                      highThreshold: cannyUpperThreshold,
+                    }),
+                    new Hysteris(),
+                  ],
+                }),
+                true
+              );
             } else {
               setSelectedEdgeType("none");
             }
-            console.log("from edge", filterData);
-
             break;
 
-          case "swirl":
-            {
-              const swirlFilterComposed = filterData as filters.Composed;
-              const swirlFilter = swirlFilterComposed.subFilters[
-                swirlFilterComposed.subFilters.length - 1
-              ] as Swirl;
-              const radius = swirlFilter.radius;
-              const angle = swirlFilter.angle;
+          case "swirl": {
+            // Get all swirl subfilters from the database data
+            const swirlFilters = filterData.subFilters || [];
+            const composedSwirlFilters = swirlFilters.map((swirlData) => {
+              const radius = swirlData.radius || 100;
+              const angle = swirlData.angle || 0;
+              const center = swirlData.center || { x: 0.5, y: 0.5 };
 
-              setSwirlRadius(radius);
-              setSwirlAngle(angle);
-              swirlRadiusRef.current = radius;
-              swirlAngleRef.current = angle;
-            }
+              // Update UI state with the last swirl's values
+              if (swirlData === swirlFilters[swirlFilters.length - 1]) {
+                setSwirlRadius(radius);
+                setSwirlAngle(angle);
+                swirlRadiusRef.current = radius;
+                swirlAngleRef.current = angle;
+              }
 
+              return new Swirl({
+                radius,
+                angle,
+                center,
+              });
+            });
+
+            // Create a composed filter with all the swirl subfilters
+            updateOrInsert(
+              filtersList,
+              "swirl",
+              new filters.Composed({
+                subFilters: composedSwirlFilters,
+              }),
+              true
+            );
             break;
+          }
 
-          case "bulge":
-            {
-              const bulgeFilterComposed = filterData as filters.Composed;
-              const bulgeFilter = bulgeFilterComposed.subFilters[
-                bulgeFilterComposed.subFilters.length - 1
-              ] as BulgeFilter;
-              console.log(bulgeFilter);
-              const bulgeRadius = bulgeFilter.radius;
-              const bulgeStrength = bulgeFilter.strength;
+          case "bulge": {
+            // Get all bulge subfilters from the database data
+            const bulgeFilters = filterData.subFilters || [];
+            const composedBulgeFilters = bulgeFilters.map((bulgeData) => {
+              const radius = bulgeData.radius || 100;
+              const strength = bulgeData.strength || 0.5;
+              const center = bulgeData.center || { x: 0.5, y: 0.5 };
 
-              setBulgeRadius(bulgeRadius);
-              setBulgeStrength(bulgeStrength);
-            }
+              // Update UI state with the last bulge's values
+              if (bulgeData === bulgeFilters[bulgeFilters.length - 1]) {
+                setBulgeRadius(radius);
+                setBulgeStrength(strength);
+              }
+
+              return new BulgeFilter({
+                radius,
+                strength,
+                center,
+              });
+            });
+
+            // Create a composed filter with all the bulge subfilters
+            updateOrInsert(
+              filtersList,
+              "bulge",
+              new filters.Composed({
+                subFilters: composedBulgeFilters,
+              }),
+              true
+            );
             break;
+          }
         }
       }
+
+      console.log("filter list", filtersList);
       // setCurrentFilters(filtersList);
+      currentFiltersRef.current = filtersList;
     };
 
     loadDatabaseFilters();
@@ -1989,9 +1920,7 @@ const Test = () => {
                 </div>
                 <div className="max-h-[580px] overflow-hidden  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <AdjustSidebarAdvanced
-                    canvas={mainCanvasRef.current!}
                     canvasRef={mainCanvasRef}
-                    image={currentImageRef.current!}
                     imageRef={currentImageRef!}
                     databaseFiltersName={databaseFiltersNameRef.current}
                     databaseFiltersObject={databaseFiltersObjectRef.current}

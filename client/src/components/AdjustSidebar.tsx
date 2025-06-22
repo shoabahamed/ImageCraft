@@ -43,8 +43,8 @@ const AdjustSidebar = ({
 }: AdjustSidebarProps) => {
   const { addLog } = useLogContext(); // Use log context
   const { disableSavingIntoStackRef, allFiltersRef } = useCanvasObjects();
-  const currentFilters = useCommonProps((state) => state.currentFilters);
-  const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
+  // const currentFilters = useCommonProps((state) => state.currentFilters);
+  // const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
   const { currentFiltersRef } = useCanvasObjects();
 
   // states from adjust store
@@ -114,9 +114,6 @@ const AdjustSidebar = ({
   const setEnableEdgeDetection = useAdjustStore(
     (state) => state.setEnableEdgeDetection
   );
-  const enableEdgeDetection = useAdjustStore(
-    (state) => state.enableEdgeDetection
-  );
 
   const setEnableWarmFilter = useAdjustStore(
     (state) => state.setEnableWarmFilter
@@ -144,38 +141,6 @@ const AdjustSidebar = ({
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
-  // const red = useAdjustStore((state) => state.red);
-  // const setRed = useAdjustStore((state) => state.setRed);
-
-  // const green = useAdjustStore((state) => state.green);
-  // const setGreen = useAdjustStore((state) => state.setGreen);
-
-  // const blue = useAdjustStore((state) => state.blue);
-  // const setBlue = useAdjustStore((state) => state.setBlue);
-
-  // const enableBlueThresholding = useAdjustStore(
-  //   (state) => state.enableBlueThresholding
-  // );
-
-  // const enableGreenThresholding = useAdjustStore(
-  //   (state) => state.enableGreenThresholding
-  // );
-
-  // const enableRedThresholding = useAdjustStore(
-  //   (state) => state.enableRedThresholding
-  // );
-  // const setEnableRedThresholding = useAdjustStore(
-  //   (state) => state.setEnableRedThresholding
-  // );
-
-  // const setEnableGreenThresholding = useAdjustStore(
-  //   (state) => state.setEnableGreenThresholding
-  // );
-
-  // const setEnableBlueThresholding = useAdjustStore(
-  //   (state) => state.setEnableBlueThresholding
-  // );
-
   const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
   const radius = useAdjustStore((state) => state.radius);
   const softness = useAdjustStore((state) => state.softness);
@@ -201,7 +166,7 @@ const AdjustSidebar = ({
         : `disabled ${filterName} scale filter`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
     switch (filterName) {
       case "grayscale":
@@ -268,7 +233,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     canvas.fire("object:modified");
@@ -285,7 +249,7 @@ const AdjustSidebar = ({
         : `disabled ${filterName} scale filter`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -313,7 +277,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     canvas.fire("object:modified");
@@ -328,7 +291,7 @@ const AdjustSidebar = ({
       message: `${filterName} filter radius changed from ${radius} to ${newRadius}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -356,7 +319,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
   };
 
@@ -369,7 +331,7 @@ const AdjustSidebar = ({
       message: `${filterName} filter softness changed from ${softness} to ${newSoftness}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -398,7 +360,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
   };
 
@@ -413,7 +374,7 @@ const AdjustSidebar = ({
 
     setDarkFocus(newDarkFocus);
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -438,7 +399,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     canvas.fire("object:modified");
@@ -452,7 +412,7 @@ const AdjustSidebar = ({
       message: `${filterName} filter value changed from ${value} to ${value}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     switch (filterName) {
@@ -477,12 +437,19 @@ const AdjustSidebar = ({
         break;
 
       case "brightnessBlue":
+        console.time("BBrightness instance creation");
+        const bBrightnessInstance = new BBrightness({ BBrightness: value });
+        console.timeEnd("BBrightness instance creation");
+
+        console.time("updateOrInsert for BBrightness");
         updateOrInsert(
           filtersList,
           "bbrightness",
-          new BBrightness({ BBrightness: value }),
+          bBrightnessInstance,
           value !== 0
         );
+        console.timeEnd("updateOrInsert for BBrightness");
+
         setBlueBrightnessValue(value);
         break;
 
@@ -559,19 +526,16 @@ const AdjustSidebar = ({
         break;
     }
 
+    console.time("applyFilters+render for BBrightness");
     const filterInstances = filtersList.map(
-      //@ts-ignore
+      //@ts-expect-error
       (tempFilter) => tempFilter.instance
     );
-    console.log("new filters", filterInstances);
-
     imageRef.current.filters = filterInstances;
-
     imageRef.current.applyFilters();
     canvas.requestRenderAll();
-
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
+    console.timeEnd("applyFilters+render for BBrightness");
   };
 
   const handleDetailsFilters = (filterName: string, value: number) => {
@@ -582,7 +546,7 @@ const AdjustSidebar = ({
       message: `${filterName} filter value changed from ${value} to ${value}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     switch (filterName) {
@@ -646,7 +610,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
   };
 
@@ -669,7 +632,7 @@ const AdjustSidebar = ({
     setSaturationValue(0);
     setHueValue(0);
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
 
     updateOrInsert(
       filtersList,
@@ -732,7 +695,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     canvas.fire("object:modified");
@@ -752,7 +714,7 @@ const AdjustSidebar = ({
     setBlurValue(0);
     setSharpenValue(0.5);
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     updateOrInsert(filtersList, "blur", new filters.Blur({ blur: 0 }), false);
     updateOrInsert(
       filtersList,
@@ -787,7 +749,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     canvas.fire("object:modified");
@@ -812,7 +773,7 @@ const AdjustSidebar = ({
     setEnableColdFilter(false);
     setEnableWarmFilter(false);
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
 
     updateOrInsert(filtersList, "grayscale", new filters.Grayscale(), false);
     updateOrInsert(filtersList, "sepia", new filters.Sepia(), false);
@@ -845,7 +806,6 @@ const AdjustSidebar = ({
 
     canvas.requestRenderAll();
 
-    setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     canvas.fire("object:modified");
@@ -863,7 +823,9 @@ const AdjustSidebar = ({
 
     disableSavingIntoStackRef.current = true;
     //@ts-ignore
-    const filtersInCanvas: string[] = currentFilters.map((f) => f.filterName);
+    const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      (f) => f.filterName
+    );
     allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
     setLoadState(true);
 
@@ -946,6 +908,7 @@ const AdjustSidebar = ({
 
       setTimeout(() => {
         imageRef.current.filters = []; // not sure if it is needed
+        currentFiltersRef.current = [];
         disableSavingIntoStackRef.current = false;
         setLoadState(false);
         canvas.renderAll();
@@ -1327,8 +1290,6 @@ const AdjustSidebar = ({
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-4 w-full">
-                  {/* test filters start */}
-
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center text-slate-400 text-sm">
                       <p>Brightness Red</p>
@@ -1336,6 +1297,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[redBrightnessValue]}
                       min={-1}
                       max={1}
@@ -1356,6 +1318,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[greenBrightnessValue]}
                       min={-1}
                       max={1}
@@ -1376,6 +1339,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[blueBrightnessValue]}
                       min={-1}
                       max={1}
@@ -1396,6 +1360,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[gammaRed]}
                       min={0.01}
                       max={2.2}
@@ -1416,6 +1381,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[gammaGreen]}
                       min={0.01}
                       max={2.2}
@@ -1435,6 +1401,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[gammaBlue]}
                       min={0.01}
                       max={2.2}
@@ -1455,6 +1422,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[contrastValue]}
                       min={-1}
                       max={1}
@@ -1474,6 +1442,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[saturationValue]}
                       min={-1}
                       max={1}
@@ -1493,6 +1462,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[vibranceValue]}
                       min={-1}
                       max={1}
@@ -1513,6 +1483,7 @@ const AdjustSidebar = ({
                     </div>
 
                     <Slider
+                      className="cursor-pointer"
                       value={[hueValue]}
                       min={-1}
                       max={1}
@@ -1556,6 +1527,7 @@ const AdjustSidebar = ({
                       <p>{opacityValue}</p>
                     </div>
                     <Slider
+                      className="cursor-pointer"
                       value={[opacityValue]}
                       min={0}
                       max={1}
@@ -1575,6 +1547,7 @@ const AdjustSidebar = ({
                       <p>{blurValue}</p>
                     </div>
                     <Slider
+                      className="cursor-pointer"
                       value={[blurValue]}
                       min={0}
                       max={1}
@@ -1594,6 +1567,7 @@ const AdjustSidebar = ({
                       <p>{noiseValue}</p>
                     </div>
                     <Slider
+                      className="cursor-pointer"
                       value={[noiseValue]}
                       min={0}
                       max={100}
@@ -1613,6 +1587,7 @@ const AdjustSidebar = ({
                       <p>{pixelateValue}</p>
                     </div>
                     <Slider
+                      className="cursor-pointer"
                       value={[pixelateValue]}
                       min={0}
                       max={50}
@@ -1632,6 +1607,7 @@ const AdjustSidebar = ({
                       <p>{sharpenValue}</p>
                     </div>
                     <Slider
+                      className="cursor-pointer"
                       value={[sharpenValue]}
                       min={0}
                       max={2}

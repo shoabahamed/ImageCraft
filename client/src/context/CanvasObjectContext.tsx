@@ -50,6 +50,8 @@ interface CanvasObjectsContextType {
   swirlAngleRef: React.MutableRefObject<number>;
   bulgeRadiusRef: React.MutableRefObject<number>;
   bulgeStrengthRef: React.MutableRefObject<number>;
+
+  activeToolNameRef: React.MutableRefObject<string>;
 }
 
 // Create the context with a default value
@@ -116,6 +118,8 @@ export const CanvasObjectsProvider = ({
   const bulgeRadiusRef = useRef(0.3);
   const bulgeStrengthRef = useRef(0.5);
 
+  const activeToolNameRef = useRef<string>("");
+
   return (
     <CanvasObjectsContext.Provider
       value={{
@@ -144,6 +148,7 @@ export const CanvasObjectsProvider = ({
         swirlAngleRef,
         bulgeRadiusRef,
         bulgeStrengthRef,
+        activeToolNameRef,
       }}
     >
       {children}

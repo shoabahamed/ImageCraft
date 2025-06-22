@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import NewProjectBox from "@/components/NewProjectBox";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import apiClient from "@/utils/appClient";
+import useAddTextStore from "@/hooks/appStore/AddTextStore";
 
 const Home = () => {
   const { user } = useAuthContext();
@@ -14,7 +16,7 @@ const Home = () => {
     localStorage.removeItem("project_data");
     localStorage.removeItem("canvasId");
     localStorage.removeItem("project_logs");
-  });
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">

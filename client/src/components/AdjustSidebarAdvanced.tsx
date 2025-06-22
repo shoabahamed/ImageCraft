@@ -9,7 +9,11 @@ import { Canvas, FabricImage, filters } from "fabric";
 import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 
-import { getRotatedBoundingBox, updateOrInsert } from "@/utils/commonFunctions";
+import {
+  getRotatedBoundingBox,
+  setActiveToolNameRef,
+  updateOrInsert,
+} from "@/utils/commonFunctions";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
 import {
@@ -58,9 +62,7 @@ interface FilterEntry {
 }
 
 type AdjustSidebarProps = {
-  canvas: Canvas;
   canvasRef: React.RefObject<Canvas>;
-  image: FabricImage;
   imageRef: React.RefObject<FabricImage>;
   databaseFiltersName: string[] | null;
   databaseFiltersObject: object[] | null;
@@ -68,17 +70,12 @@ type AdjustSidebarProps = {
 };
 
 const AdjustSidebarAdvanced = ({
-  canvas,
   canvasRef,
-  image,
   imageRef,
   setLoadState,
 }: AdjustSidebarProps) => {
   const { addLog } = useLogContext();
   const { disableSavingIntoStackRef, allFiltersRef } = useCanvasObjects();
-  const currentFilters = useCommonProps(
-    (state) => state.currentFilters as FilterEntry[] | null
-  );
   const setCurrentFilters = useCommonProps((state) => state.setCurrentFilters);
   const { currentFiltersRef } = useCanvasObjects() as {
     currentFiltersRef: React.MutableRefObject<FilterEntry[] | null>;
@@ -231,8 +228,15 @@ const AdjustSidebarAdvanced = ({
     (state) => state.setCannyUpperThreshold
   );
 
-  const { swirlAngleRef, swirlRadiusRef, bulgeRadiusRef, bulgeStrengthRef } =
-    useCanvasObjects();
+  const {
+    swirlAngleRef,
+    swirlRadiusRef,
+    bulgeRadiusRef,
+    bulgeStrengthRef,
+    activeToolNameRef,
+    noOfBulgeFilterRef,
+    noOfSwirlFilterRef,
+  } = useCanvasObjects();
   const swirlRadius = useAdjustStore((state) => state.swirlRadius);
   const setSwirlRadius = useAdjustStore((state) => state.setSwirlRadius);
   const swirlAngle = useAdjustStore((state) => state.swirlAngle);
@@ -259,6 +263,23 @@ const AdjustSidebarAdvanced = ({
     };
   }, []);
 
+  // Effect to handle activateLiquidifyTool state changes
+  useEffect(() => {
+    // Only proceed if we have a valid canvas and image reference
+    if (!canvasRef.current || !imageRef.current) return;
+
+    // Then activate the appropriate tool if needed
+    if (activeToolNameRef.current === "swirl") {
+      setActivateLiquidifyTool("swirl");
+      activateSwril();
+    } else if (activeToolNameRef.current === "bulge") {
+      setActivateLiquidifyTool("bulge");
+      activateBulge();
+    } else {
+      setActivateLiquidifyTool("");
+    }
+  }, [canvasRef.current]);
+
   const handleReflectFilter = (filterName: string, value: boolean) => {
     addLog({
       section: "adjust",
@@ -267,7 +288,7 @@ const AdjustSidebarAdvanced = ({
       message: `${filterName} filter ${value ? "enabled" : "disabled"}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     switch (filterName) {
@@ -405,12 +426,12 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
   const handleReflectFilterReset = () => {
     addLog({
@@ -431,7 +452,7 @@ const AdjustSidebarAdvanced = ({
     setEnableLeftDiagonalReflect(false);
     setEnableRightDiagonalReflect(false);
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
 
     updateOrInsert(
       filtersList,
@@ -501,12 +522,12 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.filters = filterInstances;
     imageRef.current.applyFilters();
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleGaussianBlurFilterToggle = (value: boolean) => {
@@ -520,7 +541,7 @@ const AdjustSidebarAdvanced = ({
         : `disabled ${filterName} scale filter`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -544,12 +565,12 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleGaussianBlurSigmaChange = (newSigma: number) => {
@@ -560,7 +581,7 @@ const AdjustSidebarAdvanced = ({
       event: "update",
       message: `${filterName} filter sigma changed from ${gaussianSigma} to ${newSigma}`,
     });
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -584,7 +605,7 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
@@ -599,7 +620,7 @@ const AdjustSidebarAdvanced = ({
       event: "update",
       message: `${filterName} filter matrix size changed from ${gaussianMatrixSize} to ${newSize}`,
     });
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -623,14 +644,14 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
     setGaussianMatrixSize(newSize);
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleMedianFilterToggle = (value: boolean) => {
@@ -644,7 +665,7 @@ const AdjustSidebarAdvanced = ({
         : `disabled ${filterName} filter`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -666,13 +687,13 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
 
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleMedianFilterMatrixSizeChange = (size) => {
@@ -685,7 +706,7 @@ const AdjustSidebarAdvanced = ({
       event: "update",
       message: `${filterName} filter matrix size changed from ${medianFilterMatrixSize} to ${newSize}`,
     });
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -708,12 +729,12 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleBilateralFilterToggle = (value: boolean) => {
@@ -727,7 +748,7 @@ const AdjustSidebarAdvanced = ({
         : `disabled ${filterName} filter`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -750,13 +771,13 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
 
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleBilateralFilterKernelSizeChange = (size) => {
@@ -769,7 +790,7 @@ const AdjustSidebarAdvanced = ({
       event: "update",
       message: `${filterName} filter kernel size changed from ${bilateralKernelSize} to ${newSize}`,
     });
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -794,12 +815,12 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   const handleBilateralFilterSigmaSChange = (size) => {
@@ -813,7 +834,7 @@ const AdjustSidebarAdvanced = ({
       message: `${filterName} filter sigmaS changed from ${bilateralSigmaS} to ${newSize}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -838,7 +859,7 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
@@ -855,7 +876,7 @@ const AdjustSidebarAdvanced = ({
       message: `${filterName} filter sigmaC changed from ${bilateralSigmaC} to ${newSize}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
     updateOrInsert(
@@ -880,7 +901,7 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
@@ -898,46 +919,47 @@ const AdjustSidebarAdvanced = ({
 
     disableSavingIntoStackRef.current = true;
     // currentFilters can be null, map is on array. filterName is valid on FilterEntry.
-    const filtersInCanvas: string[] = currentFilters
-      ? currentFilters.map((f) => f.filterName)
-      : [];
+    const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      (f) => f.filterName
+    );
+
     allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
     setLoadState(true);
 
     // Temporarily set visible = false for all objects other than image type
-    canvas.getObjects().forEach((obj) => {
+    canvasRef.current.getObjects().forEach((obj) => {
       if (obj.type !== "image") {
         obj.set("visible", false);
       }
     });
 
-    const scaleX = image.scaleX;
-    const scaleY = image.scaleY;
-    const flipX = image.flipX;
-    const filpY = image.flipY;
-    const angle = image.angle;
+    const scaleX = imageRef.current.scaleX;
+    const scaleY = imageRef.current.scaleY;
+    const flipX = imageRef.current.flipX;
+    const filpY = imageRef.current.flipY;
+    const angle = imageRef.current.angle;
 
-    image.angle = 0;
-    image.scaleX = 1;
-    image.scaleY = 1;
-    image.flipX = false;
-    image.flipY = false;
+    imageRef.current.angle = 0;
+    imageRef.current.scaleX = 1;
+    imageRef.current.scaleY = 1;
+    imageRef.current.flipX = false;
+    imageRef.current.flipY = false;
 
-    const originalViewportTransform = canvas.viewportTransform;
-    const originalZoom = canvas.getZoom();
+    const originalViewportTransform = canvasRef.current.viewportTransform;
+    const originalZoom = canvasRef.current.getZoom();
 
     // Reset to neutral
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
-    canvas.setZoom(1);
-    canvas
+    canvasRef.current.setZoom(1);
+    canvasRef.current
       .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
       .find((obj) => obj.setCoords());
 
     // Find the object named "Frame" or starting with "Frame"
-    const bounds = getRotatedBoundingBox(image);
+    const bounds = getRotatedBoundingBox(imageRef.current);
     // canvas.toDataURL is a valid method.
-    const dataURL = canvas.toDataURL({
+    const dataURL = canvasRef.current.toDataURL({
       format: "png",
       left: bounds.left,
       top: bounds.top,
@@ -966,19 +988,17 @@ const AdjustSidebarAdvanced = ({
 
       // imageRef.current.filters = []
 
-      image = imageRef.current;
-
       //  set visible = true for all objects other than image type
-      canvas.getObjects().forEach((obj) => {
+      canvasRef.current.getObjects().forEach((obj) => {
         if (obj.type !== "image") {
           obj.set("visible", true);
         }
       });
 
       // Restore zoom & transform
-      canvas.setViewportTransform(originalViewportTransform);
-      canvas.setZoom(originalZoom);
-      canvas
+      canvasRef.current.setViewportTransform(originalViewportTransform);
+      canvasRef.current.setZoom(originalZoom);
+      canvasRef.current
         .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
         .find((obj) => obj.setCoords());
 
@@ -986,8 +1006,8 @@ const AdjustSidebarAdvanced = ({
         imageRef.current.filters = []; // not sure if it is needed
         disableSavingIntoStackRef.current = false;
         setLoadState(false);
-        canvas.renderAll();
-        canvas.fire("object:modified");
+        canvasRef.current.renderAll();
+        canvasRef.current.fire("object:modified");
       }, 1000);
     });
   };
@@ -1001,7 +1021,7 @@ const AdjustSidebarAdvanced = ({
       message: `Selected edge and applied edge type: ${newType}`,
     });
 
-    const filtersList = [...(currentFilters || [])];
+    const filtersList = [...(currentFiltersRef.current || [])];
 
     switch (newType) {
       case "canny":
@@ -1067,12 +1087,12 @@ const AdjustSidebarAdvanced = ({
 
     imageRef.current.applyFilters();
 
-    canvas.requestRenderAll();
+    canvasRef.current.requestRenderAll();
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
 
-    canvas.fire("object:modified");
+    canvasRef.current.fire("object:modified");
   };
 
   // Handlers for Canny Edge Thresholds
@@ -1091,7 +1111,7 @@ const AdjustSidebarAdvanced = ({
       message: `Canny lower threshold changed to: ${newLower}`,
     });
     if (selectedEdgeType === "canny") {
-      const filtersList = [...(currentFilters || [])];
+      const filtersList = [...(currentFiltersRef.current || [])];
       console.log("old filters", filtersList);
       updateOrInsert(
         filtersList,
@@ -1119,7 +1139,7 @@ const AdjustSidebarAdvanced = ({
 
       imageRef.current.applyFilters();
 
-      canvas.requestRenderAll();
+      canvasRef.current.requestRenderAll();
 
       setCurrentFilters(filtersList);
       currentFiltersRef.current = filtersList;
@@ -1142,7 +1162,7 @@ const AdjustSidebarAdvanced = ({
     });
 
     if (selectedEdgeType === "canny") {
-      const filtersList = [...(currentFilters || [])];
+      const filtersList = [...(currentFiltersRef.current || [])];
       console.log("old filters", filtersList);
       updateOrInsert(
         filtersList,
@@ -1170,7 +1190,7 @@ const AdjustSidebarAdvanced = ({
 
       imageRef.current.applyFilters();
 
-      canvas.requestRenderAll();
+      canvasRef.current.requestRenderAll();
 
       setCurrentFilters(filtersList);
       currentFiltersRef.current = filtersList;
@@ -1181,26 +1201,45 @@ const AdjustSidebarAdvanced = ({
     const pointer = canvasRef.current?.getScenePoint(o.e);
     if (!pointer || !imageRef.current) return;
 
-    pointer.x = pointer.x / imageRef.current.width;
-    pointer.y = pointer.y / imageRef.current.height;
+    // Get image bounds
+    const imageBounds = imageRef.current.getBoundingRect();
+
+    // Check if click is within image bounds
+    if (
+      pointer.x < imageBounds.left ||
+      pointer.x > imageBounds.left + imageBounds.width ||
+      pointer.y < imageBounds.top ||
+      pointer.y > imageBounds.top + imageBounds.height
+    ) {
+      return;
+    }
+
+    // Convert pointer coordinates to image-relative coordinates (0-1)
+    pointer.x = (pointer.x - imageBounds.left) / imageBounds.width;
+    pointer.y = (pointer.y - imageBounds.top) / imageBounds.height;
+
     const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("currentFilters", currentFiltersRef.current);
+    console.log("currentFiltersRef.current", currentFiltersRef.current);
 
     const index = filtersList.findIndex((f) => f.filterName === "swirl");
 
     if (index !== -1) {
       const swirlFilter = filtersList[index].instance as filters.Composed;
-      swirlFilter.subFilters.push(
+      // Create a new array with the existing subfilters plus the new one
+      const newSubFilters = [
+        ...swirlFilter.subFilters,
         new Swirl({
           radius: swirlRadiusRef.current,
           angle: swirlAngleRef.current,
           center: { x: pointer.x, y: pointer.y },
-        })
-      );
-      console.log("swirlFilter", swirlFilter);
+        }),
+      ];
+      // Create a new composed filter with all subfilters
       filtersList[index] = {
-        instance: swirlFilter,
-        filterName: `swirl`,
+        instance: new filters.Composed({
+          subFilters: newSubFilters,
+        }),
+        filterName: "swirl",
       };
     } else {
       filtersList.push({
@@ -1213,7 +1252,7 @@ const AdjustSidebarAdvanced = ({
             }),
           ],
         }),
-        filterName: `swirl`,
+        filterName: "swirl",
       });
     }
 
@@ -1224,13 +1263,7 @@ const AdjustSidebarAdvanced = ({
     console.log("new filters", filterInstances);
 
     imageRef.current.filters = filterInstances;
-
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
     imageRef.current.applyFilters();
-
     canvasRef.current?.requestRenderAll();
 
     setCurrentFilters(filtersList);
@@ -1257,6 +1290,8 @@ const AdjustSidebarAdvanced = ({
       message: `Selected swirl filter`,
     });
 
+    setActiveToolNameRef(activeToolNameRef, "swirl");
+
     canvasRef.current?.on("mouse:down", startSwril);
     canvasRef.current?.on("mouse:up", endSwril);
   };
@@ -1271,6 +1306,7 @@ const AdjustSidebarAdvanced = ({
     });
 
     if (canvasRef.current) {
+      setActiveToolNameRef(activeToolNameRef, "");
       canvasRef.current.off("mouse:down", startSwril);
       canvasRef.current.off("mouse:up", endSwril);
       console.log("Event listeners removed");
@@ -1286,6 +1322,7 @@ const AdjustSidebarAdvanced = ({
       message: `Selected bulge filter`,
     });
 
+    setActiveToolNameRef(activeToolNameRef, "bulge");
     canvasRef.current?.on("mouse:down", startBulge);
     canvasRef.current?.on("mouse:up", endBulge);
   };
@@ -1299,6 +1336,7 @@ const AdjustSidebarAdvanced = ({
       message: `Deactivated bulge filter`,
     });
 
+    setActiveToolNameRef(activeToolNameRef, "");
     canvasRef.current?.off("mouse:down", startBulge);
     canvasRef.current?.off("mouse:up", endBulge);
   };
@@ -1307,8 +1345,23 @@ const AdjustSidebarAdvanced = ({
     const pointer = canvasRef.current?.getScenePoint(o.e);
     if (!pointer || !imageRef.current) return;
 
-    pointer.x = pointer.x / imageRef.current.width;
-    pointer.y = pointer.y / imageRef.current.height;
+    // Get image bounds
+    const imageBounds = imageRef.current.getBoundingRect();
+
+    // Check if click is within image bounds
+    if (
+      pointer.x < imageBounds.left ||
+      pointer.x > imageBounds.left + imageBounds.width ||
+      pointer.y < imageBounds.top ||
+      pointer.y > imageBounds.top + imageBounds.height
+    ) {
+      return;
+    }
+
+    // Convert pointer coordinates to image-relative coordinates (0-1)
+    pointer.x = (pointer.x - imageBounds.left) / imageBounds.width;
+    pointer.y = (pointer.y - imageBounds.top) / imageBounds.height;
+
     const filtersList = [...(currentFiltersRef.current || [])];
 
     const index = filtersList.findIndex((f) => f.filterName === "bulge");
@@ -1366,22 +1419,21 @@ const AdjustSidebarAdvanced = ({
 
   const handleBulgeFilterReset = () => {
     const filtersList = [...(currentFiltersRef.current || [])];
+
     const index = filtersList.findIndex((f) => f.filterName === "bulge");
     if (index !== -1) {
       filtersList.splice(index, 1);
+      const filterInstances = filtersList.map(
+        (tempFilter) => tempFilter.instance
+      );
+
+      imageRef.current.filters = filterInstances;
+      imageRef.current.applyFilters();
+      canvasRef.current?.requestRenderAll();
+
+      setCurrentFilters(filtersList);
+      currentFiltersRef.current = filtersList;
     }
-
-    const filterInstances = filtersList.map(
-      (tempFilter) => tempFilter.instance
-    );
-
-    imageRef.current.filters = filterInstances;
-    imageRef.current.applyFilters();
-    canvasRef.current?.requestRenderAll();
-
-    setCurrentFilters(filtersList);
-    currentFiltersRef.current = filtersList;
-    deactivateBulge();
 
     setBulgeRadius(0.3);
     setBulgeStrength(0.5);
@@ -1404,7 +1456,6 @@ const AdjustSidebarAdvanced = ({
 
     setCurrentFilters(filtersList);
     currentFiltersRef.current = filtersList;
-    deactivateSwril();
 
     setSwirlRadius(0.3);
     setSwirlAngle(1.0);
@@ -1611,7 +1662,9 @@ const AdjustSidebarAdvanced = ({
                         }
                       />
                     </div>
-                    <span className="text-sm font-medium">Top-Left</span>
+                    <span className="text-sm font-medium pointer-events-none">
+                      Top-Left
+                    </span>
                   </div>
 
                   <div
@@ -1640,7 +1693,9 @@ const AdjustSidebarAdvanced = ({
                         }
                       />
                     </div>
-                    <span className="text-sm font-medium">Top-Right</span>
+                    <span className="text-sm font-medium pointer-events-none">
+                      Top-Right
+                    </span>
                   </div>
 
                   <div
@@ -1672,7 +1727,9 @@ const AdjustSidebarAdvanced = ({
                         }
                       />
                     </div>
-                    <span className="text-sm font-medium">Bottom-Left</span>
+                    <span className="text-sm font-medium pointer-events-none">
+                      Bottom-Left
+                    </span>
                   </div>
 
                   <div
@@ -1704,7 +1761,9 @@ const AdjustSidebarAdvanced = ({
                         }
                       />
                     </div>
-                    <span className="text-sm font-medium">Bottom-Right</span>
+                    <span className="text-sm font-medium pointer-events-none">
+                      Bottom-Right
+                    </span>
                   </div>
 
                   <div
@@ -1743,7 +1802,9 @@ const AdjustSidebarAdvanced = ({
                         <polyline points="4,4 4,20 20,20" />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium">Left Diagonal</span>
+                    <span className="text-sm font-medium pointer-events-none">
+                      Left Diagonal
+                    </span>
                   </div>
 
                   <div
@@ -1782,7 +1843,9 @@ const AdjustSidebarAdvanced = ({
                         <polyline points="20,4 20,20 4,20" />
                       </svg>
                     </div>
-                    <span className="text-sm font-medium">Right Diagonal</span>
+                    <span className="text-sm font-medium pointer-events-none">
+                      Right Diagonal
+                    </span>
                   </div>
                 </div>
 
@@ -1924,8 +1987,10 @@ const AdjustSidebarAdvanced = ({
                       </div>
                       <div className="flex flex-col gap-4">
                         <div className="flex justify-between items-center text-slate-600 dark:text-slate-300 text-sm">
-                          <p>Angle</p>
-                          <p className="font-medium">{swirlAngle.toFixed(2)}</p>
+                          <p>Strength</p>
+                          <p className="font-medium">
+                            {(swirlAngle / Math.PI).toFixed(2)}
+                          </p>
                         </div>
                         <Slider
                           value={[swirlAngle]}
@@ -2065,7 +2130,9 @@ const AdjustSidebarAdvanced = ({
                           max={255}
                           step={1}
                           onValueChange={(e) => handleCannyLowerChange(e[0])}
-                          onValueCommit={() => canvas.fire("object:modified")}
+                          onValueCommit={() =>
+                            canvasRef.current.fire("object:modified")
+                          }
                           disabled={selectedEdgeType !== "canny"}
                         />
                       </div>
@@ -2080,7 +2147,9 @@ const AdjustSidebarAdvanced = ({
                           max={255}
                           step={1}
                           onValueChange={(e) => handleCannyUpperChange(e[0])}
-                          onValueCommit={() => canvas.fire("object:modified")}
+                          onValueCommit={() =>
+                            canvasRef.current.fire("object:modified")
+                          }
                           disabled={selectedEdgeType !== "canny"}
                         />
                       </div>
@@ -2152,7 +2221,7 @@ const AdjustSidebarAdvanced = ({
                           handleGaussianBlurSigmaChange(e[0]);
                         }}
                         onValueCommit={() => {
-                          canvas.fire("object:modified");
+                          canvasRef.current.fire("object:modified");
                         }}
                       />
                     </div>
@@ -2212,7 +2281,7 @@ const AdjustSidebarAdvanced = ({
                           handleBilateralFilterSigmaSChange(e[0]);
                         }}
                         onValueCommit={() => {
-                          canvas.fire("object:modified");
+                          canvasRef.current.fire("object:modified");
                         }}
                       />
                     </div>
@@ -2232,7 +2301,7 @@ const AdjustSidebarAdvanced = ({
                           handleBilateralFilterSigmaCChange(e[0]);
                         }}
                         onValueCommit={() => {
-                          canvas.fire("object:modified");
+                          canvasRef.current.fire("object:modified");
                         }}
                       />
                     </div>

@@ -30,10 +30,12 @@ type StyleTemplate = {
   created_at?: Date;
 };
 
+// TODO: add loading state
+
 const StyleImageSection = () => {
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const [styleImages, setStyleImages] = useState<StyleTemplate[] | []>([]);
+  const [styleImages, setStyleImages] = useState<StyleTemplate[]>([]);
   const [imageName, setImageName] = useState("");
   const [imageFile, setImageFile] = useState<null | File>(null);
   const [openStyleImageUpload, setOpenStyleImageUpload] = useState(false);
@@ -67,44 +69,64 @@ const StyleImageSection = () => {
     }
 
     const formData = new FormData();
-    formData.append("imageId", crypto.randomUUID());
+    const imageId = crypto.randomUUID();
+    formData.append("imageId", imageId);
     formData.append("styleImage", imageFile);
     formData.append("imageName", imageName);
 
     try {
-      await apiClient.post("/add_style_img", formData, {
+      const response = await apiClient.post("/add_style_img", formData, {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
 
-      setStyleImages((prevStyles) => [...prevStyles]);
-
+      if (response.data.success) {
+        const newImage = {
+          image_id: imageId,
+          image_name: imageName,
+          image_url: response.data.data.image_url,
+          created_at: new Date(),
+        };
+        setStyleImages((prevStyles) => [...prevStyles, newImage]);
+        setOpenStyleImageUpload(false);
+        setImageName("");
+        setImageFile(null);
+        toast({
+          description: response.data.message,
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to upload image:", error);
       toast({
-        description: "Style Image uploaded successfully successfull",
+        description: error.response?.data?.message || "Image upload failed",
         duration: 3000,
       });
-    } catch (error) {
-      toast({ description: "Image upload failed." + error, duration: 3000 });
     }
   };
 
   const deleteStyleImage = async (imageId: string) => {
     try {
-      await apiClient.delete(`/delete_style_img/${imageId}`, {
+      const response = await apiClient.delete(`/delete_style_img/${imageId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user?.token}`,
         },
       });
-      // @ts-ignore
-      setStyleImages(styleImages.filter((image) => image.image_id !== imageId));
 
-      toast({
-        description: "Style image deleted successfully",
-        duration: 3000,
-      });
+      if (response.data.message) {
+        setStyleImages(
+          styleImages.filter((image) => image.image_id !== imageId)
+        );
+        toast({
+          description: response.data.message,
+          duration: 3000,
+        });
+      }
     } catch (error) {
+      console.error("Failed to delete style image:", error);
       toast({
-        description: "Failed to delete style image" + error,
+        description:
+          error.response?.data?.error || "Failed to delete style image",
         duration: 3000,
       });
     }

@@ -29,7 +29,11 @@ cloudinary.config(
 
 
 # sets the cors policy for the files in the static folder
-CORS(app, resources={r"/server/static/*": {"origins": "*"}})
+# CORS(app, resources={r"/server/static/*": {"origins": "*"}})
+CORS(app, resources={
+    r"/server/static/*": {"origins": "*"},  # Open CORS for static files
+    r"/*": {"origins": [os.getenv("FRONTEND_SERVER", "https://pixeltune-theta.vercel.app")]}  # Restrict all other routes (e.g., /api/*)
+}, supports_credentials=True)
 
 
 @app.route('/')

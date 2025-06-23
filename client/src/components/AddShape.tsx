@@ -151,6 +151,7 @@ const AddShape = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,
@@ -236,6 +237,7 @@ const AddShape = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,
@@ -331,6 +333,7 @@ const AddShape = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,
@@ -425,6 +428,7 @@ const AddShape = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,

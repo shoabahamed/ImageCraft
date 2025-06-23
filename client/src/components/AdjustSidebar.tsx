@@ -528,7 +528,7 @@ const AdjustSidebar = ({
 
     console.time("applyFilters+render for BBrightness");
     const filterInstances = filtersList.map(
-      //@ts-expect-error
+      //@ts-ignore
       (tempFilter) => tempFilter.instance
     );
     imageRef.current.filters = filterInstances;
@@ -822,8 +822,9 @@ const AdjustSidebar = ({
     });
 
     disableSavingIntoStackRef.current = true;
-    //@ts-ignore
+
     const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      //@ts-ignore
       (f) => f.filterName
     );
     allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);

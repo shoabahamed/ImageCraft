@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 import IconComponent from "./icon-component";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
-import { useLogContext } from "@/hooks/useLogContext";
 
 import {
   Square,
@@ -19,7 +18,6 @@ import {
   Brush,
 } from "lucide-react";
 import { useShapeStore } from "@/hooks/appStore/ShapeStore";
-import Draw from "./Draw";
 import { ShapePropertiesSwitcher } from "./ShapeProperties";
 import DrawAdmin from "./DrawAdmin";
 
@@ -141,6 +139,7 @@ const AddShapeAdmin = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,
@@ -215,6 +214,7 @@ const AddShapeAdmin = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,
@@ -300,6 +300,7 @@ const AddShapeAdmin = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           hoverCursor: "default",
@@ -384,6 +385,7 @@ const AddShapeAdmin = ({ canvasRef }: Props) => {
           hoverCursor: "default",
         });
       }
+      // @ts-ignore
       if (obj.type === "image" || obj.name === "canvasRect") {
         obj.set({
           selectable: false,

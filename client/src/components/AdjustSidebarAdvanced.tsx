@@ -234,8 +234,6 @@ const AdjustSidebarAdvanced = ({
     bulgeRadiusRef,
     bulgeStrengthRef,
     activeToolNameRef,
-    noOfBulgeFilterRef,
-    noOfSwirlFilterRef,
   } = useCanvasObjects();
   const swirlRadius = useAdjustStore((state) => state.swirlRadius);
   const setSwirlRadius = useAdjustStore((state) => state.setSwirlRadius);

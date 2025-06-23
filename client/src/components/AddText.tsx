@@ -684,7 +684,9 @@ const AddText = ({ canvas, image }: AddTextProps) => {
         originY: "center",
       });
 
+      // @ts-ignore
       canvas.add(...obj.removeAll());
+      // @ts-ignore
       obj.destroy();
       canvas.requestRenderAll();
     });

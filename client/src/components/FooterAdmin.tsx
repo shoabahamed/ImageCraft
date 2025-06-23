@@ -88,10 +88,7 @@ const FooterAdmin = ({ canvas, setLoadState, undo, redo }: Props) => {
 
       // get the bounds of rotate bounding box and get the data url
 
-      // console.log(dataURL);
-      // console.log(groupObject.toObject(["name", "isUpper", "id"]));
-
-      // json data
+      // @ts-ignore
       const canvasJSON = groupObject.toObject(["name", "isUpper", "id"]);
 
       // Create FormData object and append the image and other canvas data
@@ -190,6 +187,7 @@ const FooterAdmin = ({ canvas, setLoadState, undo, redo }: Props) => {
 
     const bounds = getRotatedBoundingBox(groupObject);
 
+    // @ts-ignore
     const dataURL = canvas.toDataURL({
       format: "png",
       left: bounds.left,
@@ -198,8 +196,8 @@ const FooterAdmin = ({ canvas, setLoadState, undo, redo }: Props) => {
       height: bounds.height,
     });
 
-    console.log(dataURL);
-    console.log(groupObject.toObject(["name", "isUpper", "id"]));
+    // console.log(dataURL);
+    // console.log(groupObject.toObject(["name", "isUpper", "id"]));
 
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);

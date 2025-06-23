@@ -58,7 +58,7 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     });
 
     const canvasRect = canvas
-      .getObjects()
+      .getObjects() // @ts-ignore
       .find((obj) => obj.name?.startsWith("canvasRect"));
 
     // Restore zoom & transform

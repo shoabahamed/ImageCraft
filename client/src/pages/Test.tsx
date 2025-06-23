@@ -675,7 +675,7 @@ const Test = () => {
               });
 
               const canvasRect = initCanvas
-                .getObjects()
+                .getObjects() // @ts-ignore
                 .find((obj) => obj.name?.startsWith("canvasRect"));
 
               if (canvasRect) {
@@ -740,7 +740,7 @@ const Test = () => {
             }
 
             const canvasRect = initCanvas
-              .getObjects()
+              .getObjects() // @ts-ignore
               .find((obj) => obj.name?.startsWith("canvasRect"));
 
             if (canvasRect) {
@@ -1000,7 +1000,7 @@ const Test = () => {
       "id",
     ]);
 
-    const filterNames =
+    const filterNames = // @ts-ignore
       currentFiltersRef.current?.map((filter) => filter.filterName) || [];
 
     const allData = {
@@ -1166,7 +1166,7 @@ const Test = () => {
         }
 
         const canvasRect = newCanvas
-          .getObjects()
+          .getObjects() // @ts-ignore
           .find((obj) => obj.name?.startsWith("canvasRect"));
 
         if (canvasRect) {
@@ -1194,7 +1194,7 @@ const Test = () => {
         if (selectedObject) {
           const id = (selectedObject as any).id;
           const previouslySelectedObject = newCanvas
-            .getObjects()
+            .getObjects() // @ts-ignore
             .find((obj) => (obj as any).id === id);
 
           if (previouslySelectedObject) {

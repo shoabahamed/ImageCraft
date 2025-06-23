@@ -333,7 +333,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   ) => {
     setBackgroundColor(color);
     const canvasRect = canvas
-      .getObjects()
+      .getObjects() // @ts-ignore
       .find((obj) => obj.name?.startsWith("canvasRect"));
 
     if (canvasRect) {
@@ -359,7 +359,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     if (backgroundColor !== "transparent") {
       setBackgroundColor("transparent");
       const canvasRect = canvas
-        .getObjects()
+        .getObjects() // @ts-ignore
         .find((obj) => obj.name?.startsWith("canvasRect"));
 
       if (canvasRect) {

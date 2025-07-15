@@ -550,6 +550,38 @@ const Test = () => {
     setSelectedObject(null);
   };
 
+  const createAuxillaryShapes = (imgHeight, imgWidth) => {
+    const canvasRect = new fabric.Rect({
+      width: imgWidth,
+      height: imgHeight,
+      fill: backgroundColor,
+      selectable: false,
+      hasControls: false,
+      name: "canvasRect",
+      originX: "center",
+      originY: "center",
+      top: imgHeight / 2,
+      left: imgWidth / 2,
+    });
+
+    const liquifyCircle = new fabric.Circle({
+      radius: Math.min(imgHeight, imgWidth) * 0.3, // default radius, can be adjusted as needed
+      fill: "rgba(0,0,0,0.2)", // semi-transparent fill for effect area
+      selectable: false,
+
+      // evented: false,
+      visible: false, // hidden by default
+      name: "liquifyCircle",
+      originX: "center",
+      originY: "center",
+      top: imgHeight / 2,
+      left: imgWidth / 2,
+      // excludeFromExport: true,
+    });
+
+    return { canvasRect, liquifyCircle };
+  };
+
   // the below code is responsible for handling canvas and image loading
   useEffect(() => {
     if (canvasRef.current) {
@@ -791,121 +823,114 @@ const Test = () => {
           console.error("Failed to load canvas data:", error);
         }
       } else {
-        fabric.FabricImage.fromURL(imageUrl, { crossOrigin: "anonymous" }).then(
-          async (img) => {
-            const imageWidth = img.width ?? 1;
-            const imageHeight = img.height ?? 1;
+        fabric.FabricImage.fromURL(imageUrl, {
+          crossOrigin: "anonymous",
+        }).then(async (img) => {
+          const imageWidth = img.width ?? 1;
+          const imageHeight = img.height ?? 1;
 
-            setOriginalImageDimensions({
-              imageWidth: imageWidth,
-              imageHeight: imageHeight,
-            });
+          setOriginalImageDimensions({
+            imageWidth: imageWidth,
+            imageHeight: imageHeight,
+          });
 
-            setFinalImageDimensions({
-              imageWidth: imageWidth,
-              imageHeight: imageHeight,
-            });
+          setFinalImageDimensions({
+            imageWidth: imageWidth,
+            imageHeight: imageHeight,
+          });
 
-            setDownloadImageDimensions({
-              imageHeight: imageHeight,
-              imageWidth: imageWidth,
-            });
+          setDownloadImageDimensions({
+            imageHeight: imageHeight,
+            imageWidth: imageWidth,
+          });
 
-            finalImageDimensionsRef.current = {
-              imageHeight: imageHeight,
-              imageWidth: imageWidth,
-            };
+          finalImageDimensionsRef.current = {
+            imageHeight: imageHeight,
+            imageWidth: imageWidth,
+          };
 
-            downloadImageDimensionsRef.current = {
-              imageHeight: imageHeight,
-              imageWidth: imageWidth,
-            };
+          downloadImageDimensionsRef.current = {
+            imageHeight: imageHeight,
+            imageWidth: imageWidth,
+          };
 
-            originalImageDimensionsRef.current = {
-              imageHeight: imageHeight,
-              imageWidth: imageWidth,
-            };
+          originalImageDimensionsRef.current = {
+            imageHeight: imageHeight,
+            imageWidth: imageWidth,
+          };
 
-            initCanvas.setDimensions({
-              width: containerWidth,
-              height: containerHeight,
-            });
+          initCanvas.setDimensions({
+            width: containerWidth,
+            height: containerHeight,
+          });
 
-            // Calculate zoom to fit image in canvas while maintaining aspect ratio
-            const scaleX = containerWidth / imageWidth;
-            const scaleY = containerHeight / imageHeight;
-            const zoom = Math.min(scaleX, scaleY);
+          // Calculate zoom to fit image in canvas while maintaining aspect ratio
+          const scaleX = containerWidth / imageWidth;
+          const scaleY = containerHeight / imageHeight;
+          const zoom = Math.min(scaleX, scaleY);
 
-            // Apply zoom to canvas
-            initCanvas.setZoom(zoom);
-            setZoomValue(zoom);
+          // Apply zoom to canvas
+          initCanvas.setZoom(zoom);
+          setZoomValue(zoom);
 
-            // Calculate the viewport transform to center the image
-            const vp = initCanvas.viewportTransform!;
-            vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
-            vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
-            initCanvas.setViewportTransform(vp);
+          // Calculate the viewport transform to center the image
+          const vp = initCanvas.viewportTransform!;
+          vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+          vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+          initCanvas.setViewportTransform(vp);
 
-            // initCanvas.viewportCenterObject(img);
-            img.set({
-              left: imageWidth / 2,
-              top: imageHeight / 2,
-              selectable: false,
-              hoverCursor: "default",
-              originX: "center",
-              originY: "center",
-            });
+          // initCanvas.viewportCenterObject(img);
+          img.set({
+            left: imageWidth / 2,
+            top: imageHeight / 2,
+            selectable: false,
+            hoverCursor: "default",
+            originX: "center",
+            originY: "center",
+          });
 
-            const canvasRect = new fabric.Rect({
-              width: img.width,
-              height: img.height,
-              fill: backgroundColor,
-              selectable: false,
-              hasControls: false,
-              name: "canvasRect",
-              originX: "center",
-              originY: "center",
-              top: img.height / 2,
-              left: img.width / 2,
-            });
+          // img.skewX = -3.5;
 
-            initCanvas.add(canvasRect);
+          const { canvasRect, liquifyCircle } = createAuxillaryShapes(
+            img.height,
+            img.width
+          );
 
-            // img.skewX = -3.5;
+          initCanvas.add(canvasRect);
+          initCanvas.add(img);
+          initCanvas.add(liquifyCircle);
 
-            initCanvas.add(img);
-            initCanvas.renderAll();
-            currentImageRef.current = img; // Set the ref directly
-            setFlipX(img.flipX);
-            setFlipY(img.flipY);
+          initCanvas.renderAll();
+          currentImageRef.current = img; // Set the ref directly
+          setFlipX(img.flipX);
+          setFlipY(img.flipY);
 
-            mainCanvasRef.current = initCanvas;
-            setSidebarName("Arrange");
+          mainCanvasRef.current = initCanvas;
+          setSidebarName("Arrange");
 
-            const canvasData = initCanvas.toObject(["name", "isUpper", "id"]);
+          const canvasData = initCanvas.toObject(["name", "isUpper", "id"]);
 
-            const allData = {
-              project_data: canvasData,
-              final_image_shape: {
-                imageHeight: currentImageRef.current.height,
-                imageWidth: currentImageRef.current.width,
-              },
-              original_image_shape: {
-                imageHeight: currentImageRef.current.height,
-                imageWidth: currentImageRef.current.width,
-              },
-              download_image_shape: {
-                imageHeight: currentImageRef.current.height,
-                imageWidth: currentImageRef.current.width,
-              },
-              filter_names: [],
-              viewportTransform: initCanvas.viewportTransform,
-              zoomValue: zoom,
-            };
+          const allData = {
+            project_data: canvasData,
+            final_image_shape: {
+              imageHeight: currentImageRef.current.height,
+              imageWidth: currentImageRef.current.width,
+            },
+            original_image_shape: {
+              imageHeight: currentImageRef.current.height,
+              imageWidth: currentImageRef.current.width,
+            },
+            download_image_shape: {
+              imageHeight: currentImageRef.current.height,
+              imageWidth: currentImageRef.current.width,
+            },
+            filter_names: [],
+            viewportTransform: initCanvas.viewportTransform,
+            zoomValue: zoom,
+          };
 
-            setHistoryValue(allData);
-          }
-        );
+          setHistoryValue(allData);
+        });
       }
 
       initCanvas.on("mouse:wheel", function (opt) {
@@ -1764,9 +1789,9 @@ const Test = () => {
   }, [filtersUI]);
 
   return (
-    <div className="h-screen max-w-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div className="h-screen max-w-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:bg-[#05101c] min-h-screen">
       <Navbar />
-      <div className="w-full flex-1 flex items-center relative flex-col md:flex-row">
+      <div className="w-full flex-1 flex items-center relative flex-col md:flex-row dark:bg-[#05101c]">
         {/* Full-screen overlay */}
         {spinnerLoading && (
           <div className="fixed w-full h-full top-0 left-0 z-50 flex bg-black opacity-40 justify-center items-center">

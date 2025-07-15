@@ -12,6 +12,7 @@ import UserProfilePage from "./pages/Profile";
 import Gallery from "./pages/Gallery";
 import AdminPanel from "./pages/Admin";
 import TemplateUpload from "./pages/TemplateUpload";
+import AdminPanelAdvanced from "./pages/AdminPanelAdvanced";
 
 export default function App() {
   const { user, loading } = useAuthContext();
@@ -46,7 +47,11 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                user && user.role.includes("admin") ? <AdminPanel /> : <Home />
+                user && user.role.includes("admin") ? (
+                  <AdminPanelAdvanced />
+                ) : (
+                  <Home />
+                )
               }
             />
 
@@ -78,6 +83,8 @@ export default function App() {
                 </LogProvider>
               }
             />
+
+            {/* <Route path="/admin_advanced" element={<AdminPanelAdvanced />} /> */}
           </Routes>
 
           <Toaster />

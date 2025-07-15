@@ -161,6 +161,9 @@ type AdjustStore = {
   setActivateLiquidifyTool: (value: string) => void;
 
   resetFilters: () => void;
+
+  cdfArray: number[] | Uint8Array | null;
+  setCdfArray: (cdf: number[] | Uint8Array | null) => void;
 };
 
 export const useAdjustStore = create<AdjustStore>((set) => ({
@@ -316,7 +319,7 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
   setCannyUpperThreshold: (value) => set({ cannyUpperThreshold: value }),
 
   swirlRadius: 0.3,
-  swirlAngle: 1.0,
+  swirlAngle: 3.0,
   setSwirlRadius: (value) => set({ swirlRadius: value }),
   setSwirlAngle: (value) => set({ swirlAngle: value }),
 
@@ -400,10 +403,13 @@ export const useAdjustStore = create<AdjustStore>((set) => ({
       cannyUpperThreshold: 50,
 
       swirlRadius: 0.3,
-      swirlAngle: 1.0,
+      swirlAngle: 3.0,
       enableSwirl: false,
 
       bulgeRadius: 0.3,
       bulgeStrength: 0.5,
     }),
+
+  cdfArray: null,
+  setCdfArray: (cdf) => set({ cdfArray: cdf }),
 }));

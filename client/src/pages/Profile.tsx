@@ -213,7 +213,7 @@ export default function UserProfilePage() {
                     </div>
                     <div className="text-center">
                       <p className="font-bold text-blue-600 dark:text-blue-400">
-                        {avgRate}
+                        {avgRate || 0}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Average Rating

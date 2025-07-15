@@ -23,7 +23,7 @@ embedding_collection = db['Embedding']
 
 def save_project():
     try:
-
+        print("skdjf")
         user_id = str(g._id)  # Extracted by the middleware
         print(request.files)     
         
@@ -41,14 +41,15 @@ def save_project():
         canvas_image_file = request.files.get('canvasImage')
         inter_image_file = request.files.get("interImage")
         project_name = request.form.get("projectName")
-        
+        print("fetched all")
         # Retrieve JSON-like data from form fields
         original_image_shape = request.form.get('originalImageShape')
         final_image_shape = request.form.get('finalImageShape')
         download_image_shape = request.form.get('downloadImageShape')
-        filter_names = request.form.get("filterNames")
-        all_filters_applied = request.form.get('allFiltersApplied')
+        filter_names = request.form.get("filterNames", "[]")
+        all_filters_applied = request.form.get('allFiltersApplied', '[]')
 
+        print("eval")
         filter_names = eval(filter_names)
         all_filters_applied = eval(all_filters_applied)
 
@@ -196,6 +197,7 @@ def save_project():
                     "canvas_image_url": cloud_canvas_result["secure_url"],
                     "total_rating": 5,
                     "rating_count": 1,
+                    "avg_rating": 5,
                     "total_views": 1,
                     "total_bookmark": 0,
                     "original_image_shape": original_image_shape,
@@ -386,6 +388,69 @@ def get_all_projects():
   except Exception as e:
     return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
   
+  
+
+def query_projects():
+    try:
+        user_id = str(g._id)
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        bookmarked_projects = user.get('bookmarked', [])
+
+        # Get query params
+        search = request.args.get("search", "").strip()
+        sort = request.args.get("sort", "date")
+        dir = request.args.get("dir", "desc")
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 8))
+
+        # Build MongoDB query
+        query = {"is_public": "true"}
+        if search:
+            query["$or"] = [
+                {"project_name": {"$regex": search, "$options": "i"}},
+                {"username": {"$regex": search, "$options": "i"}},
+            ]
+
+        # Sorting
+        sort_map = {
+            "date": "updated_at",
+            "rating": "avg_rating",
+            "views": "total_views",
+            "name": "project_name",
+            "bookmarked": "total_bookmark",
+        }
+        sort_field = sort_map.get(sort, "updated_at")
+        sort_dir = -1 if dir == "desc" else 1
+
+        # No special aggregation for rating, just sort by avg_rating
+        cursor = projects_collection.find(query)
+        cursor = cursor.sort(sort_field, sort_dir)
+        total_count = cursor.count() if hasattr(cursor, 'count') else projects_collection.count_documents(query)
+        cursor = cursor.skip((page - 1) * page_size).limit(page_size)
+        projects = list(cursor)
+
+        # Mark bookmarks and convert types
+        for project in projects:
+            project["_id"] = str(project["_id"])
+            project['bookmarked'] = project.get('project_id') in bookmarked_projects
+            project["total_rating"] = int(project.get('total_rating', 0))
+            project['rating_count'] = int(project.get('rating_count', 0))
+            project['project_logs'] = []
+
+        response = {
+            "projects": projects,
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count + page_size - 1) // page_size
+        }
+        return jsonify({"success": True, "message": "Projects retrieved successfully", "data": response}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+
+  
+# create a function to fetch all projects based on query
 
 
 def get_project_by_id(project_id):
@@ -567,7 +632,7 @@ def rate_project():
         # Update the project's visibility
         result = projects_collection.update_one(
             {"project_id": project_id},
-            {"$set": {"total_rating": str(total_rating), "rating_count": str(rating_count)}}
+            {"$set": {"total_rating": total_rating, "rating_count": rating_count, "avg_rating": total_rating / rating_count}}
         )
 
 
@@ -599,14 +664,14 @@ def update_project_view_count():
             project = projects_collection.find_one({"project_id": project_id})
 
             
-            total_rating = int(project.get("total_views", 0)) + 1
-            
+            total_views = int(project.get("total_views", 0)) + 1
+            print(total_views, "dskfdslkfjlskdj")
     
         
             # Update the project's visibility
             result = projects_collection.update_one(
                 {"project_id": project_id},
-                {"$set": {"total_views": str(total_rating)}}
+                {"$set": {"total_views": str(total_views)}}
             )
 
 

@@ -8,24 +8,25 @@ import {
 import { Canvas, FabricImage, filters } from "fabric";
 import { useLogContext } from "@/hooks/useLogContext";
 import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
-import { SharpenFilter } from "@/utils/SharpenFilter";
 
-import { getRotatedBoundingBox, updateOrInsert } from "@/utils/commonFunctions";
+import {
+  getRotatedBoundingBox,
+  throttle,
+  updateOrInsert,
+} from "@/utils/commonFunctions";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
-import { Sparkles, Wand2, Moon, Palette, Sun } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCommonProps } from "@/hooks/appStore/CommonProps";
-import { ColdFilter } from "@/utils/ColdFilter";
-import { SobelFilter } from "@/utils/SobelFilter";
-import { WarmFilter } from "@/utils/WarmFilter";
-import { FocusFilter } from "@/utils/FocusFilter";
 import { Slider } from "./ui/slider";
 import { RBrightness } from "@/utils/RedBrightnessFilter";
 import { GBrightness } from "@/utils/GreenBrightnessValue";
 import { BBrightness } from "@/utils/BlueBrightnessFilter";
-import { CustomGrayScale } from "@/utils/CustomGrayScale";
+import { useRef } from "react";
+import DetailFiltersTab from "./DetailsFilterTab";
+import PredefinedFilterTab from "./PredefinedFilter";
+
+const COLORS_THROTTLE_MS = 50;
+
 type AdjustSidebarProps = {
   canvas: Canvas;
   image: FabricImage;
@@ -56,22 +57,7 @@ const AdjustSidebar = ({
   const contrastValue = useAdjustStore((state) => state.contrastValue);
   const saturationValue = useAdjustStore((state) => state.saturationValue);
   const vibranceValue = useAdjustStore((state) => state.vibranceValue);
-  const opacityValue = useAdjustStore((state) => state.opacityValue);
   const hueValue = useAdjustStore((state) => state.hueValue);
-  const blurValue = useAdjustStore((state) => state.blurValue);
-  const noiseValue = useAdjustStore((state) => state.noiseValue);
-  const pixelateValue = useAdjustStore((state) => state.pixelateValue);
-  const enableGrayScale = useAdjustStore((state) => state.enableGrayScale);
-  // const enableVintage = useAdjustStore((state) => state.enableVintage);
-  const enableSepia = useAdjustStore((state) => state.enableSepia);
-  const enableTechnicolor = useAdjustStore((state) => state.enableTechnicolor);
-  const enableKodachrome = useAdjustStore((state) => state.enableKodachrome);
-  const enableWarmFilter = useAdjustStore((state) => state.enableWarmFilter);
-  const enableColdFilter = useAdjustStore((state) => state.enableColdFilter);
-
-  const sharpenValue = useAdjustStore((state) => state.sharpenValue);
-
-  const enableInvert = useAdjustStore((state) => state.enableInvert);
 
   const blueBrightnessValue = useAdjustStore(
     (state) => state.blueBrightnessValue
@@ -97,32 +83,6 @@ const AdjustSidebar = ({
   );
   const setGammaRedValue = useAdjustStore((state) => state.setGammaRedValue);
 
-  const setEnableGrayScale = useAdjustStore(
-    (state) => state.setEnableGrayScale
-  );
-  const setEnableVintage = useAdjustStore((state) => state.setEnableVintage);
-  const setEnableSepia = useAdjustStore((state) => state.setEnableSepia);
-  const setEnableTechnicolor = useAdjustStore(
-    (state) => state.setEnableTechnicolor
-  );
-  const setEnableKodachrome = useAdjustStore(
-    (state) => state.setEnableKodachrome
-  );
-  const setEnableSharpen = useAdjustStore((state) => state.setEnableSharpen);
-  const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
-
-  const setEnableEdgeDetection = useAdjustStore(
-    (state) => state.setEnableEdgeDetection
-  );
-
-  const setEnableWarmFilter = useAdjustStore(
-    (state) => state.setEnableWarmFilter
-  );
-
-  const setEnableColdFilter = useAdjustStore(
-    (state) => state.setEnableColdFilter
-  );
-
   // Set functions for each value
   const setContrastValue = useAdjustStore((state) => state.setContrastValue);
   const setSaturationValue = useAdjustStore(
@@ -132,277 +92,63 @@ const AdjustSidebar = ({
     (state) => state.setRedBrightnessValue
   );
   const setVibranceValue = useAdjustStore((state) => state.setVibranceValue);
-  const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
   const setHueValue = useAdjustStore((state) => state.setHueValue);
-  const setBlurValue = useAdjustStore((state) => state.setBlurValue);
-  const setNoiseValue = useAdjustStore((state) => state.setNoiseValue);
-  const setPixelateValue = useAdjustStore((state) => state.setPixelateValue);
-  const setSharpenValue = useAdjustStore((state) => state.setSharpenValue);
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
-  const enableFocusFilter = useAdjustStore((state) => state.enableFocusFilter);
-  const radius = useAdjustStore((state) => state.radius);
-  const softness = useAdjustStore((state) => state.softness);
+  // Throttled handler for redBrightness
+  const throttledRedBrightness = useRef(
+    throttle((value: number) => {
+      handleColorFilters("brightnessRed", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
 
-  const darkFocus = useAdjustStore((state) => state.darkFocus);
-
-  const setEnableFocusFilter = useAdjustStore(
-    (state) => state.setEnableFocusFilter
-  );
-
-  const setRadius = useAdjustStore((state) => state.setRadius);
-  const setSoftness = useAdjustStore((state) => state.setSoftness);
-
-  const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
-
-  const handlePredefinedFilter = (filterName: string, value: boolean) => {
-    addLog({
-      section: "adjust",
-      tab: "filters",
-      event: "update",
-      message: value
-        ? `enabled ${filterName} filter`
-        : `disabled ${filterName} scale filter`,
-    });
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("old filters", filtersList);
-    switch (filterName) {
-      case "grayscale":
-        updateOrInsert(filtersList, "grayscale", new CustomGrayScale(), value);
-        setEnableGrayScale(value);
-        break;
-      case "sepia":
-        updateOrInsert(filtersList, "sepia", new filters.Sepia(), value);
-        setEnableSepia(value);
-        break;
-
-      case "kodachrome":
-        updateOrInsert(
-          filtersList,
-          "kodachrome",
-          new filters.Kodachrome(),
-          value
-        );
-        setEnableKodachrome(value);
-        break;
-
-      case "technicolor":
-        updateOrInsert(
-          filtersList,
-          "technicolor",
-          new filters.Technicolor(),
-          value
-        );
-        setEnableTechnicolor(value);
-        break;
-
-      case "invert":
-        updateOrInsert(filtersList, "invert", new filters.Invert(), value);
-        setEnableInvert(value);
-        break;
-
-      case "sobeledge":
-        updateOrInsert(filtersList, "sobeledge", new SobelFilter(), value);
-        setEnableEdgeDetection(value);
-        break;
-
-      case "cold":
-        updateOrInsert(filtersList, "cold", new ColdFilter(), value);
-        setEnableColdFilter(value);
-        break;
-
-      case "warm":
-        updateOrInsert(filtersList, "warm", new WarmFilter(), value);
-        setEnableWarmFilter(value);
-        break;
-      default:
-        break;
-    }
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-
-    canvas.fire("object:modified");
-  };
-
-  const handleFocusFilterToggle = (value: boolean) => {
-    const filterName = "focus";
-    addLog({
-      section: "adjust",
-      tab: "filters",
-      event: "update",
-      message: value
-        ? `enabled ${filterName} filter`
-        : `disabled ${filterName} scale filter`,
-    });
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("old filters", filtersList);
-
-    updateOrInsert(
-      filtersList,
-      "focusFilter",
-      new FocusFilter({
-        radius: radius,
-        softness: softness,
-        dark: darkFocus,
-      }),
-      value
-    );
-
-    setEnableFocusFilter(value);
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-
-    canvas.fire("object:modified");
-  };
-
-  const handleFocusRadiusChange = (newRadius: number) => {
-    const filterName = "focus";
-    addLog({
-      section: "adjust",
-      tab: "filters",
-      event: "update",
-      message: `${filterName} filter radius changed from ${radius} to ${newRadius}`,
-    });
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("old filters", filtersList);
-
-    updateOrInsert(
-      filtersList,
-      "focusFilter",
-      new FocusFilter({
-        radius: newRadius,
-        softness: softness,
-        dark: darkFocus,
-      }),
-      enableFocusFilter
-    );
-
-    setRadius(newRadius);
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-  };
-
-  const handleFocusSoftnessChange = (newSoftness: number) => {
-    const filterName = "focus";
-    addLog({
-      section: "adjust",
-      tab: "filters",
-      event: "update",
-      message: `${filterName} filter softness changed from ${softness} to ${newSoftness}`,
-    });
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("old filters", filtersList);
-
-    updateOrInsert(
-      filtersList,
-      "focusFilter",
-      new FocusFilter({
-        radius: radius,
-        softness: newSoftness,
-        dark: darkFocus,
-      }),
-      enableFocusFilter
-    );
-
-    setSoftness(newSoftness);
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-  };
-
-  const handleFocusReverseToggle = (newDarkFocus: boolean) => {
-    const filterName = "focus";
-    addLog({
-      section: "adjust",
-      tab: "filters",
-      event: "update",
-      message: `${filterName} filter dark focus changed from ${darkFocus} to ${newDarkFocus}`,
-    });
-
-    setDarkFocus(newDarkFocus);
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("old filters", filtersList);
-
-    updateOrInsert(
-      filtersList,
-      "focusFilter",
-      new FocusFilter({
-        radius: radius,
-        softness: softness,
-        dark: newDarkFocus,
-      }),
-      enableFocusFilter
-    );
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-
-    canvas.fire("object:modified");
-  };
+  // Throttled handlers for color sliders
+  const throttledGreenBrightness = useRef(
+    throttle((value: number) => {
+      handleColorFilters("brightnessGreen", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledBlueBrightness = useRef(
+    throttle((value: number) => {
+      handleColorFilters("brightnessBlue", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledGammaRed = useRef(
+    throttle((value: number) => {
+      handleColorFilters("gammaRed", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledGammaGreen = useRef(
+    throttle((value: number) => {
+      handleColorFilters("gammaGreen", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledGammaBlue = useRef(
+    throttle((value: number) => {
+      handleColorFilters("gammaBlue", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledContrast = useRef(
+    throttle((value: number) => {
+      handleColorFilters("contrast", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledSaturation = useRef(
+    throttle((value: number) => {
+      handleColorFilters("saturation", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledVibrance = useRef(
+    throttle((value: number) => {
+      handleColorFilters("vibrance", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
+  const throttledHue = useRef(
+    throttle((value: number) => {
+      handleColorFilters("hueRotation", value);
+    }, COLORS_THROTTLE_MS)
+  ).current;
 
   const handleColorFilters = (filterName: string, value: number) => {
     addLog({
@@ -418,115 +164,135 @@ const AdjustSidebar = ({
     switch (filterName) {
       case "brightnessRed":
         console.log("brightnessRed", value);
+        console.time("updateOrInsert-brightnessRed");
         updateOrInsert(
           filtersList,
           "rbrightness",
           new RBrightness({ RBrightness: value }),
           value !== 0
         );
+        console.timeEnd("updateOrInsert-brightnessRed");
         setRedBrightnessValue(value);
         break;
       case "brightnessGreen":
+        console.time("updateOrInsert-brightnessGreen");
         updateOrInsert(
           filtersList,
           "gbrightness",
           new GBrightness({ GBrightness: value }),
           value !== 0
         );
+        console.timeEnd("updateOrInsert-brightnessGreen");
         setGreenBrightnessValue(value);
         break;
 
-      case "brightnessBlue":
+      case "brightnessBlue": {
         console.time("BBrightness instance creation");
         const bBrightnessInstance = new BBrightness({ BBrightness: value });
         console.timeEnd("BBrightness instance creation");
 
-        console.time("updateOrInsert for BBrightness");
+        console.time("updateOrInsert-brightnessBlue");
         updateOrInsert(
           filtersList,
           "bbrightness",
           bBrightnessInstance,
           value !== 0
         );
-        console.timeEnd("updateOrInsert for BBrightness");
+
+        console.timeEnd("updateOrInsert-brightnessBlue");
 
         setBlueBrightnessValue(value);
         break;
+      }
 
       case "gammaRed":
+        console.time("updateOrInsert-gammaRed");
         updateOrInsert(
           filtersList,
           "gamma",
           new filters.Gamma({ gamma: [value, gammaGreen, gammaBlue] }),
           value !== 1
         );
+        console.timeEnd("updateOrInsert-gammaRed");
         setGammaRedValue(value);
         break;
 
       case "gammaGreen":
+        console.time("updateOrInsert-gammaGreen");
         updateOrInsert(
           filtersList,
           "gamma",
           new filters.Gamma({ gamma: [gammaRed, value, gammaBlue] }),
           value !== 1
         );
+        console.timeEnd("updateOrInsert-gammaGreen");
         setGammaGreenValue(value);
         break;
 
       case "gammaBlue":
+        console.time("updateOrInsert-gammaBlue");
         updateOrInsert(
           filtersList,
           "gamma",
           new filters.Gamma({ gamma: [gammaRed, gammaGreen, value] }),
           value !== 1
         );
+        console.timeEnd("updateOrInsert-gammaBlue");
         setGammaBlueValue(value);
         break;
 
       case "contrast":
+        console.time("updateOrInsert-contrast");
         updateOrInsert(
           filtersList,
           "contrast",
           new filters.Contrast({ contrast: value }),
           value !== 0
         );
+        console.timeEnd("updateOrInsert-contrast");
         setContrastValue(value);
         break;
 
       case "saturation":
+        console.time("updateOrInsert-saturation");
         updateOrInsert(
           filtersList,
           "saturation",
           new filters.Saturation({ saturation: value }),
           value !== 0
         );
+        console.timeEnd("updateOrInsert-saturation");
         setSaturationValue(value);
         break;
 
       case "vibrance":
+        console.time("updateOrInsert-vibrance");
         updateOrInsert(
           filtersList,
           "vibrance",
           new filters.Vibrance({ vibrance: value }),
           value !== 0
         );
+        console.timeEnd("updateOrInsert-vibrance");
         setVibranceValue(value);
         break;
 
       case "hueRotation":
+        console.time("updateOrInsert-hueRotation");
         updateOrInsert(
           filtersList,
           "hueRotation",
           new filters.HueRotation({ rotation: value }),
           value !== 0
         );
+        console.timeEnd("updateOrInsert-hueRotation");
         setHueValue(value);
         break;
       default:
         break;
     }
 
-    console.time("applyFilters+render for BBrightness");
+    console.time("applyFilters+render");
     const filterInstances = filtersList.map(
       //@ts-ignore
       (tempFilter) => tempFilter.instance
@@ -535,82 +301,7 @@ const AdjustSidebar = ({
     imageRef.current.applyFilters();
     canvas.requestRenderAll();
     currentFiltersRef.current = filtersList;
-    console.timeEnd("applyFilters+render for BBrightness");
-  };
-
-  const handleDetailsFilters = (filterName: string, value: number) => {
-    addLog({
-      section: "adjust",
-      tab: "detail",
-      event: "update",
-      message: `${filterName} filter value changed from ${value} to ${value}`,
-    });
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    console.log("old filters", filtersList);
-
-    switch (filterName) {
-      case "opacity":
-        imageRef.current.set("opacity", value);
-        setOpacityValue(value);
-        break;
-
-      case "blur":
-        updateOrInsert(
-          filtersList,
-          "blur",
-          new filters.Blur({ blur: value }),
-          value !== 0
-        );
-        setBlurValue(value);
-        break;
-
-      case "noise":
-        updateOrInsert(
-          filtersList,
-          "noise",
-          new filters.Noise({ noise: value }),
-          value !== 0
-        );
-        setNoiseValue(value);
-        break;
-
-      case "pixelate":
-        updateOrInsert(
-          filtersList,
-          "pixelate",
-          new filters.Pixelate({ blocksize: value }),
-          value !== 0
-        );
-        setPixelateValue(value);
-        break;
-
-      case "sharpen":
-        updateOrInsert(
-          filtersList,
-          "sharpen",
-          new SharpenFilter({ SharpenValue: value }),
-          value !== 0.5
-        );
-        setSharpenValue(value);
-        break;
-
-      default:
-        break;
-    }
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
+    console.timeEnd("applyFilters+render");
   };
 
   const handleColorReset = () => {
@@ -700,117 +391,6 @@ const AdjustSidebar = ({
     canvas.fire("object:modified");
   };
 
-  const handleDetailReset = () => {
-    addLog({
-      section: "adjust",
-      tab: "detail",
-      event: "reset",
-      message: `reseted all image detail properties `,
-    });
-
-    setOpacityValue(1);
-    setPixelateValue(0);
-    setNoiseValue(0);
-    setBlurValue(0);
-    setSharpenValue(0.5);
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-    updateOrInsert(filtersList, "blur", new filters.Blur({ blur: 0 }), false);
-    updateOrInsert(
-      filtersList,
-      "noise",
-      new filters.Noise({ noise: 0 }),
-      false
-    );
-    updateOrInsert(
-      filtersList,
-      "pixelate",
-      new filters.Pixelate({ blocksize: 0 }),
-      false
-    );
-    updateOrInsert(
-      filtersList,
-      "sharpen",
-      new SharpenFilter({ SharpenValue: 0.5 }),
-      false
-    );
-
-    imageRef.current.set("opacity", 1);
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-
-    canvas.fire("object:modified");
-  };
-
-  const handlePredefinedFilterReset = () => {
-    addLog({
-      section: "adjust",
-      tab: "filter",
-      event: "deletion",
-      message: `removed all predefined filters`,
-    });
-
-    setEnableGrayScale(false);
-    setEnableSepia(false);
-    setEnableVintage(false);
-    setEnableKodachrome(false);
-    setEnableTechnicolor(false);
-    setEnableSharpen(false);
-    setEnableInvert(false);
-    setEnableEdgeDetection(false);
-    setEnableColdFilter(false);
-    setEnableWarmFilter(false);
-
-    const filtersList = [...(currentFiltersRef.current || [])];
-
-    updateOrInsert(filtersList, "grayscale", new filters.Grayscale(), false);
-    updateOrInsert(filtersList, "sepia", new filters.Sepia(), false);
-    updateOrInsert(filtersList, "kodachrome", new filters.Kodachrome(), false);
-
-    updateOrInsert(
-      filtersList,
-      "technicolor",
-      new filters.Technicolor(),
-      false
-    );
-
-    updateOrInsert(filtersList, "invert", new filters.Invert(), false);
-
-    updateOrInsert(filtersList, "sobeledge", new SobelFilter(), false);
-
-    updateOrInsert(filtersList, "cold", new ColdFilter(), false);
-
-    updateOrInsert(filtersList, "warm", new WarmFilter(), false);
-
-    const filterInstances = filtersList.map(
-      //@ts-ignore
-      (tempFilter) => tempFilter.instance
-    );
-    console.log("new filters", filterInstances);
-
-    imageRef.current.filters = filterInstances;
-
-    imageRef.current.applyFilters();
-
-    canvas.requestRenderAll();
-
-    currentFiltersRef.current = filtersList;
-
-    canvas.fire("object:modified");
-  };
-
   const handleApplyFilter = () => {
     addLog({
       section: "adjust",
@@ -833,7 +413,7 @@ const AdjustSidebar = ({
     // Temporarily set visible = false for all objects other than image type
     canvas.getObjects().forEach((obj) => {
       if (obj.type !== "image") {
-        obj.set("visible", false);
+        obj.visible = false;
       }
     });
 
@@ -876,7 +456,6 @@ const AdjustSidebar = ({
       resetFilters();
       // Replace the image content
 
-      console.log("djf");
       imageRef.current.setElement(img.getElement());
 
       imageRef.current.scaleX = scaleX;
@@ -895,7 +474,7 @@ const AdjustSidebar = ({
 
       //  set visible = true for all objects other than image type
       canvas.getObjects().forEach((obj) => {
-        if (obj.type !== "image") {
+        if (obj.type !== "image" && obj?.name.startsWith("Frame")) {
           obj.set("visible", true);
         }
       });
@@ -910,12 +489,47 @@ const AdjustSidebar = ({
       setTimeout(() => {
         imageRef.current.filters = []; // not sure if it is needed
         currentFiltersRef.current = [];
+        imageRef.current.applyFilters();
+
         disableSavingIntoStackRef.current = false;
         setLoadState(false);
         canvas.renderAll();
         canvas.fire("object:modified");
       }, 1000);
     });
+  };
+
+  const CompareImage = () => {
+    imageRef.current.filters = [];
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+  };
+
+  const recoverFilter = () => {
+    const filtersList = [...(currentFiltersRef.current || [])];
+    const filterInstances = filtersList.map(
+      //@ts-ignore
+      (tempFilter) => tempFilter.instance
+    );
+
+    imageRef.current.filters = filterInstances;
+    imageRef.current.applyFilters();
+
+    canvas.requestRenderAll();
+  };
+
+  const handleCompareMouseDown = () => {
+    CompareImage();
+  };
+
+  const handleCompareMouseUp = () => {
+    recoverFilter();
+  };
+
+  const handleCompareMouseLeave = () => {
+    // If mouse leaves the button while pressed, recover the filter
+    recoverFilter();
   };
 
   return (
@@ -933,348 +547,8 @@ const AdjustSidebar = ({
         </div>
 
         {/* Preset Filters Tab */}
-        <TabsContent
-          value="presets"
-          className="flex-1 flex flex-col justify-center items-center"
-        >
-          <div className="w-[90%]">
-            <Card>
-              <CardHeader>
-                <CardDescription className="text-center">
-                  Predefined Filters
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="w-full flex flex-col gap-2">
-                <div className="grid grid-cols-3 md:grid-cols-2 gap-4">
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("grayscale", !enableGrayScale);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableGrayScale
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableGrayScale
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableGrayScale
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Moon />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">GrayScale</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("sepia", !enableSepia);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableSepia
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableSepia
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableSepia
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Palette />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Sepia</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("kodachrome", !enableKodachrome);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableKodachrome
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableKodachrome
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableKodachrome
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Wand2 />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Kodachrome</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("technicolor", !enableTechnicolor);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableTechnicolor
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableTechnicolor
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableTechnicolor
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Sparkles />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Technicolor</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("invert", !enableInvert);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableInvert
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableInvert
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableInvert
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Sparkles />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Invert</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("cold", !enableColdFilter);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableColdFilter
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableColdFilter
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableColdFilter
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Moon />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Cold</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      handlePredefinedFilter("warm", !enableWarmFilter);
-                    }}
-                    className={`
-                    flex flex-col items-center justify-center p-3 rounded-lg cursor-pointer
-                    ${
-                      enableWarmFilter
-                        ? "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }
-                    transition-all
-                  `}
-                  >
-                    <div
-                      className={`p-2 rounded-full mb-2 ${
-                        enableWarmFilter
-                          ? "bg-blue-200 dark:bg-blue-800"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          enableWarmFilter
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
-                      >
-                        <Sun />
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">Warm</span>
-                  </div>
-                </div>
-
-                <button
-                  className="custom-button w-full"
-                  onClick={handlePredefinedFilterReset}
-                >
-                  Reset
-                </button>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="w-[90%] pt-4">
-            <Card className="w-full">
-              <CardHeader>
-                <CardDescription className="">
-                  <div className="flex flex-row justify-between items-center">
-                    <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                      Focus
-                    </span>
-                    <div className="flex flex-row justify-end items-center">
-                      <Switch
-                        checked={enableFocusFilter}
-                        onCheckedChange={() => {
-                          handleFocusFilterToggle(!enableFocusFilter);
-                        }}
-                      />
-                    </div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-8  border-t pt-4">
-                <div className="flex flex-col justify-between items-center mb-3">
-                  <div className="w-full flex  justify-between items-center space-x-2">
-                    <div className="w-full flex flex-col gap-4 pt-2">
-                      <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center text-slate-400 text-sm">
-                          <p>Radius</p>
-                          <p>{radius}</p>
-                        </div>
-
-                        <Slider
-                          value={[radius]}
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          onValueChange={(e) => {
-                            handleFocusRadiusChange(e[0]);
-                          }}
-                          disabled={!enableFocusFilter}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="w-full flex flex-col gap-4 pt-2">
-                      <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center text-slate-400 text-sm">
-                          <p>Softness</p>
-                          <p>{softness}</p>
-                        </div>
-
-                        <Slider
-                          value={[softness]}
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          onValueChange={(e) => {
-                            handleFocusSoftnessChange(e[0]);
-                          }}
-                          disabled={!enableFocusFilter}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-row justify-between items-center">
-                  <span className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                    Reverse
-                  </span>
-                  <div className="flex flex-row justify-end items-center">
-                    <Switch
-                      checked={darkFocus}
-                      onCheckedChange={() => {
-                        handleFocusReverseToggle(!darkFocus);
-                      }}
-                      disabled={!enableFocusFilter}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="presets">
+          <PredefinedFilterTab imageRef={imageRef} canvas={canvas} />
         </TabsContent>
 
         {/* Colors Tab */}
@@ -1304,9 +578,11 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("brightnessRed", e[0]);
+                        // setRedBrightnessValue(e[0]);
+                        throttledRedBrightness(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        handleColorFilters("brightnessRed", e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -1325,7 +601,8 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("brightnessGreen", e[0]);
+                        throttledGreenBrightness(e[0]);
+                        // handleColorFilters("brightnessGreen", e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1346,7 +623,7 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("brightnessBlue", e[0]);
+                        throttledBlueBrightness(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1367,7 +644,7 @@ const AdjustSidebar = ({
                       max={2.2}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("gammaRed", e[0]);
+                        throttledGammaRed(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1388,7 +665,7 @@ const AdjustSidebar = ({
                       max={2.2}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("gammaGreen", e[0]);
+                        throttledGammaGreen(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1408,7 +685,7 @@ const AdjustSidebar = ({
                       max={2.2}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("gammaBlue", e[0]);
+                        throttledGammaBlue(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1429,7 +706,7 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("contrast", e[0]);
+                        throttledContrast(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1449,7 +726,7 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("saturation", e[0]);
+                        throttledSaturation(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1469,7 +746,7 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("vibrance", e[0]);
+                        throttledVibrance(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1490,7 +767,7 @@ const AdjustSidebar = ({
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {
-                        handleColorFilters("hueRotation", e[0]);
+                        throttledHue(e[0]);
                       }}
                       onValueCommit={() => {
                         canvas.fire("object:modified");
@@ -1513,122 +790,7 @@ const AdjustSidebar = ({
           value="details"
           className="w-full flex flex-col justify-center items-center"
         >
-          <div className="w-[90%]">
-            <Card className="w-full">
-              <CardHeader>
-                <CardDescription className="text-center">
-                  Detail Adjustments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4 w-full">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-slate-400 text-sm">
-                      <p>Opacity</p>
-                      <p>{opacityValue}</p>
-                    </div>
-                    <Slider
-                      className="cursor-pointer"
-                      value={[opacityValue]}
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      onValueChange={(e) => {
-                        handleDetailsFilters("opacity", e[0]);
-                      }}
-                      onValueCommit={() => {
-                        canvas.fire("object:modified");
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-slate-400 text-sm">
-                      <p>Blur</p>
-                      <p>{blurValue}</p>
-                    </div>
-                    <Slider
-                      className="cursor-pointer"
-                      value={[blurValue]}
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      onValueChange={(e) => {
-                        handleDetailsFilters("blur", e[0]);
-                      }}
-                      onValueCommit={() => {
-                        canvas.fire("object:modified");
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-slate-400 text-sm">
-                      <p>Noise</p>
-                      <p>{noiseValue}</p>
-                    </div>
-                    <Slider
-                      className="cursor-pointer"
-                      value={[noiseValue]}
-                      min={0}
-                      max={100}
-                      step={2}
-                      onValueChange={(e) => {
-                        handleDetailsFilters("noise", e[0]);
-                      }}
-                      onValueCommit={() => {
-                        canvas.fire("object:modified");
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-slate-400 text-sm">
-                      <p>Pixelate</p>
-                      <p>{pixelateValue}</p>
-                    </div>
-                    <Slider
-                      className="cursor-pointer"
-                      value={[pixelateValue]}
-                      min={0}
-                      max={50}
-                      step={1}
-                      onValueChange={(e) => {
-                        handleDetailsFilters("pixelate", e[0]);
-                      }}
-                      onValueCommit={() => {
-                        canvas.fire("object:modified");
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-slate-400 text-sm">
-                      <p>Sharpen</p>
-                      <p>{sharpenValue}</p>
-                    </div>
-                    <Slider
-                      className="cursor-pointer"
-                      value={[sharpenValue]}
-                      min={0}
-                      max={2}
-                      step={0.01}
-                      onValueChange={(e) => {
-                        handleDetailsFilters("sharpen", e[0]);
-                      }}
-                      onValueCommit={() => {
-                        canvas.fire("object:modified");
-                      }}
-                    />
-                  </div>
-
-                  <button className="custom-button" onClick={handleDetailReset}>
-                    Reset
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <DetailFiltersTab imageRef={imageRef} canvas={canvas} />
         </TabsContent>
       </Tabs>
 
@@ -1640,6 +802,14 @@ const AdjustSidebar = ({
 
           <CardContent className="w-full">
             <div className="flex flex-col gap-4 w-full">
+              <button
+                className="custom-button"
+                onMouseDown={handleCompareMouseDown}
+                onMouseUp={handleCompareMouseUp}
+                onMouseLeave={handleCompareMouseLeave}
+              >
+                Compare
+              </button>
               <button
                 className="custom-button"
                 onClick={() => handleApplyFilter()}

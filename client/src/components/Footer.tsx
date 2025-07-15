@@ -64,13 +64,13 @@ const Footer = ({
     setDownloadImageDimensions,
     setFinalImageDimensions,
     allFiltersRef,
+    currentFiltersRef,
     loadedFromSaved,
   } = useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
   const { toast } = useToast();
 
-  const currentFilters = useCommonProps((state) => state.currentFilters);
   const projectName = useCommonProps((state) => state.projectName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
   const showUpdateButton = useCommonProps((state) => state.showUpdateButton);
@@ -141,24 +141,26 @@ const Footer = ({
 
       // json data
       const canvasJSON = canvas.toObject(["name", "isUpper", "id"]);
-      let mainImageSrc = canvasJSON.objects[0].src;
-      canvasJSON.objects[0].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
+      let mainImageSrc = canvasJSON.objects[1].src;
+      canvasJSON.objects[1].src = "temp"; //large base64 file does not get parsed in flask for some so using a hack temporaliy as we do not rely on src
 
       // Convert canvas image (Data URL) to a Blob and then to a File
       const canvasImageFile = await convertBlobToFile(canvasDataUrl);
       // Convert the image URL (blob URL) to a File object
 
       const originalImageFile = await convertBlobToFile(imageUrl);
-      console.log(imageUrl);
+      // console.log(mainImageSrc);
       if (!isBase64(mainImageSrc)) {
         mainImageSrc = await urlToBase64(mainImageSrc);
       }
 
       const interImage = base64ToFile(mainImageSrc, "inter_image");
       let filterNames = [];
-      if (currentFilters) {
+      if (currentFiltersRef.current) {
         // @ts-ignore
-        filterNames = currentFilters.map((filter) => filter.filterName);
+        filterNames = currentFiltersRef.current.map(
+          (filter) => filter.filterName
+        );
       }
 
       // Create FormData object and append the image and other canvas data

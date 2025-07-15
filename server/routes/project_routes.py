@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.project_contoller import save_project, get_projects, get_all_projects, get_project_by_id, delete_project, update_project_visibility, update_project_bookmark, rate_project, update_project_view_count, get_bookmark_projects
+from controllers.project_contoller import save_project, get_projects, get_all_projects, get_project_by_id, delete_project, update_project_visibility, update_project_bookmark, rate_project, update_project_view_count, get_bookmark_projects, query_projects
 from middleware.auth import auth_middleware
 
 project_routes = Blueprint("project_routes", __name__)
@@ -23,6 +23,7 @@ def use_auth_middleware():
 # Define routes
 @project_routes.route("/api/save_project", methods=["OPTIONS", "POST"])
 def save_project_route():
+    print("saving project")
     if request.method == "OPTIONS":
         # Handle preflight request
         response = jsonify({})
@@ -164,4 +165,8 @@ def update_project_view_count_route():
 
 
 
+# create the pagination route here 
 
+@project_routes.route("/api/projects/query", methods=["GET"])
+def query_projects_route():
+    return query_projects()

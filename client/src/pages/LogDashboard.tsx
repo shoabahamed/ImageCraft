@@ -40,6 +40,8 @@ import Navbar from "@/components/Navbar";
 
 // TODO: what to do if the image is very big I do not think the display would look very good
 
+const MAX_HIST_IMG_SIZE = 256;
+
 type logType = {
   section: string;
   tab: string;
@@ -250,7 +252,7 @@ export function ImageComparison({
           </TabsContent>
 
           <TabsContent value="final">
-            <div className="relative w-full aspect-square border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div className="flex justify-center items-center w-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
               <img src={final} alt="Final image" className="object-contain" />
             </div>
           </TabsContent>
@@ -413,18 +415,39 @@ export function Histograms({
       });
 
       const canvas = document.createElement("canvas");
+      canvas.backgroundColor = "#111111";
       canvas.width = img.width;
       canvas.height = img.height;
 
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Unable to get canvas context");
 
-      ctx.drawImage(img, 0, 0);
+      const maxSize = Math.max(img.width, img.height);
+      const scale =
+        maxSize >= MAX_HIST_IMG_SIZE
+          ? maxSize / MAX_HIST_IMG_SIZE
+          : MAX_HIST_IMG_SIZE / maxSize;
+
+      const downgraded_width = Math.floor(img.width / scale);
+      const downgraded_height = Math.floor(img.height / scale);
+
+      console.log(downgraded_height, downgraded_width);
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        img.width,
+        img.height,
+        0,
+        0,
+        downgraded_width,
+        downgraded_height
+      );
       const imageData = ctx.getImageData(
         0,
         0,
-        canvas.width,
-        canvas.height
+        downgraded_width,
+        downgraded_height
       ).data;
 
       // Using objects to store only existing values
@@ -492,7 +515,7 @@ export function Histograms({
   if (loading) return <h1>Loading</h1>;
 
   return (
-    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+    <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md mt-5">
       <CardHeader>
         <CardTitle className="text-gray-900 dark:text-gray-100">
           Image Histograms
@@ -574,12 +597,17 @@ export function HistogramChart({
   title: string;
 }) {
   // Find the maximum count for normalization
-  const maxCount = Math.max(...data.map((d) => d.count));
+  const counts = data.map((d) => d.count);
+  const totalCount = counts.reduce(
+    (accumulator, currentValue) => accumulator + currentValue,
+    0
+  );
 
   // Create normalized data while preserving original counts
   const normalizedData = data.map((d) => ({
     ...d,
-    normalizedCount: d.count / maxCount,
+    normalizedCount: d.count / totalCount,
+    // normalizedCount: d.count ,
   }));
 
   // Calculate statistics
@@ -593,6 +621,10 @@ export function HistogramChart({
   const min = data.find((d) => d.count > 0)?.value ?? 0;
   const max = [...data].reverse().find((d) => d.count > 0)?.value ?? 0;
 
+  const maxNormalized = Math.max(
+    ...normalizedData.map((d) => d.normalizedCount)
+  );
+
   return (
     <div className="h-80 flex flex-col items">
       <h3 className="text-sm font-medium text-blue-800 text-center">{title}</h3>
@@ -604,7 +636,11 @@ export function HistogramChart({
             stroke="#1e40af"
             tickCount={5}
           />
-          <YAxis stroke="#1e40af" tick={{ fontSize: 10 }} domain={[0, 1]} />
+          <YAxis
+            stroke="#1e40af"
+            tick={{ fontSize: 10 }}
+            domain={[0, maxNormalized * 1.2]}
+          />
           <Tooltip
             contentStyle={{
               backgroundColor: "#f8fafc",
@@ -615,11 +651,17 @@ export function HistogramChart({
             itemStyle={{ color: "#1e40af" }}
             labelStyle={{ color: "#1e3a8a", fontWeight: "bold" }}
             formatter={(value: number, name: string, props: any) => [
-              props.payload.count, // Show original count in tooltip
-              "Count",
+              `${(props.payload.normalizedCount * 100).toFixed(6)}%`, // Show original count in tooltip
+              "Perc",
             ]}
+            labelFormatter={(label) => `Pixel Intensity: ${label}`}
           />
-          <Bar dataKey="normalizedCount" fill={color} radius={[2, 2, 0, 0]} />
+          <Bar
+            dataKey="normalizedCount"
+            fill={color}
+            radius={[2, 2, 0, 0]}
+            name="Pixel"
+          />
         </BarChart>
       </ResponsiveContainer>
       <div className="text-xs text-blue-700 mt-2 ml-16">
@@ -727,7 +769,7 @@ export default function LogDashboard() {
   if (loading) return <h1>Loading</h1>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:bg-[#05101c]">
       <div className="flex flex-col">
         <Navbar />
 
@@ -775,7 +817,7 @@ export default function LogDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-6 py-8  dark:bg-[#05101c]">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <ImageComparison

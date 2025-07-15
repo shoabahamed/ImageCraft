@@ -17,7 +17,8 @@ const fragmentSource = {
       mirroredCoord = vec2(1.0 - vTexCoord.x, vTexCoord.y);
     }
     vec4 color = texture2D(uTexture, mirroredCoord);
-    // vec4 color = vec4(vTexCoord.x,vTexCoord.y, 0.0, 1.0);
+ 
+    // gl_FragColor = vec4(vTexCoord.x, vTexCoord.y, 0, 1.0);
     gl_FragColor = color;
 }
   `,

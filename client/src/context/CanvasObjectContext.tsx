@@ -114,7 +114,7 @@ export const CanvasObjectsProvider = ({
   const currentFiltersRef = useRef<object[]>([]);
 
   const swirlRadiusRef = useRef(0.3);
-  const swirlAngleRef = useRef(1.0);
+  const swirlAngleRef = useRef(3.0);
   const bulgeRadiusRef = useRef(0.3);
   const bulgeStrengthRef = useRef(0.5);
 

@@ -1,6 +1,7 @@
 import { useDropzone } from "react-dropzone";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import pica from "pica";
 
 import {
   Dialog,
@@ -31,6 +32,9 @@ interface ProjectJson {
   all_filters_applied: any;
 }
 
+const MAX_WIDTH = 2048;
+const MAX_HEIGHT = 2048;
+
 const NewProjectBox = (props: {
   extraStyles?: string;
   useButton?: boolean;
@@ -44,6 +48,17 @@ const NewProjectBox = (props: {
   const [imageUrl, setImageUrl] = useState("");
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("local");
+  const [showResizeWarningLocal, setShowResizeWarningLocal] = useState(false);
+  const [resizeInfoLocal, setResizeInfoLocal] = useState<{
+    current: [number, number];
+    resized: [number, number];
+  } | null>(null);
+  const [showResizeWarningUrl, setShowResizeWarningUrl] = useState(false);
+  const [resizeInfoUrl, setResizeInfoUrl] = useState<{
+    current: [number, number];
+    resized: [number, number];
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const [jsonFile, setJsonFile] = useState<ProjectJson | null>(null);
 
@@ -76,14 +91,79 @@ const NewProjectBox = (props: {
       maxFiles: 1,
     });
 
+  const resizeImageIfNeeded = async (
+    img: HTMLImageElement,
+    type: "local" | "url"
+  ): Promise<string> => {
+    if (type === "local") {
+      setShowResizeWarningLocal(false);
+      setResizeInfoLocal(null);
+    } else {
+      setShowResizeWarningUrl(false);
+      setResizeInfoUrl(null);
+    }
+    // setLoading(true);
+    return new Promise((resolve) => {
+      if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
+        const scale = Math.min(MAX_WIDTH / img.width, MAX_HEIGHT / img.height);
+        const newWidth = Math.round(img.width * scale);
+        const newHeight = Math.round(img.height * scale);
+        if (type === "local") {
+          setShowResizeWarningLocal(true);
+          setResizeInfoLocal({
+            current: [img.width, img.height],
+            resized: [newWidth, newHeight],
+          });
+        } else {
+          setShowResizeWarningUrl(true);
+          setResizeInfoUrl({
+            current: [img.width, img.height],
+            resized: [newWidth, newHeight],
+          });
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        pica()
+          .resize(img, canvas)
+          .then(() => {
+            setLoading(false);
+            resolve(canvas.toDataURL());
+          });
+      } else {
+        if (type === "local") {
+          setShowResizeWarningLocal(false);
+          setResizeInfoLocal(null);
+        } else {
+          setShowResizeWarningUrl(false);
+          setResizeInfoUrl(null);
+        }
+        // No resize needed
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const ctx = tempCanvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0);
+        // setLoading(false);
+        resolve(tempCanvas.toDataURL());
+      }
+    });
+  };
+
   const onDrop = useCallback((acceptedFiles) => {
     acceptedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onabort = () => console.log("file reading was aborted");
       reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        const binaryStr = reader.result;
-        setDataURL(binaryStr);
+      reader.onload = async () => {
+        const binaryStr = reader.result as string;
+        // Check image size
+        const img = new window.Image();
+        img.onload = async () => {
+          const resizedDataUrl = await resizeImageIfNeeded(img, "local");
+          setDataURL(resizedDataUrl);
+        };
+        img.src = binaryStr;
       };
       reader.readAsDataURL(file);
     });
@@ -97,30 +177,85 @@ const NewProjectBox = (props: {
     },
   });
 
+  const handleUrlChange = (e) => {
+    const url = e.target.value;
+    setImageUrl(url);
+    if (!url) {
+      setShowResizeWarningUrl(false);
+      setResizeInfoUrl(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // Check image size for URL
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = async () => {
+      setLoading(false);
+      if (img.width > 0 && img.height > 0) {
+        if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
+          const scale = Math.min(
+            MAX_WIDTH / img.width,
+            MAX_HEIGHT / img.height
+          );
+          const newWidth = Math.round(img.width * scale);
+          const newHeight = Math.round(img.height * scale);
+          setShowResizeWarningUrl(true);
+          setResizeInfoUrl({
+            current: [img.width, img.height],
+            resized: [newWidth, newHeight],
+          });
+        } else {
+          setShowResizeWarningUrl(false);
+          setResizeInfoUrl(null);
+        }
+      }
+    };
+    img.onerror = () => {
+      setLoading(false);
+      setShowResizeWarningUrl(false);
+      setResizeInfoUrl(null);
+    };
+    img.src = url;
+  };
+
+  const handleUrlUpload = async () => {
+    if (!imageUrl) return;
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = async () => {
+      // setLoading(true);
+      const resizedDataUrl = await resizeImageIfNeeded(img, "url");
+
+      const data = { type: "url", imageUrl: resizedDataUrl };
+      navigate(`/mainpage`, { state: data });
+      window.location.href = `/mainpage`;
+    };
+    img.onerror = () => setLoading(false);
+    img.src = imageUrl;
+  };
+
   const handleImageUpload = () => {
     localStorage.removeItem("CanvasId");
     localStorage.removeItem("project_data");
     localStorage.removeItem("project_logs");
     localStorage.removeItem("project_name");
-
     localStorage.removeItem("final_image_shape");
     localStorage.removeItem("original_image_shape");
     localStorage.removeItem("download_image_shape");
     localStorage.removeItem("filter_names");
     localStorage.removeItem("all_filters_applied");
-
     setTimeout(() => {
       let data;
       switch (activeTab) {
         case "local":
-          data = { type: "local", imageUrl: dataURL };
-
+          data = { type: "url", imageUrl: dataURL };
           navigate(`/mainpage`, { state: data });
+
           break;
         case "url":
-          data = { type: "url", imageUrl };
-          navigate("/mainpage", { state: data });
-          break;
+          handleUrlUpload();
+          return;
         case "json":
           if (jsonFile) {
             const {
@@ -137,7 +272,6 @@ const NewProjectBox = (props: {
             localStorage.setItem("project_data", JSON.stringify(project_data));
             localStorage.setItem("project_logs", JSON.stringify(project_logs));
             localStorage.setItem("project_name", project_name);
-
             localStorage.setItem(
               "final_image_shape",
               JSON.stringify(final_image_shape)
@@ -159,13 +293,8 @@ const NewProjectBox = (props: {
           }
           break;
       }
-
       window.location.href = `/mainpage`;
     }, 500);
-  };
-
-  const handleUrlChange = (e) => {
-    setImageUrl(e.target.value);
   };
 
   return (
@@ -230,6 +359,14 @@ const NewProjectBox = (props: {
                 className="border-2 border-dashed border-blue-400 w-full max-w-sm p-8 rounded-lg flex flex-col items-center justify-center cursor-pointer transition hover:bg-blue-50 dark:border-blue-500 dark:hover:bg-gray-700/50"
               >
                 <input {...getInputProps()} />
+                {showResizeWarningLocal && resizeInfoLocal && (
+                  <div className="mb-2 text-yellow-600 dark:text-yellow-400 text-center w-full">
+                    The image is too large and will be resized from{" "}
+                    {resizeInfoLocal.current[0]}x{resizeInfoLocal.current[1]} to{" "}
+                    {resizeInfoLocal.resized[0]}x{resizeInfoLocal.resized[1]}{" "}
+                    pixels.
+                  </div>
+                )}
                 {dataURL ? (
                   <img
                     src={dataURL}
@@ -259,34 +396,72 @@ const NewProjectBox = (props: {
 
             <TabsContent value="url" className="flex flex-col items-center">
               <div className="w-full max-w-sm">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={imageUrl}
-                    onChange={handleUrlChange}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-                {imageUrl && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Preview:
-                    </p>
-                    <img
-                      src={imageUrl}
-                      alt="URL Preview"
-                      className="w-full max-h-[300px] object-contain rounded-lg shadow-md"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.currentTarget.src = "";
-                        e.currentTarget.alt = "Invalid image URL";
-                      }}
-                    />
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center min-h-[200px]">
+                    <svg
+                      className="animate-spin h-8 w-8 text-blue-600 mb-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8z"
+                      ></path>
+                    </svg>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      Loading image...
+                    </span>
                   </div>
+                ) : (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={imageUrl}
+                        onChange={handleUrlChange}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                    {showResizeWarningUrl && resizeInfoUrl && (
+                      <div className="mb-2 text-yellow-600 dark:text-yellow-400 text-center w-full">
+                        The image is too large and will be resized from{" "}
+                        {resizeInfoUrl.current[0]}x{resizeInfoUrl.current[1]} to{" "}
+                        {resizeInfoUrl.resized[0]}x{resizeInfoUrl.resized[1]}{" "}
+                        pixels.
+                      </div>
+                    )}
+                    {imageUrl && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Preview:
+                        </p>
+                        <img
+                          src={imageUrl}
+                          alt="URL Preview"
+                          className="w-full max-h-[300px] object-contain rounded-lg shadow-md"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            e.currentTarget.src = "";
+                            e.currentTarget.alt = "Invalid image URL";
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TabsContent>

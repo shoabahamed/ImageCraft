@@ -11,10 +11,7 @@ const fragmentSource = `
   uniform float uStepH;
 
   void main() {
-    
-
-
-    // Horizontal edge detection kernel
+    // Sharpen kernel
     float uKernel[9];
     uKernel[0] = 0.0;
     uKernel[1] = -1.0;
@@ -26,51 +23,48 @@ const fragmentSource = `
     uKernel[7] =  -1.0;
     uKernel[8] =  0.0;
 
-    // Grayscale first then convolution
-    vec4 c; // temporary
-    vec4 org;  // org image
-    vec4 sum = vec4(0.0, 0.0, 0.0, 1.0); // conv result
-    vec2 stepSize = vec2(uStepW, uStepH); // step size  
+    // Get original pixel
+    vec4 org = texture2D(uTexture, vTexCoord);
+    
+    // Initialize convolution sum for RGB only (not alpha)
+    vec3 sum = vec3(0.0, 0.0, 0.0);
+    vec2 stepSize = vec2(uStepW, uStepH);
 
-
-    org = texture2D(uTexture, vec2(vTexCoord.x, vTexCoord.y));
-
+    // Apply convolution kernel to RGB channels only
+    vec4 c;
+    
     c = texture2D(uTexture, vec2(vTexCoord.x - stepSize.x, vTexCoord.y - stepSize.y));
-    sum += c * uKernel[0];
+    sum += c.rgb * uKernel[0];
     
     c = texture2D(uTexture, vec2(vTexCoord.x, vTexCoord.y - stepSize.y));
-     sum += c * uKernel[1];
+    sum += c.rgb * uKernel[1];
     
     c = texture2D(uTexture, vec2(vTexCoord.x + stepSize.x, vTexCoord.y - stepSize.y));
-  sum += c * uKernel[2];
+    sum += c.rgb * uKernel[2];
     
     c = texture2D(uTexture, vec2(vTexCoord.x - stepSize.x, vTexCoord.y));
-    sum += c * uKernel[3];
+    sum += c.rgb * uKernel[3];
     
     c = texture2D(uTexture, vec2(vTexCoord.x, vTexCoord.y));
- sum += c * uKernel[4];
+    sum += c.rgb * uKernel[4];
     
     c = texture2D(uTexture, vec2(vTexCoord.x + stepSize.x, vTexCoord.y));
- sum += c * uKernel[5];
+    sum += c.rgb * uKernel[5];
     
     c = texture2D(uTexture, vec2(vTexCoord.x - stepSize.x, vTexCoord.y + stepSize.y));
- sum += c * uKernel[6];;
+    sum += c.rgb * uKernel[6];
     
     c = texture2D(uTexture, vec2(vTexCoord.x, vTexCoord.y + stepSize.y));
- sum += c * uKernel[7];
-
+    sum += c.rgb * uKernel[7];
 
     c = texture2D(uTexture, vec2(vTexCoord.x + stepSize.x, vTexCoord.y + stepSize.y));
-  sum += c * uKernel[8];
+    sum += c.rgb * uKernel[8];
 
+    // Apply sharpen effect to RGB only, preserve original alpha
+    vec3 sharpened = org.rgb + sum * uSharpenValue;
     
-    sum = vec4(org.rgb + sum.rgb * uSharpenValue, 1.0);
-
-
-
-
-
-    gl_FragColor =sum;
+    // Output with original alpha preserved
+    gl_FragColor = vec4(sharpened, org.a);
 }
 `
 

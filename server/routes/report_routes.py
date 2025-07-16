@@ -1,5 +1,5 @@
 from flask import Blueprint, g, request, jsonify
-from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message, get_project_log, add_style_img, get_all_style_img, delete_style_img, get_all_users, send_notice, get_user_notices, delete_user, save_template, get_all_templates, delete_template
+from controllers.report_controller import submit_report, get_all_reports, resolve_report, delete_report, grant_logs, get_user_reports, delete_report_project,  send_message, get_project_log, add_style_img, get_all_style_img, delete_style_img, get_all_users, send_notice, get_user_notices, delete_user, save_template, get_all_templates, delete_template, get_users_admin, get_reports_admin
 from middleware.auth import auth_middleware
 
 report_routes = Blueprint("report_routes", __name__)
@@ -282,3 +282,11 @@ def delete_template_route(template_id):
         response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
         return response, 204
     return delete_template(template_id)
+
+@report_routes.route("/api/users_admin", methods=["GET"])
+def get_users_admin_route():
+    return get_users_admin()
+
+@report_routes.route("/api/reports_admin", methods=["GET"])
+def get_reports_admin_route():
+    return get_reports_admin()

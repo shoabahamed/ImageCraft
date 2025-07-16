@@ -19,9 +19,9 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white dark:bg-[#05101c]">
       <Navbar />
-      <div className="flex flex-grow flex-col justify-center items-center text-center px-6 md:px-12 lg:px-24 py-12">
+      <div className="flex flex-grow flex-col justify-center items-center text-center px-6 md:px-12 lg:px-24 py-12 dark:bg-[#05101c]">
         <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-300">
           ImageCraft
         </h2>

@@ -80,103 +80,60 @@ const AdminReportSection = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [pendingReports, setPendingReports] = useState<Report[]>([]);
-  const [resolvedReports, setResolvedReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentTab, setCurrentTab] = useState<"pending" | "resolved">(
+    "pending"
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [messageContent, setMessageContent] = useState("");
   const [messageTitle, setMessageTitle] = useState("");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-
-  const projectPerPage = 8;
-  const [startPendingIndex, setPendingStartIndex] = useState(0);
-  const [endPendingIndex, setEndPendingIndex] = useState(projectPerPage);
-  const [currentPendingPageNo, setCurrentPendingPageNo] = useState(1);
-  const [PendingPages, setPendingPages] = useState<number[]>([1]);
-
-  const [startResolvedIndex, setResolvedStartIndex] = useState(0);
-  const [endResolvedIndex, setEndResolvedIndex] = useState(projectPerPage);
-  const [currentResolvedPageNo, setCurrentResolvedPageNo] = useState(1);
-  const [ResolvedPages, setResolvedPages] = useState<number[]>([1]);
-
-  const calculatePages = (totalProjects: number) => {
-    const totalPages = Math.ceil(totalProjects / projectPerPage);
-    // console.log(totalProjects);
-    const temp: number[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      temp.push(i);
-    }
-
-    return temp;
-  };
+  const pageSize = 8;
 
   useEffect(() => {
     const fetchReports = async () => {
+      setLoading(true);
       try {
-        const response = await apiClient.get("/get_all_reports", {
+        const response = await apiClient.get("/reports_admin", {
+          params: {
+            page: currentPage,
+            page_size: pageSize,
+            status: currentTab,
+          },
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user?.token}`,
           },
         });
-        const fetchedReports = response.data.data.map((report: Report) => ({
-          ...report,
-          created_at: new Date(report.created_at),
-        }));
-
-        const sortedReports = fetchedReports.sort((a, b) => {
-          return b.created_at.getTime() - a.created_at.getTime();
-        });
-
-        // Separate reports into pending and resolved based on their status
-        setPendingReports(
-          sortedReports.filter((report: Report) => report.status === "pending")
+        setReports(
+          response.data.data.reports.map((r: Report) => ({
+            ...r,
+            created_at: new Date(r.created_at),
+          }))
         );
-        setResolvedReports(
-          sortedReports.filter((report: Report) => report.status === "resolved")
-        );
-
-        setPendingPages(
-          calculatePages(
-            sortedReports.filter(
-              (report: Report) => report.status === "pending"
-            ).length
-          )
-        );
-        setResolvedPages(
-          calculatePages(
-            sortedReports.filter(
-              (report: Report) => report.status === "resolved"
-            ).length
-          )
-        );
-      } catch (error) {
-        console.error("Failed to fetch reports:", error);
+        setTotalPages(response.data.data.total_pages);
+      } catch {
+        setReports([]);
+        setTotalPages(1);
         toast({ description: "Failed to load reports", duration: 3000 });
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchReports();
-  }, [user?.token]);
+  }, [user?.token, currentPage, currentTab]);
 
+  // When tab changes, reset to page 1
   useEffect(() => {
-    const eIndex = Math.max(currentPendingPageNo * projectPerPage, 0);
-    const sIndex = Math.min(eIndex - projectPerPage, pendingReports.length);
-
-    setPendingStartIndex(sIndex);
-    setEndPendingIndex(eIndex);
-  }, [currentPendingPageNo]);
-
-  useEffect(() => {
-    const eIndex = Math.max(currentResolvedPageNo * projectPerPage, 0);
-    const sIndex = Math.min(eIndex - projectPerPage, resolvedReports.length);
-
-    setResolvedStartIndex(sIndex);
-    setEndResolvedIndex(eIndex);
-  }, [currentResolvedPageNo]);
+    setCurrentPage(1);
+  }, [currentTab]);
 
   // Function to resolve a report
   const resolveReport = async (reportId: string) => {
     try {
-      const response = await apiClient.post(
+      await apiClient.post(
         "/resolve_report",
         {
           report_id: reportId,
@@ -189,17 +146,9 @@ const AdminReportSection = () => {
         }
       );
 
-      const reportToResolve = pendingReports.find(
-        (report) => report.id === reportId
-      );
+      const reportToResolve = reports.find((report) => report.id === reportId);
       if (reportToResolve) {
-        setPendingReports(
-          pendingReports.filter((report) => report.id !== reportId)
-        );
-        setResolvedReports([
-          ...resolvedReports,
-          { ...reportToResolve, status: "resolved" },
-        ]);
+        setReports(reports.filter((report) => report.id !== reportId));
       }
       toast({
         description: "Report resolved successfully!",
@@ -269,7 +218,7 @@ const AdminReportSection = () => {
     }
   };
 
-  const downloadAsFile = (content: any, filename: string) => {
+  const downloadAsFile = (content: unknown, filename: string) => {
     try {
       const fileContent =
         typeof content === "object"
@@ -300,13 +249,9 @@ const AdminReportSection = () => {
         },
       });
       if (type === "pending") {
-        setPendingReports(
-          pendingReports.filter((report: Report) => report.id !== reportId)
-        );
+        setReports(reports.filter((report: Report) => report.id !== reportId));
       } else {
-        setResolvedReports(
-          resolvedReports.filter((report: Report) => report.id !== reportId)
-        );
+        setReports(reports.filter((report: Report) => report.id !== reportId));
       }
       toast({
         description: "Report deleted sucessfully",
@@ -334,7 +279,7 @@ const AdminReportSection = () => {
 
     // Make the API call to submit the report
     try {
-      const response = await apiClient.post(
+      await apiClient.post(
         "/send_message",
         {
           reportId: selectedReportId, // Include the project_id
@@ -356,19 +301,20 @@ const AdminReportSection = () => {
       setMessageContent("");
       setMessageTitle("");
       setSelectedReportId(null); // Reset selected project
-    } catch (error) {
+    } catch {
       toast({
         description: "Failed to send message.",
         className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
-      console.error(error);
     }
   };
 
   return (
     <Tabs
       defaultValue="pending"
+      value={currentTab}
+      onValueChange={(v) => setCurrentTab(v as "pending" | "resolved")}
       className="w-full bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen p-6"
     >
       <TabsList className="mb-6 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -376,21 +322,32 @@ const AdminReportSection = () => {
           value="pending"
           className="flex items-center gap-2 text-gray-700 dark:text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:data-[state=active]:bg-blue-700"
         >
-          <Clock size={16} /> Pending Reports ({pendingReports.length})
+          <Clock size={16} /> Pending Reports
         </TabsTrigger>
         <TabsTrigger
           value="resolved"
           className="flex items-center gap-2 text-gray-700 dark:text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:data-[state=active]:bg-blue-700"
         >
-          <CheckCircle size={16} /> Resolved Reports ({resolvedReports.length})
+          <CheckCircle size={16} /> Resolved Reports
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="pending">
         <div className="grid grid-cols-1 gap-4">
-          {pendingReports
-            .slice(startPendingIndex, endPendingIndex)
-            .map((report) => (
+          {loading ? (
+            <div className="col-span-full text-center text-blue-600 dark:text-blue-300 text-lg">
+              Loading...
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No pending reports
+                </p>
+              </div>
+            </div>
+          ) : (
+            reports.map((report) => (
               <Card
                 key={report.id}
                 className="bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg"
@@ -712,15 +669,7 @@ const AdminReportSection = () => {
                   </Button>
                 </CardFooter>
               </Card>
-            ))}
-          {pendingReports.length === 0 && (
-            <div className="text-center py-8">
-              <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No pending reports
-                </p>
-              </div>
-            </div>
+            ))
           )}
         </div>
         <Pagination className="flex justify-end p-7">
@@ -728,28 +677,21 @@ const AdminReportSection = () => {
             <PaginationItem>
               <PaginationPrevious
                 className="cursor-pointer"
-                onClick={() => {
-                  setCurrentPendingPageNo(
-                    Math.max(currentPendingPageNo - 1, 1)
-                  );
-                }}
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               />
             </PaginationItem>
             <PaginationItem>
               <PaginationEllipsis />
             </PaginationItem>
 
-            {PendingPages.slice(
-              Math.max(currentPendingPageNo - 2, 0),
-              Math.min(currentPendingPageNo + 1, PendingPages.length)
-            ).map((pageNo) => (
-              <PaginationItem key={pageNo}>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <PaginationItem key={i + 1}>
                 <PaginationLink
-                  onClick={() => setCurrentPendingPageNo(pageNo)}
-                  isActive={pageNo === currentPendingPageNo}
+                  onClick={() => setCurrentPage(i + 1)}
+                  isActive={i + 1 === currentPage}
                   className="cursor-pointer"
                 >
-                  {pageNo}
+                  {i + 1}
                 </PaginationLink>
               </PaginationItem>
             ))}
@@ -760,11 +702,9 @@ const AdminReportSection = () => {
             <PaginationItem>
               <PaginationNext
                 className="cursor-pointer"
-                onClick={() => {
-                  setCurrentPendingPageNo(
-                    Math.min(currentPendingPageNo + 1, PendingPages.length)
-                  );
-                }}
+                onClick={() =>
+                  setCurrentPage(Math.min(currentPage + 1, totalPages))
+                }
               />
             </PaginationItem>
           </PaginationContent>
@@ -773,9 +713,20 @@ const AdminReportSection = () => {
 
       <TabsContent value="resolved">
         <div className="grid grid-cols-1 gap-4">
-          {resolvedReports
-            .slice(startResolvedIndex, endResolvedIndex)
-            .map((report) => (
+          {loading ? (
+            <div className="col-span-full text-center text-blue-600 dark:text-blue-300 text-lg">
+              Loading...
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No resolved reports
+                </p>
+              </div>
+            </div>
+          ) : (
+            reports.map((report) => (
               <Card
                 key={report.id}
                 className="bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 transition-shadow hover:shadow-lg"
@@ -906,7 +857,6 @@ const AdminReportSection = () => {
                               )}
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
-                              {/* Action buttons with consistent dark mode styling */}
                               {report.admin_response?.logs && (
                                 <Button
                                   size="sm"
@@ -996,16 +946,7 @@ const AdminReportSection = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-
-          {resolvedReports.length === 0 && (
-            <div className="text-center py-8">
-              <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg shadow-md p-8 max-w-md mx-auto border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No resolved reports
-                </p>
-              </div>
-            </div>
+            ))
           )}
         </div>
 
@@ -1014,28 +955,21 @@ const AdminReportSection = () => {
             <PaginationItem>
               <PaginationPrevious
                 className="cursor-pointer"
-                onClick={() => {
-                  setCurrentPendingPageNo(
-                    Math.max(currentResolvedPageNo - 1, 1)
-                  );
-                }}
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               />
             </PaginationItem>
             <PaginationItem>
               <PaginationEllipsis />
             </PaginationItem>
 
-            {ResolvedPages.slice(
-              Math.max(currentResolvedPageNo - 2, 0),
-              Math.min(currentResolvedPageNo + 1, ResolvedPages.length)
-            ).map((pageNo) => (
-              <PaginationItem key={pageNo}>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <PaginationItem key={i + 1}>
                 <PaginationLink
-                  onClick={() => setCurrentResolvedPageNo(pageNo)}
-                  isActive={pageNo === currentResolvedPageNo}
+                  onClick={() => setCurrentPage(i + 1)}
+                  isActive={i + 1 === currentPage}
                   className="cursor-pointer"
                 >
-                  {pageNo}
+                  {i + 1}
                 </PaginationLink>
               </PaginationItem>
             ))}
@@ -1046,11 +980,9 @@ const AdminReportSection = () => {
             <PaginationItem>
               <PaginationNext
                 className="cursor-pointer"
-                onClick={() => {
-                  setCurrentResolvedPageNo(
-                    Math.min(currentResolvedPageNo + 1, ResolvedPages.length)
-                  );
-                }}
+                onClick={() =>
+                  setCurrentPage(Math.min(currentPage + 1, totalPages))
+                }
               />
             </PaginationItem>
           </PaginationContent>

@@ -278,12 +278,15 @@ const ProjectSection = ({
     download_image_shape: object,
     filter_names: string[] | [],
     project_name: string,
-    imageUrl: string
+    imageUrl: string,
+    all_filters_applied: string[] | [],
   ) => {
     localStorage.setItem("canvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
     localStorage.setItem("project_logs", JSON.stringify(project_logs));
     localStorage.setItem("project_name", project_name);
+
+    localStorage.removeItem("all_filters_applied");
 
     localStorage.setItem(
       "final_image_shape",
@@ -298,6 +301,7 @@ const ProjectSection = ({
       JSON.stringify(download_image_shape)
     );
     localStorage.setItem("filter_names", JSON.stringify(filter_names));
+    localStorage.setItem("all_filters_applied", JSON.stringify(JSON.stringify(all_filters_applied)));
     navigate("/mainpage", { state: { imageUrl } });
   };
 
@@ -490,7 +494,8 @@ const ProjectSection = ({
                             project.download_image_shape,
                             project.filter_names,
                             project.project_name || "Untitled",
-                            project.original_image_url
+                            project.original_image_url,
+                            project.all_filters_applied
                           )
                         }
                       >

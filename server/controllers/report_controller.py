@@ -649,3 +649,107 @@ def delete_template(template_id):
             return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
     except Exception as e:
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+
+def get_users_admin():
+    try:
+        role = g.role
+        if role.lower() not in ["admin", "super admin"]:
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
+
+        # Get query params
+        search = request.args.get("search", "")
+        sort = request.args.get("sort", "username")
+        dir = request.args.get("dir", "asc")
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 10))
+
+        query = {"role": "user"}
+        if search:
+            or_conditions = [
+                {"username": {"$regex": search, "$options": "i"}},
+                {"email": {"$regex": search, "$options": "i"}}
+            ]
+            # If search looks like an ObjectId, add user_id search
+            from bson import ObjectId
+            if len(search) == 24:
+                try:
+                    or_conditions.append({"_id": ObjectId(search)})
+                except Exception:
+                    pass
+            query["$or"] = or_conditions
+
+        sort_dir = 1 if dir == "asc" else -1
+        sort_field = sort if sort in ["username", "email"] else "username"
+
+        total = users_collection.count_documents(query)
+        users_cursor = users_collection.find(query).sort(sort_field, sort_dir).skip((page-1)*page_size).limit(page_size)
+        users = list(users_cursor)
+
+        formatted_users = [
+            {
+                "user_id": str(user["_id"]),
+                "username": user["username"],
+                "email": user["email"],
+                "image_url": user.get("image_url", "")
+            }
+            for user in users
+        ]
+        return jsonify({
+            "success": True,
+            "data": {
+                "users": formatted_users,
+                "total": total,
+                "total_pages": (total + page_size - 1) // page_size,
+                "page": page
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+def get_reports_admin():
+    try:
+        role = g.role
+        if role.lower() not in ["admin", "super admin"]:
+            return jsonify({"success": False, "message": "Unauthorized. Only admins are allowed"}), 403
+
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 10))
+        status = request.args.get("status", None)
+        skip = (page - 1) * page_size
+
+        query = {}
+        if status in ["pending", "resolved"]:
+            query["status"] = status
+
+        total = reports_collection.count_documents(query)
+        reports_cursor = reports_collection.find(query).sort("created_at", -1).skip(skip).limit(page_size)
+        reports = list(reports_cursor)
+
+        formatted_reports = [
+            {
+                "id": str(report["_id"]),
+                "reporter_name": str(report['reporter_name']),
+                "reporter_user_id": report["reporter_user_id"],
+                "project_id": report["project_id"],
+                "project_user_name": report['project_user_name'],
+                "project_user_id": report["project_user_id"],
+                "title": report["title"],
+                "description": report["description"],
+                "status": report["status"],
+                "has_admin_response": report['has_admin_response'],
+                "created_at": report["created_at"],
+                "admin_response": report['admin_response']
+            }
+            for report in reports
+        ]
+        return jsonify({
+            "success": True,
+            "data": {
+                "reports": formatted_reports,
+                "total": total,
+                "total_pages": (total + page_size - 1) // page_size,
+                "page": page
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500

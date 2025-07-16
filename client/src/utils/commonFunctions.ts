@@ -191,9 +191,27 @@ const setActiveToolNameRef = (ref: React.MutableRefObject<string>, name: string)
 };
 
 
+// Throttle utility
+function throttle<T extends (...args: any[]) => void>(func: T, limit: number) {
+  let lastFunc: ReturnType<typeof setTimeout>;
+  let lastRan: number;
+  return function (this: unknown, ...args: unknown[]) {
+    if (!lastRan) {
+      func.apply(this, args as Parameters<T>);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => {
+        if (Date.now() - lastRan >= limit) {
+          func.apply(this, args as Parameters<T>);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  };
+}
 
-
-export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert, setActiveToolNameRef}
+export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert, setActiveToolNameRef, throttle}
 
 
 

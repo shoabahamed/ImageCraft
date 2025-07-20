@@ -5,9 +5,12 @@ from routes.project_routes import project_routes
 from routes.report_routes import report_routes
 from routes.image_proc_routes import image_proc_routes
 from routes.text_proc_routes import text_proc_routes
+from routes.subscription_route import subscription_routes
+from controllers.subscription_controller import stripe_webhook
 from dotenv import load_dotenv
 import os 
 import cloudinary
+
 
 load_dotenv()
 
@@ -83,6 +86,8 @@ def get_profile_image(user_id, filename):
     return send_from_directory(path,filename, as_attachment=False)
 
 
+app.route("/api/webhook", methods=['POST'])(stripe_webhook)
+
 
 # Register Blueprints for the routes
 app.register_blueprint(auth_routes)
@@ -90,6 +95,7 @@ app.register_blueprint(project_routes)
 app.register_blueprint(report_routes)
 app.register_blueprint(image_proc_routes)
 app.register_blueprint(text_proc_routes)
+app.register_blueprint(subscription_routes)
 
 # runs the server on port 5000
 if __name__ == "__main__":

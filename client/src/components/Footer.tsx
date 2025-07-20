@@ -28,7 +28,7 @@ import {
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
 import NewProjectBox from "./NewProjectBox";
 
-// TODO: saving canvas when style transfer has been done
+// TODO: if the image loaded is transparent the image download becomes not transparent but dark(need to set the default background color to null)
 // TODO: saving the background image if available(not sure though may be we could just let fabric js handle this)
 
 type mapStateType = {

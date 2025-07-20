@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import NoticeSection from "@/components/NoticeSection";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import SubscriptionSection from "@/components/SubscriptionSection";
+import PageFooter from "@/components/PageFooter";
 
 export default function UserProfilePage() {
   const [activeTab, setActiveTab] = useState("projects");
@@ -135,7 +137,7 @@ export default function UserProfilePage() {
   };
 
   return (
-    <div className=" bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div className=" bg-gradient-to-b from-blue-50 to-white dark:from-[#05101c] dark:to-[#0a192f] dark:bg-gradient-to-b duration-300 min-h-screen">
       <Navbar />
       <div className="mx-auto max-w-6xl p-4">
         {/* Enhanced Profile Header */}
@@ -249,6 +251,17 @@ export default function UserProfilePage() {
           >
             Bookmarks
           </button>
+
+          <button
+            className={`py-2 px-4 font-medium transition-colors duration-200 ${
+              activeTab === "subscription"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-300"
+            }`}
+            onClick={() => setActiveTab("subscription")}
+          >
+            Subscription
+          </button>
           <button
             className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "reports"
@@ -286,6 +299,9 @@ export default function UserProfilePage() {
           {/* Bookmark Cards */}
           {activeTab === "bookmarks" && <BookmarkSection userId={userId} />}
 
+          {/* Bookmark Cards */}
+          {activeTab === "subscription" && <SubscriptionSection />}
+
           {/* Reports Cards - No Create Project Button */}
           {activeTab === "reports" && <ReportSection userId={userId} />}
 
@@ -293,7 +309,7 @@ export default function UserProfilePage() {
           {activeTab === "notices" && <NoticeSection userId={userId} />}
         </div>
       </div>
-
+      <PageFooter />
       {/* Profile Image Upload Dialog */}
       <Dialog open={profileImageOpen} onOpenChange={setProfileImageOpen}>
         <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-2xl shadow-xl">

@@ -38,6 +38,8 @@ import {
 import SubmitRating from "@/components/SubmitRating";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import LoadingBox from "@/components/LoadingBox";
+import PageFooter from "@/components/PageFooter";
 
 const sortTypes = [
   { label: "Newest", value: "date" },
@@ -408,7 +410,7 @@ export default function Gallery() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-[#05101c] dark:to-[#0a192f]">
       <Navbar />
       {/* Modern Header with Gradient */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-900 dark:to-blue-800 relative overflow-hidden">
@@ -501,7 +503,7 @@ export default function Gallery() {
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 bg-gradient-to-b from-blue-50 to-white dark:from-[#05101c] dark:to-[#0a192f] dark:bg-gradient-to-b duration-300">
           {loading ? (
             <div className="col-span-full text-center text-blue-600 dark:text-blue-300 text-lg">
               Loading...
@@ -708,6 +710,7 @@ export default function Gallery() {
         </Pagination>
       </div>
 
+      <PageFooter />
       {/* ... existing modals ... */}
       {/* Rate Modal */}
       <Dialog open={openRate} onOpenChange={setOpenRate}>

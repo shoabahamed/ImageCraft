@@ -37,12 +37,14 @@ const MAX_HEIGHT = 2048;
 
 const NewProjectBox = (props: {
   extraStyles?: string;
+  buttonText?: string;
   useButton?: boolean;
 }) => {
   const {
     extraStyles = "px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-blue-500/50 transition-all duration-300 dark:bg-blue-500 dark:hover:bg-blue-600",
     useButton = true,
   } = props;
+  const { buttonText } = props;
   const navigate = useNavigate();
   const [dataURL, setDataURL] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -305,7 +307,7 @@ const NewProjectBox = (props: {
             onClick={() => setShowLoadingDialog(true)}
             className={extraStyles}
           >
-            Start Edit
+            {buttonText || "Start Edit"}
           </button>
         </div>
       )}

@@ -568,8 +568,7 @@ const Test = () => {
       radius: Math.min(imgHeight, imgWidth) * 0.3, // default radius, can be adjusted as needed
       fill: "rgba(0,0,0,0.2)", // semi-transparent fill for effect area
       selectable: false,
-
-      // evented: false,
+      hasControls: false,
       visible: false, // hidden by default
       name: "liquifyCircle",
       originX: "center",

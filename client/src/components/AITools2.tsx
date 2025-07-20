@@ -24,6 +24,8 @@ import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useArrangeStore } from "@/hooks/appStore/ArrangeStore";
+import axios from "axios";
+import { Crown } from "lucide-react";
 
 // TODO: ability to restore original image after style transfer
 // TODO: everything works right now but for some reason filters are not updated from the get go when switching images if the the canvas was loaded from database
@@ -106,6 +108,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
     setLoadSate(true);
     removeTempStylizeImage();
+
     try {
       const formData = new FormData();
 
@@ -190,12 +193,14 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
         });
       }
     } catch (error) {
-      console.error("Error saving canvas:", error);
+      let message = error.message;
+      if (axios.isAxiosError(error)) {
+        message = error.response.data.message;
+      }
       toast({
         variant: "destructive",
-        description: "Unexpected Error " + error,
-        className: "bg-green-500 text-gray-900",
-        duration: 3000,
+        description: message,
+        duration: 8000,
       });
     }
     setLoadSate(false);
@@ -262,7 +267,11 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
     });
 
     canvas.getObjects().forEach(function (obj) {
-      if (obj.type.toLowerCase() !== "image") {
+      if (
+        obj.type.toLowerCase() !== "image" &&
+        obj?.name === "canvasRect" &&
+        obj?.name === "liquifyCircle"
+      ) {
         canvas.remove(obj);
       }
     });
@@ -275,19 +284,26 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
         <Dialog open={openStylizeImage} onOpenChange={setOpenStylizeImage}>
           <DialogTrigger asChild>
             <div className="flex flex-col gap-3">
-              <button className="custom-button w-full">Stylize Image</button>
+              <button className="custom-button w-full flex items-center justify-center gap-2">
+                <Crown className="w-5 h-5 text-yellow-500" />
+                Stylize Image
+              </button>
             </div>
           </DialogTrigger>
-          <DialogContent className="w-screen h-screen max-w-[90vw] max-h-[90vh] p-8 bg-white rounded-lg shadow-lg overflow-hidden">
+          <DialogContent className="w-screen h-screen max-w-[90vw] max-h-[90vh] p-8 bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg overflow-hidden border border-gray-200">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-gray-800">
-                Image Processing
+              <DialogTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
+                <Crown className="w-6 h-6 text-yellow-500" />
+                Image Processing{" "}
+                <span className="text-xs font-normal text-yellow-500 ml-2">
+                  Premium
+                </span>
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 h-[80%]">
               {/* First Image from FabricImage */}
               <div className="flex flex-col items-center text-center h-full">
-                <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
                   <img
                     src={getCanvasDataUrl(
                       canvas,
@@ -299,12 +315,14 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
                     className="object-contain w-full h-full"
                   />
                 </div>
-                <p className="mt-4 text-gray-600">Image from Fabric</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">
+                  Image from Fabric
+                </p>
               </div>
 
               {/* Second Image (Uploaded) */}
               <div className="flex flex-col items-center text-center h-full">
-                <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
                   {uploadedImage ? (
                     <img
                       src={uploadedImage}
@@ -312,21 +330,25 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
                       className="object-contain w-full h-full"
                     />
                   ) : (
-                    <p className="text-gray-500">No Image Uploaded</p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      No Image Uploaded
+                    </p>
                   )}
                 </div>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="mt-4 px-4 py-2 border rounded-lg cursor-pointer"
+                  className="mt-4 px-4 py-2 border rounded-lg cursor-pointer dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                 />
-                <p className="mt-4 text-gray-600">Upload Your Image</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">
+                  Upload Your Image
+                </p>
               </div>
 
               {/* Third Image (Backend Image) */}
               <div className="flex flex-col items-center text-center h-full">
-                <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-center w-full h-[250px] bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
                   {backendImage ? (
                     <img
                       src={backendImage}
@@ -334,10 +356,14 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
                       className="object-contain w-full h-full"
                     />
                   ) : (
-                    <p className="text-gray-500">Loading...</p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Loading...
+                    </p>
                   )}
                 </div>
-                <p className="mt-4 text-gray-600">Image from Backend</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">
+                  Image from Backend
+                </p>
               </div>
             </div>
             <DialogFooter className="mt-8">

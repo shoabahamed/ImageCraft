@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from PIL import Image
+from bson import ObjectId
 from utils.preprocessing import get_style_transfer_transform, get_similar_image_transform, get_super_resolution_transform
 from model_config import CFG
 import torchvision.transforms.v2 as T
@@ -14,14 +15,38 @@ from torchvision import models
 from config.db_config import get_db
 import numpy as np
 import gc
+import os
+
 
 db = get_db()
 embedding_collection = db['Embedding']
+users_collection = db["Users"]
+
+
+
+STYLE_PRO_COMPUTE = int(os.getenv("STYLE_PRO_COMPUTE", 100)) 
+SUPER_RESOULTION_PRO_COMPUTE = int(os.getenv("SUPER_RESOULTION_PRO_COMPUTE", 100))
+STYLE_ULTIMATE_COMPUTE = int(os.getenv("STYLE_ULTIMATE_COMPUTE", 99999))
+SUPER_RESOULTION_ULTIMATE_COMPUTE = int(os.getenv("SUPER_RESOULTION_ULTIMATE_COMPUTE", 99999))
 
 def apply_style_transfer():
   try:
     if 'originalImage' not in request.files or 'styleImage' not in request.files:
         return jsonify({"success": False, "message": "Both originalImage and styleImage must be provided"}), 400
+    
+    user_id = str(g._id)
+    user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
+    subscription_plan = user.get("subscription_plan", "free")
+    style_completion = user.get("style_completion") 
+    
+  
+
+    if(subscription_plan == 'free'):
+        return jsonify({"success": False, "message": "Upgrade to Premium for Style Transfer"}), 400
+    
+    if(subscription_plan == 'pro' and style_completion >= STYLE_PRO_COMPUTE):
+        return jsonify({"success": False, "message": "You have completed this months Style Transfer Compute. Upgrade to Pro to get unlimited Access"}), 400
+
     
     # raw_data = request.get_data()
     # print(f"🔍 Content-Type: {request.content_type}")
@@ -91,6 +116,22 @@ def apply_style_transfer():
     stylized_img.save(buffer, format="png")
     buffer.seek(0)
     image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    
+    
+    
+    
+
+    result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"style_completion": style_completion + 1}}
+        )
+
+    
+    print(result)
+    
+    
+    
+    
     return jsonify({"success": True, "message": "Style Trasnfer Successfull", "image": image_base64}), 200
 
   except Exception as e:
@@ -151,6 +192,17 @@ def find_similar_image():
 
 def apply_super_resolution():
     try:
+        user_id = str(g._id)
+        user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
+        subscription_plan = user.get("subscription_plan", "free")
+        upscale_completion = user.get("upscale_completion")  
+
+        if(subscription_plan == 'free'):
+            return jsonify({"success": False, "message": "Upgrade to Premium for Upscale Transfer"}), 400
+        
+        if(subscription_plan == 'pro' and upscale_completion >= SUPER_RESOULTION_PRO_COMPUTE):
+            return jsonify({"success": False, "message": "You have completed this months SUPER RESOLUTION Compute. Upgrade to Pro to get unlimited Access"}), 400
+
         print("DEBUG: Starting apply_super_resolution function")
 
         # Check if the file is provided
@@ -214,6 +266,14 @@ def apply_super_resolution():
         buffer.seek(0)
         image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
         print("DEBUG: Image encoded to base64")
+        
+        
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"upscale_completion": upscale_completion + 1}}
+        )
+        print(result)
+
 
         return jsonify({"success": True, "message": "Super-resolution applied successfully", 'image': image_base64}), 200
 

@@ -13,6 +13,9 @@ import Gallery from "./pages/Gallery";
 import AdminPanel from "./pages/Admin";
 import TemplateUpload from "./pages/TemplateUpload";
 import AdminPanelAdvanced from "./pages/AdminPanelAdvanced";
+import Pricing from "./pages/Pricing";
+import ErrorPage from "./pages/Error";
+import SuccessPage from "./pages/SuccessPage";
 
 export default function App() {
   const { user, loading } = useAuthContext();
@@ -83,6 +86,10 @@ export default function App() {
                 </LogProvider>
               }
             />
+
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/success" element={<SuccessPage />} />
+            <Route path="/*" element={<ErrorPage />} />
 
             {/* <Route path="/admin_advanced" element={<AdminPanelAdvanced />} /> */}
           </Routes>

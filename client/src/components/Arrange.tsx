@@ -10,9 +10,10 @@ import {
   RedoDot,
   UnfoldVertical,
   UnfoldHorizontal,
+  Crown,
 } from "lucide-react";
 import { Canvas, FabricImage } from "fabric";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLogContext } from "@/hooks/useLogContext";
 import ImageSize from "./ImageSize";
@@ -90,7 +91,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
 
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
-  const [backendImage, setBackendImage] = useState<null | string>(null);
+  // const [backendImage, setBackendImage] = useState<null | string>(null);
 
   const backgroundColor = useArrangeStore((state) => state.backgroundColor);
   const setBackgroundColor = useArrangeStore(
@@ -127,9 +128,12 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
     canvas.setZoom(1);
+    // Fabric.js objects may have setCoords, but type is not guaranteed
     canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.setCoords());
+      .getObjects()
+      .find((obj) =>
+        (obj as unknown as { setCoords?: () => void }).setCoords?.()
+      );
 
     const bounds = getRotatedBoundingBox(imageRef.current);
 
@@ -143,16 +147,22 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       imageWidth: bounds.width,
     };
 
+    // @ts-expect-error
     const canvasRect = canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.name?.startsWith("canvasRect"));
+      .getObjects()
+      // Fabric.js objects may have custom 'name' property
+      .find((obj) =>
+        (obj as unknown as { name?: string }).name?.startsWith("canvasRect")
+      );
 
     // Restore zoom & transform
     canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
     canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.setCoords());
+      .getObjects()
+      .find((obj) =>
+        (obj as unknown as { setCoords?: () => void }).setCoords?.()
+      );
 
     canvasRect.set({
       width: bounds.width,
@@ -262,7 +272,11 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     });
 
     canvas.getObjects().forEach(function (obj) {
-      if (obj.type.toLowerCase() !== "image") {
+      if (
+        obj.type.toLowerCase() !== "image" &&
+        obj?.name === "canvasRect" &&
+        obj?.name === "liquifyCircle"
+      ) {
         canvas.remove(obj);
       }
     });
@@ -306,7 +320,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
         // setUploadedImage("");
         const base64Image = `data:image/png;base64,${response.data.image}`;
         // const base64Image =response.data.image
-        setBackendImage(base64Image);
+        // setBackendImage(base64Image);
         replaceImage(base64Image);
         toast({
           description: "Successfull",
@@ -332,9 +346,13 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     fireModified: boolean
   ) => {
     setBackgroundColor(color);
+    // @ts-expect-error
     const canvasRect = canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.name?.startsWith("canvasRect"));
+      .getObjects()
+      // Fabric.js objects may have custom 'name' property
+      .find((obj) =>
+        (obj as unknown as { name?: string }).name?.startsWith("canvasRect")
+      );
 
     if (canvasRect) {
       canvasRect.set({
@@ -358,9 +376,13 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   const handleRemoveBackground = () => {
     if (backgroundColor !== "transparent") {
       setBackgroundColor("transparent");
+      // @ts-expect-error
       const canvasRect = canvas
-        .getObjects() // @ts-ignore
-        .find((obj) => obj.name?.startsWith("canvasRect"));
+        .getObjects()
+        // Fabric.js objects may have custom 'name' property
+        .find((obj) =>
+          (obj as unknown as { name?: string }).name?.startsWith("canvasRect")
+        );
 
       if (canvasRect) {
         canvasRect.set({
@@ -699,9 +721,15 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
           <div className="w-[90%]">
             <Card>
               <CardHeader>
-                <CardDescription className="text-lg font-medium">
-                  AI Image Enhancement
-                </CardDescription>
+                <div className="flex items-center gap-2">
+                  <CardDescription className="text-lg font-medium text-gray-800 dark:text-yellow-400 flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    Enhance Image
+                    <span className="text-xs font-normal text-yellow-500 ml-2">
+                      Premium
+                    </span>
+                  </CardDescription>
+                </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Increase your image resolution using advanced AI technology
                 </p>

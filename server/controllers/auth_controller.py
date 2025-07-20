@@ -74,7 +74,7 @@ def callback():
             role = "user"
             image_url = ""
             hashed_password = "gmail_login"
-            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": image_url}
+            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": image_url, "subscription_plan": "free"}
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id), role=role)
@@ -91,13 +91,14 @@ def callback():
             username = user['username']
             user_id = str(user["_id"])
             image_url = user['image_url']
+            subscription_plan = user.get("subscription_plan", "free")
             # Existing user: Generate token using the user's ObjectId
             token = create_token(str(user["_id"]), role=role)
         
             
         
         # Redirect to the frontend with the email and token as query parameters
-        redirect_url = f"{os.getenv('AUTH_REDIRECT_URL')}/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}"
+        redirect_url = f"{os.getenv('AUTH_REDIRECT_URL')}/?email={email}&token={token}&role={role}&username={username}&userId={user_id}&image_url={image_url}&subscription_plan={subscription_plan}"
         return redirect(redirect_url)
 
     except Exception as e:
@@ -127,11 +128,11 @@ def signup():
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         # user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8')}
-        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role, "bookmarked": [], "image_url": ""}
+        user_data = {"username": username, "email": valid_email, "password": hashed_password.decode('utf-8'), "role": role, "bookmarked": [], "image_url": "", "subscription_plan": "free"}
         user = users_collection.insert_one(user_data)
 
         token = create_token(str(user.inserted_id), role=role)
-        response = {"email": valid_email, "token": token, "role": role, "username": username, "userId": str(user.inserted_id), "image_url": ""}
+        response = {"email": valid_email, "token": token, "role": role, "username": username, "userId": str(user.inserted_id), "image_url": "", "subscription_plan": "free" }
 
         # create a specific directory for the user using user id
 
@@ -180,6 +181,7 @@ def login():
         username = str(user['username'])
         user_id = str(user["_id"])
         image_url = user['image_url']
+        subscription_plan = user.get('subscription_plan', 'free')
         # Generate JWT token
         token = create_token(str(user["_id"]), role=role)
         response = {
@@ -188,7 +190,8 @@ def login():
             "role": role,
             'username': username,
             "userId": user_id,
-            "image_url": image_url
+            "image_url": image_url,
+            "subscription_plan": subscription_plan
         }
 
         return jsonify({"success": True, "message": "Login successful", "data": response}), 200
@@ -198,7 +201,7 @@ def login():
 
 
 def get_user_info(user_id):
-    user = users_collection.find_one({"_id": ObjectId(user_id)}, {"username": 1, "email": 1, "image_url": 1, "_id": 0})
+    user = users_collection.find_one({"_id": ObjectId(user_id)}, {"username": 1, "email": 1, "image_url": 1, "_id": 0, "subscription_plan": 1})
 
     return jsonify({"success": True, "message": "Data Retrieveal successful", "data": user}), 200
 

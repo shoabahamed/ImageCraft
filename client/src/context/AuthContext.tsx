@@ -15,6 +15,7 @@ interface User {
   username: string;
   userId: string;
   imageUrl: string;
+  subscriptionPlan: string;
 }
 
 // Define the structure of the state

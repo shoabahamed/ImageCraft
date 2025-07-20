@@ -8,6 +8,8 @@ import {
   Home,
   Camera,
   Image,
+  Gem,
+  Crown,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,13 +28,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -90,10 +90,19 @@ export default function Navbar() {
     const username = urlParams.get("username");
     const userId = urlParams.get("userId");
     const imageUrl = urlParams.get("image_url");
+    const subscriptionPlan = urlParams.get("subscription_plan");
 
     // If email and token are present, store them and clear the query string
     if (email && token && role && username) {
-      const userData = { email, token, role, username, userId, imageUrl };
+      const userData = {
+        email,
+        token,
+        role,
+        username,
+        userId,
+        imageUrl,
+        subscriptionPlan,
+      };
       localStorage.setItem("user", JSON.stringify(userData));
       dispatch({ type: "LOGIN", payload: userData });
 
@@ -145,8 +154,17 @@ export default function Navbar() {
           username,
           userId,
           image_url: imageUrl,
+          subscription_plan: subscriptionPlan,
         } = response.data.data;
-        const userData = { email, token, role, username, userId, imageUrl };
+        const userData = {
+          email,
+          token,
+          role,
+          username,
+          userId,
+          imageUrl,
+          subscriptionPlan,
+        };
         localStorage.setItem("user", JSON.stringify(userData));
         dispatch({ type: "LOGIN", payload: userData });
         toast({
@@ -200,8 +218,17 @@ export default function Navbar() {
           username,
           userId,
           image_url: imageUrl,
+          subscription_plan: subscriptionPlan,
         } = response.data.data;
-        const userData = { email, token, role, username, userId, imageUrl };
+        const userData = {
+          email,
+          token,
+          role,
+          username,
+          userId,
+          imageUrl,
+          subscriptionPlan,
+        };
         localStorage.setItem("user", JSON.stringify(userData));
 
         dispatch({ type: "LOGIN", payload: userData });
@@ -287,6 +314,7 @@ export default function Navbar() {
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Gallery", href: "/gallery", icon: Image },
+    { name: "Pricing", href: "/pricing", icon: Crown },
     {
       name: "Profile",
       href: `/profile/${user?.userId}`,
@@ -459,6 +487,16 @@ export default function Navbar() {
                         >
                           Sign up
                         </Button>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                      <DropdownMenuItem asChild>
+                        <a
+                          href="/pricing"
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        >
+                          <Camera className="mr-2 h-4 w-4" />
+                          Pricing
+                        </a>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

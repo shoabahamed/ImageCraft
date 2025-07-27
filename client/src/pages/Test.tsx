@@ -939,6 +939,7 @@ const Test = () => {
         if (zoom > 20) zoom = 20;
         if (zoom < 0.01) zoom = 0.01; //@ts-ignore
         initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+
         setZoomValue(zoom);
         opt.e.preventDefault();
         opt.e.stopPropagation();
@@ -1789,7 +1790,11 @@ const Test = () => {
 
   return (
     <div className="h-screen max-w-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:bg-[#05101c] min-h-screen">
-      <Navbar />
+      <Navbar
+        canvasRef={mainCanvasRef}
+        canvasId={canvasIdRef.current}
+        imageUrl={imageUrl}
+      />
       <div className="w-full flex-1 flex items-center relative flex-col md:flex-row dark:bg-[#05101c]">
         {/* Full-screen overlay */}
         {spinnerLoading && (

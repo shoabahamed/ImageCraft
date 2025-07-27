@@ -670,7 +670,7 @@ const EdgeFiltersTab = ({ canvasRef, imageRef }: Props) => {
 
     updateOrInsert(
       filtersList,
-      "bilateralBlur",
+      "bilateralFilter",
       new BilateralFilter({
         sigmaS: bilateralSigmaS,
         sigmaC: newSize,

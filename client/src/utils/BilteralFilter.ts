@@ -28,7 +28,7 @@ const fragmentSource = {
               // Spatial weight from precomputed kernel
               float spatialWeight = uSpatialKernel[(y + 2) * 5 + (x + 2)];
               
-              // Color distance weight
+              // Color/intensity distance weight
               float colorDistance = length(neighborColor - centerColor);
               float rangeWeight = exp(-(colorDistance * colorDistance) / (2.0 * uSigmaColor * uSigmaColor));
               

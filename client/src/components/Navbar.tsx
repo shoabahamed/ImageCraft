@@ -48,6 +48,11 @@ import {
 } from "@/components/ui/form";
 import axios from "axios";
 
+import { Canvas } from "fabric";
+import { useLogContext } from "@/hooks/useLogContext";
+import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
+import { useCommonProps } from "@/hooks/appStore/CommonProps";
+
 const signupformSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
@@ -72,51 +77,70 @@ const loginformSchema = z.object({
 });
 
 // Main Navbar Component
-export default function Navbar() {
+export default function Navbar({
+  canvasRef,
+  canvasId,
+  imageUrl,
+}: {
+  canvasRef?: React.RefObject<Canvas>;
+  canvasId?: string;
+  imageUrl: string;
+}) {
   const { setTheme } = useTheme();
   const { user, dispatch } = useAuthContext();
+  const { logs } = useLogContext();
+  const {
+    finalImageDimensions,
+    originalImageDimensions,
+    downloadImageDimensions,
+    allFiltersRef,
+    currentFiltersRef,
+  } = useCanvasObjects();
+
+  const projectName = useCommonProps((state) => state.projectName);
+
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    // Parse the query parameters from the URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const email = urlParams.get("email");
-    const token = urlParams.get("token");
-    const role = urlParams.get("role");
-    const username = urlParams.get("username");
-    const userId = urlParams.get("userId");
-    const imageUrl = urlParams.get("image_url");
-    const subscriptionPlan = urlParams.get("subscription_plan");
+  // useEffect(() => {
+  //   // Parse the query parameters from the URL
+  //   const urlParams = new URLSearchParams(window.location.search);
+  //   const email = urlParams.get("email");
+  //   const token = urlParams.get("token");
+  //   const role = urlParams.get("role");
+  //   const username = urlParams.get("username");
+  //   const userId = urlParams.get("userId");
+  //   const imageUrl = urlParams.get("image_url");
+  //   const subscriptionPlan = urlParams.get("subscription_plan");
 
-    // If email and token are present, store them and clear the query string
-    if (email && token && role && username) {
-      const userData = {
-        email,
-        token,
-        role,
-        username,
-        userId,
-        imageUrl,
-        subscriptionPlan,
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
-      dispatch({ type: "LOGIN", payload: userData });
+  //   // If email and token are present, store them and clear the query string
+  //   if (email && token && role && username) {
+  //     const userData = {
+  //       email,
+  //       token,
+  //       role,
+  //       username,
+  //       userId,
+  //       imageUrl,
+  //       subscriptionPlan,
+  //     };
+  //     localStorage.setItem("user", JSON.stringify(userData));
+  //     dispatch({ type: "LOGIN", payload: userData });
 
-      toast({
-        description: "Login successful",
-        className: "bg-green-500 text-gray-900",
-        duration: 5000,
-      });
+  //     toast({
+  //       description: "Login successful",
+  //       className: "bg-green-500 text-gray-900",
+  //       duration: 5000,
+  //     });
 
-      // Clear the query string from the URL
-      window.history.replaceState({}, document.title, "/");
-      console.log(user);
-    }
-  }, []);
+  //     // Clear the query string from the URL
+  //     window.history.replaceState({}, document.title, "/");
+  //     console.log(user);
+  //   }
+  // }, []);
 
   // 1. Define your form.
   const signupform = useForm<z.infer<typeof signupformSchema>>({
@@ -275,6 +299,55 @@ export default function Navbar() {
       const response = await apiClient.get("/google_login");
 
       if (response.data.authorization_url) {
+        // if (canvasRef.current) {
+        //   const { imageHeight: finalImageHeight, imageWidth: finalImageWidth } =
+        //     finalImageDimensions;
+        //   const { imageHeight: originalHeight, imageWidth: originalWidth } =
+        //     originalImageDimensions;
+        //   const { imageHeight: downloadHeight, imageWidth: downloadWidth } =
+        //     downloadImageDimensions;
+
+        //   // we need store the current state of the images
+        //   const project_data = canvasRef.current.toObject([
+        //     "name",
+        //     "isUpper",
+        //     "id",
+        //   ]);
+        //   const project_logs = JSON.stringify(logs);
+        //   const project_name = projectName;
+        //   const final_image_shape = JSON.stringify({
+        //     width: finalImageWidth,
+        //     height: finalImageHeight,
+        //   });
+        //   const original_image_shape = JSON.stringify({
+        //     width: originalWidth,
+        //     height: originalHeight,
+        //   });
+        //   const download_image_shape = JSON.stringify({
+        //     width: downloadWidth,
+        //     height: downloadHeight,
+        //   });
+
+        //   const filterNames =
+        //     JSON.stringify(
+        //       currentFiltersRef.current.map((filter) => filter.filterName)
+        //     ) || JSON.stringify([]);
+
+        //   const all_filters_applied = JSON.stringify(allFiltersRef.current);
+
+        //   localStorage.setItem("canvasId", canvasId);
+
+        //   localStorage.setItem("project_data", project_data);
+        //   localStorage.setItem("project_logs", project_logs);
+        //   localStorage.setItem("project_name", project_name);
+        //   localStorage.setItem("final_image_shape", final_image_shape);
+        //   localStorage.setItem("original_image_shape", original_image_shape);
+        //   localStorage.setItem("download_image_shape", download_image_shape);
+        //   localStorage.setItem("filter_names", filterNames);
+        //   localStorage.setItem("all_filters_applied", all_filters_applied);
+        //   localStorage.setItem("imageUrl", imageUrl)
+        // }
+
         // Redirect the user to Google's OAuth page
         window.location.href = response.data.authorization_url;
       } else {
@@ -308,7 +381,6 @@ export default function Navbar() {
       className: "bg-green-500 text-gray-900",
       duration: 2000,
     });
-    navigate("/");
   };
 
   const navItems = [

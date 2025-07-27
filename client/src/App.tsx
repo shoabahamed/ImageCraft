@@ -28,71 +28,53 @@ export default function App() {
     <div>
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Home />} />
+          <LogProvider>
+            <CanvasObjectsProvider>
+              <Routes>
+                <Route path="/" element={<Home />} />
 
-            <Route
-              path="/mainpage"
-              element={
-                <LogProvider>
-                  <CanvasObjectsProvider>
-                    {/* <MainPage /> */}
+                <Route path="/mainpage" element={<Test />} />
 
-                    <Test />
-                  </CanvasObjectsProvider>
-                </LogProvider>
-              }
-            />
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/temp" element={<Temp />} />
 
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/temp" element={<Temp />} />
+                <Route
+                  path="/admin"
+                  element={
+                    user && user.role.includes("admin") ? (
+                      <AdminPanelAdvanced />
+                    ) : (
+                      <Home />
+                    )
+                  }
+                />
 
-            <Route
-              path="/admin"
-              element={
-                user && user.role.includes("admin") ? (
-                  <AdminPanelAdvanced />
-                ) : (
-                  <Home />
-                )
-              }
-            />
+                <Route
+                  path="/admin/templates/upload"
+                  element={
+                    user && user.role.includes("admin") ? (
+                      <TemplateUpload />
+                    ) : (
+                      <Home />
+                    )
+                  }
+                />
 
-            <Route
-              path="/admin/templates/upload"
-              element={
-                user && user.role.includes("admin") ? (
-                  <CanvasObjectsProvider>
-                    <TemplateUpload />
-                  </CanvasObjectsProvider>
-                ) : (
-                  <Home />
-                )
-              }
-            />
+                <Route
+                  path="/log_dashboard/:projectId"
+                  element={<LogDashboard />}
+                />
 
-            <Route
-              path="/log_dashboard/:projectId"
-              element={<LogDashboard />}
-            />
+                <Route path="/profile/:userId" element={<UserProfilePage />} />
 
-            <Route
-              path="/profile/:userId"
-              element={
-                <LogProvider>
-                  <CanvasObjectsProvider>
-                    <UserProfilePage />
-                  </CanvasObjectsProvider>
-                </LogProvider>
-              }
-            />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/success" element={<SuccessPage />} />
+                <Route path="/*" element={<ErrorPage />} />
 
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/success" element={<SuccessPage />} />
-            <Route path="/*" element={<ErrorPage />} />
-
-            {/* <Route path="/admin_advanced" element={<AdminPanelAdvanced />} /> */}
-          </Routes>
+                {/* <Route path="/admin_advanced" element={<AdminPanelAdvanced />} /> */}
+              </Routes>
+            </CanvasObjectsProvider>
+          </LogProvider>
 
           <Toaster />
         </BrowserRouter>

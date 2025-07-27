@@ -14,10 +14,11 @@ const fragmentSource = `
 
 
   void main() {
+  // the code below is basically stadard rotation of a point. 
     vec2 coord = vTexCoord;
     vec2 center = uCenter;
 
-    vec2 offset = coord - center;
+    vec2 offset = coord - center; // translate
     float dist = length(offset);
 
     if (dist < uRadius) {
@@ -30,15 +31,16 @@ const fragmentSource = `
         offset = vec2(
             offset.x * c - offset.y * s,
             offset.x * s + offset.y * c
-        );
+        ); // rotate 
 
-        coord = center + offset;
+        coord = center + offset; // translate
     }
 
     vec4 color = texture2D(uTexture, coord);
     gl_FragColor = color;
   }
 `
+
 
 type SwirlOwnProps = {
   center: {x: number, y: number},

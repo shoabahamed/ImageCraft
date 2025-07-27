@@ -47,13 +47,14 @@ const SuccessPage = () => {
 
     const timer = setTimeout(() => {
       // Example logic: redirect based on localStorage values
-      const projectData = localStorage.getItem("project_data");
-      if (projectData) {
-        navigate("/mainpage"); // or any route you want
-      } else {
-        navigate("/");
-      }
-    }, 25000);
+      // const projectData = localStorage.getItem("project_data");
+      navigate("/");
+      // if (projectData) {
+      //   navigate("/mainpage"); // or any route you want
+      // } else {
+      //   navigate("/");
+      // }
+    }, 2500);
     return () => clearTimeout(timer);
   }, [navigate]);
 

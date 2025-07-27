@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 interface ProjectJson {
   project_data: any;
@@ -44,6 +45,7 @@ const NewProjectBox = (props: {
     extraStyles = "px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-blue-500/50 transition-all duration-300 dark:bg-blue-500 dark:hover:bg-blue-600",
     useButton = true,
   } = props;
+  const { user } = useAuthContext();
   const { buttonText } = props;
   const navigate = useNavigate();
   const [dataURL, setDataURL] = useState(null);

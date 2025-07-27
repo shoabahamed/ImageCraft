@@ -277,7 +277,6 @@ const Footer = ({
 
     const dataURL = getCanvasDataUrl(canvas, image, false);
 
-    // Trigger download (optional, if you still want to download the image)
     const link = document.createElement("a");
     link.href = dataURL;
     link.download = "canvas-image.png";

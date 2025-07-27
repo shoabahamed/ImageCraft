@@ -85,7 +85,13 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       }
     };
 
-    get_style_images();
+    if (!user) {
+      toast({
+        description: "You need to sign in first",
+      });
+    } else {
+      get_style_images();
+    }
   }, []);
 
   const handleImageUpload = (event) => {
@@ -108,6 +114,11 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const handleStyleTransfer = async (predefinedImageUrl: string = "") => {
     setLoadSate(true);
     removeTempStylizeImage();
+
+    if (!user)
+      toast({
+        description: "You need to sign in first",
+      });
 
     try {
       const formData = new FormData();
@@ -184,6 +195,25 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
             },
           });
         }
+      } else if (response.status === 201 || response.status == 202) {
+        // that means user is in free version
+        toast({
+          title: "Upgrade",
+          description: response.data.message,
+          action: (
+            <ToastAction altText="Switch">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    window.open("/pricing", "_blank");
+                  }}
+                >
+                  Upgrade
+                </button>
+              </div>
+            </ToastAction>
+          ),
+        });
       } else {
         toast({
           variant: "destructive",
@@ -230,6 +260,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       canvas.renderAll();
     };
   };
+
   const replaceImage = (base64Image: string) => {
     if (!canvas || !imageRef.current) return;
 
@@ -237,6 +268,14 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 
     FabricImage.fromURL(base64Image).then((img) => {
       if (!img || !imageRef.current) return;
+
+      addLog({
+        section: "arrange",
+        tab: "ai",
+        event: "update",
+        message: `Applied Style Transfer`,
+        objType: "image",
+      });
       // Replace the image content
 
       console.log("djf");

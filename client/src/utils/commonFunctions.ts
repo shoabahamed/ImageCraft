@@ -88,6 +88,7 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     
 
 
+
     // Reset to neutral
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
@@ -97,6 +98,7 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
       .find((obj) => obj.setCoords());
 
 
+    
     const frameObject = canvas
     .getObjects() // @ts-ignore
     .find((obj) => obj.name?.startsWith("Frame"));
@@ -104,12 +106,17 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
     if(changeAngle && frameObject){
       image.clipPath = null
     }
+    let frameStrokeWidth;
 
+    const backgroundColor = canvas.backgroundColor
     // Find the object named "Frame" or starting with "Frame"
     let bounds = getRotatedBoundingBox(image);
 
     if (frameObject && image.clipPath) {
-      frameObject.visible = false; // this line is new
+      canvas.backgroundColor = 'transparent'
+      frameStrokeWidth = frameObject.strokeWidth
+      frameObject.visible = false
+      frameObject.strokeWidth = 0
       bounds = getRotatedBoundingBox(frameObject);
     }
 
@@ -135,6 +142,9 @@ const getCanvasDataUrl = (  canvas: fabric.Canvas,
 
     //the next two line is new
     if(frameObject && image.clipPath){
+        frameObject.visible = true
+        frameObject.strokeWidth = frameStrokeWidth
+        canvas.backgroundColor =  backgroundColor
         frameObject.visible = true
     }
     

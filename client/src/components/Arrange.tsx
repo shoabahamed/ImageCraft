@@ -35,6 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ToastAction } from "./ui/toast";
 
 const presetColors = [
   // Grays
@@ -284,14 +285,10 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   };
 
   const handleSuperResolution = async (scale: number) => {
-    addLog({
-      section: "arrange",
-      tab: "super-resolution",
-      event: "update",
-      message: `canvas super resolution set to ${scale}x`,
-      param: "super-resolution",
-      objType: "image",
-    });
+    if (!user)
+      toast({
+        description: "You need to sign in first",
+      });
 
     try {
       setSpinnerLoading(true);
@@ -322,10 +319,39 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
         // const base64Image =response.data.image
         // setBackendImage(base64Image);
         replaceImage(base64Image);
+
+        addLog({
+          section: "arrange",
+          tab: "super-resolution",
+          event: "update",
+          message: `canvas super resolution set to ${scale}x`,
+          param: "super-resolution",
+          objType: "image",
+        });
         toast({
           description: "Successfull",
           className: "bg-green-500 text-gray-900",
           duration: 3000,
+        });
+      } else if (response.status === 201 || response.status == 202) {
+        // that means user is in free version
+        setSpinnerLoading(false);
+        toast({
+          title: "Upgrade",
+          description: response.data.message,
+          action: (
+            <ToastAction altText="Switch">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    window.open("/pricing", "_blank");
+                  }}
+                >
+                  Upgrade
+                </button>
+              </div>
+            </ToastAction>
+          ),
         });
       } else {
         setSpinnerLoading(false);

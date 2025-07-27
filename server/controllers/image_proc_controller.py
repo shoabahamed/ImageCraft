@@ -37,15 +37,15 @@ def apply_style_transfer():
     user_id = str(g._id)
     user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
     subscription_plan = user.get("subscription_plan", "free")
-    style_completion = user.get("style_completion") 
+    style_completion = user.get("style_completion", 0) 
     
   
 
     if(subscription_plan == 'free'):
-        return jsonify({"success": False, "message": "Upgrade to Premium for Style Transfer"}), 400
+        return jsonify({"success": False, "message": "Upgrade to To Premium"}), 201
     
     if(subscription_plan == 'pro' and style_completion >= STYLE_PRO_COMPUTE):
-        return jsonify({"success": False, "message": "You have completed this months Style Transfer Compute. Upgrade to Pro to get unlimited Access"}), 400
+        return jsonify({"success": False, "message": "Style Completion Quota Complete"}), 202
 
     
     # raw_data = request.get_data()
@@ -198,10 +198,11 @@ def apply_super_resolution():
         upscale_completion = user.get("upscale_completion")  
 
         if(subscription_plan == 'free'):
-            return jsonify({"success": False, "message": "Upgrade to Premium for Upscale Transfer"}), 400
+            return jsonify({"success": False, "message": "Upgrade to To Premium"}), 201
+    
         
         if(subscription_plan == 'pro' and upscale_completion >= SUPER_RESOULTION_PRO_COMPUTE):
-            return jsonify({"success": False, "message": "You have completed this months SUPER RESOLUTION Compute. Upgrade to Pro to get unlimited Access"}), 400
+            return jsonify({"success": False, "message": "Style Completion Quota Complete"}), 202
 
         print("DEBUG: Starting apply_super_resolution function")
 

@@ -89,7 +89,7 @@ const Test = () => {
   const idFromState = localStorage.getItem("CanvasId");
 
   const navigate = useNavigate();
-  const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test3.png");
+  const [imageUrl, setImageUrl] = useState(imageUrlFromState || "./test2.jpg");
 
   const canvasIdRef = useRef(idFromState || crypto.randomUUID());
 
@@ -384,26 +384,54 @@ const Test = () => {
       height: containerHeight,
     });
 
-    // Get current image size (NOT scaled size, actual size)
-    const img = currentImageRef.current;
-    const imageWidth = img.width ?? 1;
-    const imageHeight = img.height ?? 1;
+    const imageWidth = downloadImageDimensionsRef.current.imageWidth;
+    const imageHeight = downloadImageDimensionsRef.current.imageHeight;
 
     // Recalculate zoom to fit
     const scaleX = containerWidth / imageWidth;
     const scaleY = containerHeight / imageHeight;
     const zoom = Math.min(scaleX, scaleY);
 
-    mainCanvasRef.current.setZoom(zoom);
-    setZoomValue(zoom);
+    if (zoom <= 1) {
+      mainCanvasRef.current.setZoom(zoom);
+      setZoomValue(zoom);
 
-    // Re-center the image using viewport transform
-    const vp = mainCanvasRef.current.viewportTransform!;
-    vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
-    vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
-    mainCanvasRef.current.setViewportTransform(vp);
+      // Re-center the image using viewport transform
+      const vp = mainCanvasRef.current.viewportTransform!;
+      vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+      vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+      mainCanvasRef.current.setViewportTransform(vp);
 
-    mainCanvasRef.current.renderAll();
+      currentImageRef.current.set({
+        left: imageWidth / 2,
+        top: imageHeight / 2,
+        originX: "center",
+        originY: "center",
+      });
+
+      const canvasRect = mainCanvasRef.current
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.name?.startsWith("canvasRect"));
+
+      canvasRect.set({
+        left: imageWidth / 2,
+        top: imageHeight / 2,
+        originX: "center",
+        originY: "center",
+      });
+
+      mainCanvasRef.current.renderAll();
+    } else {
+      const center = new fabric.Point(containerWidth / 2, containerHeight / 2);
+
+      mainCanvasRef.current.zoomToPoint(center, zoom); // handles zoom + centering together
+      setZoomValue(zoom);
+      currentImageRef.current.setCoords();
+
+      mainCanvasRef.current.requestRenderAll();
+
+      mainCanvasRef.current.renderAll();
+    }
   };
 
   const handleObjectSelected = () => {
@@ -905,7 +933,7 @@ const Test = () => {
           setFlipY(img.flipY);
 
           mainCanvasRef.current = initCanvas;
-          setSidebarName("Arrange");
+          // setSidebarName("Arrange");
 
           const canvasData = initCanvas.toObject(["name", "isUpper", "id"]);
 
@@ -936,8 +964,8 @@ const Test = () => {
         const delta = opt.e.deltaY;
         let zoom = initCanvas.getZoom();
         zoom *= 0.999 ** delta;
-        if (zoom > 20) zoom = 20;
-        if (zoom < 0.01) zoom = 0.01; //@ts-ignore
+        if (zoom > 100) zoom = 100;
+        if (zoom < 0.001) zoom = 0.001; //@ts-ignore
         initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
 
         setZoomValue(zoom);
@@ -966,8 +994,8 @@ const Test = () => {
           const delta = opt.e.deltaY;
           let zoom = initCanvas.getZoom();
           zoom *= 0.999 ** delta;
-          if (zoom > 20) zoom = 20;
-          if (zoom < 0.01) zoom = 0.01; //@ts-ignore
+          if (zoom > 100) zoom = 100;
+          if (zoom < 0.001) zoom = 0.001; //@ts-ignore
           initCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
           setZoomValue(zoom);
           opt.e.preventDefault();
@@ -1249,8 +1277,8 @@ const Test = () => {
       const delta = opt.e.deltaY;
       let zoom = newCanvas.getZoom();
       zoom *= 0.999 ** delta;
-      if (zoom > 20) zoom = 20;
-      if (zoom < 0.01) zoom = 0.01; //@ts-ignore
+      if (zoom > 100) zoom = 100;
+      if (zoom < 0.001) zoom = 0.001; //@ts-ignore
       newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
       setZoomValue(zoom);
       opt.e.preventDefault();
@@ -1276,8 +1304,8 @@ const Test = () => {
         const delta = opt.e.deltaY;
         let zoom = newCanvas.getZoom();
         zoom *= 0.999 ** delta;
-        if (zoom > 20) zoom = 20;
-        if (zoom < 0.01) zoom = 0.01; //@ts-ignore
+        if (zoom > 100) zoom = 100;
+        if (zoom < 0.001) zoom = 0.001; //@ts-ignore
         newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
         setZoomValue(zoom);
         opt.e.preventDefault();
@@ -2011,8 +2039,8 @@ const Test = () => {
             </div>
 
             <Footer
-              canvas={mainCanvasRef.current!}
-              image={currentImageRef.current!}
+              canvasRef={mainCanvasRef}
+              imageRef={currentImageRef}
               backupImage={backupCurrentImageRef.current}
               canvasId={canvasIdRef.current}
               imageUrl={imageUrl}

@@ -85,8 +85,11 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
-  const { setDownloadImageDimensions, downloadImageDimensionsRef } =
-    useCanvasObjects();
+  const {
+    setDownloadImageDimensions,
+    downloadImageDimensionsRef,
+    finalImageDimensionsRef,
+  } = useCanvasObjects();
   const { setFinalImageDimensions, disableSavingIntoStackRef } =
     useCanvasObjects();
 
@@ -148,7 +151,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       imageWidth: bounds.width,
     };
 
-    // @ts-expect-error
+    // @ts-ignore
     const canvasRect = canvas
       .getObjects()
       // Fabric.js objects may have custom 'name' property
@@ -274,8 +277,8 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
 
     canvas.getObjects().forEach(function (obj) {
       if (
-        obj.type.toLowerCase() !== "image" &&
-        obj?.name === "canvasRect" &&
+        obj.type.toLowerCase() !== "image" && // @ts-ignore
+        obj?.name === "canvasRect" && // @ts-ignore
         obj?.name === "liquifyCircle"
       ) {
         canvas.remove(obj);
@@ -285,10 +288,23 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   };
 
   const handleSuperResolution = async (scale: number) => {
-    if (!user)
+    if (!user) {
       toast({
         description: "You need to sign in first",
       });
+      return;
+    }
+
+    if (
+      finalImageDimensionsRef.current.imageWidth >= 814 &&
+      finalImageDimensionsRef.current.imageHeight >= 814
+    ) {
+      toast({
+        description: "Image size is too big. Scale down first",
+      });
+
+      return;
+    }
 
     try {
       setSpinnerLoading(true);
@@ -330,7 +346,6 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
         });
         toast({
           description: "Successfull",
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
       } else if (response.status === 201 || response.status == 202) {
@@ -372,7 +387,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     fireModified: boolean
   ) => {
     setBackgroundColor(color);
-    // @ts-expect-error
+    // @ts-ignore
     const canvasRect = canvas
       .getObjects()
       // Fabric.js objects may have custom 'name' property
@@ -402,7 +417,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
   const handleRemoveBackground = () => {
     if (backgroundColor !== "transparent") {
       setBackgroundColor("transparent");
-      // @ts-expect-error
+      // @ts-ignore
       const canvasRect = canvas
         .getObjects()
         // Fabric.js objects may have custom 'name' property
@@ -751,9 +766,9 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
                   <CardDescription className="text-lg font-medium text-gray-800 dark:text-yellow-400 flex items-center gap-2">
                     <Crown className="w-5 h-5 text-yellow-500" />
                     Enhance Image
-                    <span className="text-xs font-normal text-yellow-500 ml-2">
+                    {/* <span className="text-xs font-normal text-yellow-500 ml-2">
                       Premium
-                    </span>
+                    </span> */}
                   </CardDescription>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">

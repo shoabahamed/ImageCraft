@@ -252,7 +252,7 @@ export default function UserProfilePage() {
             Bookmarks
           </button>
 
-          <button
+          {/* <button
             className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "subscription"
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
@@ -261,7 +261,7 @@ export default function UserProfilePage() {
             onClick={() => setActiveTab("subscription")}
           >
             Subscription
-          </button>
+          </button> */}
           <button
             className={`py-2 px-4 font-medium transition-colors duration-200 ${
               activeTab === "reports"
@@ -300,7 +300,7 @@ export default function UserProfilePage() {
           {activeTab === "bookmarks" && <BookmarkSection userId={userId} />}
 
           {/* Bookmark Cards */}
-          {activeTab === "subscription" && <SubscriptionSection />}
+          {/* {activeTab === "subscription" && <SubscriptionSection />} */}
 
           {/* Reports Cards - No Create Project Button */}
           {activeTab === "reports" && <ReportSection userId={userId} />}

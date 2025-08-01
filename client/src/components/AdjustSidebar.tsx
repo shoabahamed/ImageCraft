@@ -151,13 +151,6 @@ const AdjustSidebar = ({
   ).current;
 
   const handleColorFilters = (filterName: string, value: number) => {
-    addLog({
-      section: "adjust",
-      tab: "color",
-      event: "update",
-      message: `${filterName} filter value changed from ${value} to ${value}`,
-    });
-
     const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
@@ -440,8 +433,19 @@ const AdjustSidebar = ({
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
 
-    // Find the object named "Frame" or starting with "Frame"
+    // get the bounding rect of the image
     const bounds = getRotatedBoundingBox(image);
+
+    // find the frame Object
+    const frameObject = canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+
+    // if clipPath exist make it null so that we get the correct dataUrl
+    if (imageRef.current.clipPath && frameObject) {
+      imageRef.current.clipPath = null;
+    }
+
     // @ts-ignore
     const dataURL = canvas.toDataURL({
       format: "png",
@@ -474,7 +478,11 @@ const AdjustSidebar = ({
 
       //  set visible = true for all objects other than image type
       canvas.getObjects().forEach((obj) => {
-        if (obj.type !== "image" && obj?.name.startsWith("Frame")) {
+        if (
+          obj.type !== "image" && // @ts-ignore
+          obj?.name?.startsWith("Frame") && // @ts-ignore
+          obj?.name?.startsWith("liquifyCircle")
+        ) {
           obj.set("visible", true);
         }
       });
@@ -486,15 +494,21 @@ const AdjustSidebar = ({
         .getObjects() // @ts-ignore
         .find((obj) => obj.setCoords());
 
+      if (frameObject) {
+        imageRef.current.clipPath = frameObject;
+      }
+
+      canvas.requestRenderAll();
       setTimeout(() => {
         imageRef.current.filters = []; // not sure if it is needed
         currentFiltersRef.current = [];
         imageRef.current.applyFilters();
 
         disableSavingIntoStackRef.current = false;
-        setLoadState(false);
-        canvas.renderAll();
+
         canvas.fire("object:modified");
+
+        setLoadState(false);
       }, 1000);
     });
   };
@@ -582,7 +596,15 @@ const AdjustSidebar = ({
                         throttledRedBrightness(e[0]);
                       }}
                       onValueCommit={(e) => {
-                        handleColorFilters("brightnessRed", e[0]);
+                        const filterName = "brightnessRed";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -604,7 +626,16 @@ const AdjustSidebar = ({
                         throttledGreenBrightness(e[0]);
                         // handleColorFilters("brightnessGreen", e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "brigthnessGreen";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -625,7 +656,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledBlueBrightness(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "brightnessBlue";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -646,7 +686,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledGammaRed(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "gammaRed";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -667,7 +716,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledGammaGreen(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "gammaGreen";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -687,7 +745,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledGammaBlue(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "gammaBlue";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -708,7 +775,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledContrast(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "contrast";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -728,7 +804,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledSaturation(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "saturation";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -748,7 +833,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledVibrance(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "vibrance";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />
@@ -769,7 +863,16 @@ const AdjustSidebar = ({
                       onValueChange={(e) => {
                         throttledHue(e[0]);
                       }}
-                      onValueCommit={() => {
+                      onValueCommit={(e) => {
+                        const filterName = "hueRotation";
+                        addLog({
+                          section: "adjust",
+                          tab: "color",
+                          event: "update",
+                          message: `${filterName} filter value changed to ${e[0]}`,
+                        });
+
+                        handleColorFilters(filterName, e[0]);
                         canvas.fire("object:modified");
                       }}
                     />

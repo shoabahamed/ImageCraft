@@ -20,10 +20,10 @@ import { useLogContext } from "@/hooks/useLogContext";
 import useDrawStore from "@/hooks/appStore/DrawStore";
 
 type DrawProps = {
-  canvas: fabric.Canvas;
+  canvasRef: React.RefObject<fabric.Canvas>;
 };
 
-const Draw = ({ canvas }: DrawProps) => {
+const Draw = ({ canvasRef }: DrawProps) => {
   // const { firstLoad, setFirstLoad } = useState(false);
   // @ts-ignore
   const { selectedObject, setSelectedObject } = useCanvasObjects();
@@ -69,23 +69,30 @@ const Draw = ({ canvas }: DrawProps) => {
   };
 
   useEffect(() => {
-    if (canvas) {
+    if (canvasRef.current) {
       if (brushType !== "none") {
-        canvas.isDrawingMode = true;
-        const brush = createBrush(canvas, brushType, brushColor, brushSize);
-        canvas.freeDrawingBrush = brush;
+        setSelectedObject(null); // Clear selected object when drawing mode is enabled
+        canvasRef.current.discardActiveObject();
+        canvasRef.current.isDrawingMode = true;
+        const brush = createBrush(
+          canvasRef.current,
+          brushType,
+          brushColor,
+          brushSize
+        );
+        canvasRef.current.freeDrawingBrush = brush;
       } else {
-        canvas.isDrawingMode = false;
+        canvasRef.current.isDrawingMode = false;
       }
     }
 
     return () => {
-      canvas.isDrawingMode = false;
+      canvasRef.current.isDrawingMode = false;
     };
-  }, [canvas, brushType, brushColor, brushSize]);
+  }, [canvasRef.current, brushType, brushColor, brushSize]);
 
   const clearBrushStrokes = () => {
-    if (!canvas) return;
+    if (!canvasRef.current) return;
     addLog({
       section: "draw",
       tab: "draw",
@@ -94,7 +101,7 @@ const Draw = ({ canvas }: DrawProps) => {
     });
 
     // Filter objects that are created in drawing mode
-    const objectsToRemove = canvas.getObjects().filter((obj) => {
+    const objectsToRemove = canvasRef.current.getObjects().filter((obj) => {
       // Exclude objects that are not part of brush strokes
       return (
         obj.type === "path" || // Pencil Brush objects
@@ -105,13 +112,13 @@ const Draw = ({ canvas }: DrawProps) => {
     });
 
     // Remove the filtered objects
-    objectsToRemove.forEach((obj) => canvas.remove(obj));
+    objectsToRemove.forEach((obj) => canvasRef.current.remove(obj));
 
-    canvas.renderAll(); // Refresh the canvas
+    canvasRef.current.renderAll(); // Refresh the canvas
   };
 
   useEffect(() => {
-    if (!canvas) return;
+    if (!canvasRef.current) return;
 
     const handlePathCreated = () => {
       addLog({
@@ -122,14 +129,14 @@ const Draw = ({ canvas }: DrawProps) => {
       });
     };
     // Attach event listener for path creation
-    canvas.on("path:created", handlePathCreated);
+    canvasRef.current.on("path:created", handlePathCreated);
 
     // Cleanup event listeners on unmount or canvas changes
     return () => {
       // Attach event listener for path creation
-      canvas.off("path:created", handlePathCreated);
+      canvasRef.current.off("path:created", handlePathCreated);
     };
-  }, [canvas, setSelectedObject]);
+  }, [canvasRef.current, setSelectedObject]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full gap-4">

@@ -95,8 +95,8 @@ const AdjustSidebarAdvanced = ({
   useEffect(() => {
     return () => {
       console.log("deactivated liquidify tool from use Effect");
-      deactivateSwril();
-      deactivateBulge();
+      deactivateSwril(false);
+      deactivateBulge(false);
       setActivateLiquidifyTool("");
     };
   }, []);
@@ -125,16 +125,16 @@ const AdjustSidebarAdvanced = ({
       if (prevTabRef.current === "morph") {
         console.log("morph deactivated");
         setActivateLiquidifyTool("");
-        deactivateBulge();
-        deactivateSwril();
+        deactivateBulge(false);
+        deactivateSwril(false);
       }
 
       // Deactivate liquify tools when switching to edge or hist tabs
       if (activateTab === "edge" || activateTab === "hist") {
         console.log("switching to edge/hist, deactivating liquify tools");
         setActivateLiquidifyTool("");
-        deactivateBulge();
-        deactivateSwril();
+        deactivateBulge(false);
+        deactivateSwril(false);
       }
     }
 
@@ -152,11 +152,11 @@ const AdjustSidebarAdvanced = ({
     });
 
     disableSavingIntoStackRef.current = true;
-    // currentFilters can be null, map is on array. filterName is valid on FilterEntry.
+
     const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      //@ts-ignore
       (f) => f.filterName
     );
-
     allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
     setLoadState(true);
 
@@ -187,19 +187,29 @@ const AdjustSidebarAdvanced = ({
 
     canvasRef.current.setZoom(1);
     canvasRef.current
-      .getObjects() // Canvas.getObjects() is okay, find might be an issue if empty.
+      .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
 
-    // Find the object named "Frame" or starting with "Frame"
+    // get the bounding rect of the image
     const bounds = getRotatedBoundingBox(imageRef.current);
-    // canvas.toDataURL is a valid method.
+
+    // find the frame Object
+    const frameObject = canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+
+    // if clipPath exist make it null so that we get the correct dataUrl
+    if (imageRef.current.clipPath && frameObject) {
+      imageRef.current.clipPath = null;
+    }
+
+    // @ts-ignore
     const dataURL = canvasRef.current.toDataURL({
       format: "png",
       left: bounds.left,
       top: bounds.top,
       width: bounds.width,
       height: bounds.height,
-      multiplier: 1,
     });
 
     FabricImage.fromURL(dataURL).then((img) => {
@@ -207,7 +217,6 @@ const AdjustSidebarAdvanced = ({
       resetFilters();
       // Replace the image content
 
-      console.log("djf");
       imageRef.current.setElement(img.getElement());
 
       imageRef.current.scaleX = scaleX;
@@ -224,7 +233,11 @@ const AdjustSidebarAdvanced = ({
 
       //  set visible = true for all objects other than image type
       canvasRef.current.getObjects().forEach((obj) => {
-        if (obj.type !== "image" && obj?.name.startsWith("Frame")) {
+        if (
+          obj.type !== "image" && // @ts-ignore
+          obj?.name?.startsWith("Frame") && // @ts-ignore
+          obj?.name?.startsWith("liquifyCircle")
+        ) {
           obj.set("visible", true);
         }
       });
@@ -233,19 +246,24 @@ const AdjustSidebarAdvanced = ({
       canvasRef.current.setViewportTransform(originalViewportTransform);
       canvasRef.current.setZoom(originalZoom);
       canvasRef.current
-        .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
+        .getObjects() // @ts-ignore
         .find((obj) => obj.setCoords());
 
+      if (frameObject) {
+        imageRef.current.clipPath = frameObject;
+      }
+
+      canvasRef.current.requestRenderAll();
       setTimeout(() => {
         imageRef.current.filters = []; // not sure if it is needed
         currentFiltersRef.current = [];
         imageRef.current.applyFilters();
 
         disableSavingIntoStackRef.current = false;
-        setLoadState(false);
 
-        canvasRef.current.requestRenderAll();
         canvasRef.current.fire("object:modified");
+
+        setLoadState(false);
       }, 1000);
     });
   };
@@ -295,8 +313,8 @@ const AdjustSidebarAdvanced = ({
 
     // Find or create the circle
     const liquifyCircle = canvasRef.current
-      .getObjects()
-      .find((obj) => obj.name === "liquifyCircle");
+      .getObjects() // @ts-ignore
+      .find((obj) => obj?.name === "liquifyCircle");
 
     if (!liquifyCircle) return;
 
@@ -456,14 +474,16 @@ const AdjustSidebarAdvanced = ({
     canvasRef.current?.on("mouse:move", handleSwirlCircleArea);
   };
 
-  const deactivateSwril = () => {
+  const deactivateSwril = (addToLog: boolean = true) => {
     console.log("Deactivating swirl - removing event listeners");
-    addLog({
-      section: "adjust",
-      tab: "swirl",
-      event: "update",
-      message: `Deactivated swirl filter`,
-    });
+    if (addToLog) {
+      addLog({
+        section: "adjust",
+        tab: "swirl",
+        event: "update",
+        message: `Deactivated swirl filter`,
+      });
+    }
 
     if (intervalIdRef.current) {
       clearInterval(intervalIdRef.current);
@@ -490,8 +510,8 @@ const AdjustSidebarAdvanced = ({
 
     // Find or create the circle
     const liquifyCircle = canvasRef.current
-      .getObjects()
-      .find((obj) => obj.name === "liquifyCircle");
+      .getObjects() // @ts-ignore
+      .find((obj) => obj?.name === "liquifyCircle");
 
     if (!liquifyCircle) return;
 
@@ -542,14 +562,16 @@ const AdjustSidebarAdvanced = ({
     canvasRef.current?.on("mouse:move", handleBulgeCircleArea);
   };
 
-  const deactivateBulge = () => {
+  const deactivateBulge = (addToLog: boolean = true) => {
     console.log("deactivated bulge");
-    addLog({
-      section: "adjust",
-      tab: "bulge",
-      event: "update",
-      message: `Deactivated bulge filter`,
-    });
+    if (addToLog) {
+      addLog({
+        section: "adjust",
+        tab: "bulge",
+        event: "update",
+        message: `Deactivated bulge filter`,
+      });
+    }
 
     setActiveToolNameRef(activeToolNameRef, "");
     canvasRef.current?.off("mouse:down", startBulge);
@@ -728,99 +750,69 @@ const AdjustSidebarAdvanced = ({
     recoverFilter();
   };
 
-  // do not delete the function below it is saved for reference
-  // const applyHistogram = async () => {
-  //   setLoadState(true);
-  //   const filtersList = [...(currentFiltersRef.current || [])];
-
-  //   // 1. Get the base64 image
-  //   const canvasImageBase64 = getCanvasDataUrl(
-  //     canvasRef.current,
-  //     imageRef.current,
-  //     false,
-  //     true
-  //   );
-
-  //   // 2. Load image and get pixel data
-  //   const img = new window.Image();
-  //   img.src = canvasImageBase64;
-
-  //   img.onload = () => {
-  //     // Create a temp canvas
-  //     const tempCanvas = document.createElement("canvas");
-  //     tempCanvas.width = img.width;
-  //     tempCanvas.height = img.height;
-  //     const ctx = tempCanvas.getContext("2d");
-  //     if (!ctx) return;
-
-  //     ctx.drawImage(img, 0, 0);
-  //     const imageData = ctx.getImageData(0, 0, img.width, img.height);
-  //     const data = imageData.data;
-
-  //     // 3. Convert RGB to YCrCb and compute histogram on Y channel
-  //     const hist = new Array(256).fill(0);
-  //     for (let i = 0; i < data.length; i += 4) {
-  //       const r = data[i];
-  //       const g = data[i + 1];
-  //       const b = data[i + 2];
-
-  //       // Convert RGB to YCrCb and extract Y (brightness) component
-  //       const y = 0.299 * r + 0.587 * g + 0.114 * b;
-
-  //       // Convert Y to 0-255 range for histogram
-  //       const yValue = Math.round(y);
-  //       hist[yValue]++;
-  //     }
-
-  //     // 4. Compute CDF
-  //     const cdf = new Array(256).fill(0);
-  //     cdf[0] = hist[0];
-  //     for (let i = 1; i < 256; i++) {
-  //       cdf[i] = cdf[i - 1] + hist[i];
-  //     }
-  //     // Normalize CDF to 0-1 range for the shader
-  //     const cdfMin = cdf.find((v) => v > 0) || 0;
-  //     const total = cdf[255];
-
-  //     const cdfNorm = cdf.map((v) => ((v - cdfMin) * 255) / (total - cdfMin));
-  //     const cdfRound = cdfNorm.map((v) => Math.abs(Math.round(v)));
-
-  //     // 5. Add Histogram filter with CDF array (not texture)
-
-  //     console.log(cdfRound);
-
-  //     updateOrInsert(
-  //       filtersList,
-  //       "histogram",
-  //       new HistorgramFilter({ cdf: cdfRound }),
-  //       true
-  //     );
-
-  //     const filterInstances = filtersList.map(
-  //       (tempFilter) => tempFilter.instance
-  //     );
-
-  //     imageRef.current.filters = filterInstances;
-  //     imageRef.current.applyFilters();
-  //     canvasRef.current?.requestRenderAll();
-
-  //     setCurrentFilters(filtersList);
-  //     currentFiltersRef.current = filtersList;
-
-  //     setLoadState(false);
-  //     // handleApplyFilter();
-  //   };
-  // };
-
   const applyHistogram = async () => {
-    setLoadState(true);
-    // 1. Get the base64 image
-    const canvasImageBase64 = getCanvasDataUrl(
-      canvasRef.current,
-      imageRef.current,
-      false,
-      true
+    disableSavingIntoStackRef.current = true;
+
+    const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      //@ts-ignore
+      (f) => f.filterName
     );
+    allFiltersRef.current = allFiltersRef.current
+      .concat(filtersInCanvas)
+      .concat(["global Hist Equilize"]);
+    setLoadState(true);
+
+    // Temporarily set visible = false for all objects other than image type
+    canvasRef.current.getObjects().forEach((obj) => {
+      if (obj.type !== "image") {
+        obj.visible = false;
+      }
+    });
+
+    const scaleX = imageRef.current.scaleX;
+    const scaleY = imageRef.current.scaleY;
+    const flipX = imageRef.current.flipX;
+    const filpY = imageRef.current.flipY;
+    const angle = imageRef.current.angle;
+
+    imageRef.current.angle = 0;
+    imageRef.current.scaleX = 1;
+    imageRef.current.scaleY = 1;
+    imageRef.current.flipX = false;
+    imageRef.current.flipY = false;
+
+    const originalViewportTransform = canvasRef.current.viewportTransform;
+    const originalZoom = canvasRef.current.getZoom();
+
+    // Reset to neutral
+    canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    canvasRef.current.setZoom(1);
+    canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+
+    // get the bounding rect of the image
+    const bounds = getRotatedBoundingBox(imageRef.current);
+
+    // find the frame Object
+    const frameObject = canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+
+    // if clipPath exist make it null so that we get the correct dataUrl
+    if (imageRef.current.clipPath && frameObject) {
+      imageRef.current.clipPath = null;
+    }
+
+    // @ts-ignore
+    const canvasImageBase64 = canvasRef.current.toDataURL({
+      format: "png",
+      left: bounds.left,
+      top: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+    });
 
     // 2. Load image and get pixel data
     const img = new window.Image();
@@ -899,54 +891,6 @@ const AdjustSidebarAdvanced = ({
       ctx.putImageData(imageData, 0, 0);
       const base64Result = tempCanvas.toDataURL("image/png");
 
-      // addLog({
-      //   section: "adjust",
-      //   tab: "mode",
-      //   event: "update",
-      //   message: "filters permanently applied",
-      //   param: "filters",
-      //   objType: "image",
-      // });
-
-      disableSavingIntoStackRef.current = true;
-      // currentFilters can be null, map is on array. filterName is valid on FilterEntry.
-      const filtersInCanvas: string[] = currentFiltersRef.current.map(
-        (f) => f.filterName
-      );
-
-      allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
-      setLoadState(true);
-
-      // Temporarily set visible = false for all objects other than image type
-      canvasRef.current.getObjects().forEach((obj) => {
-        if (obj.type !== "image") {
-          obj.visible = false;
-        }
-      });
-
-      const scaleX = imageRef.current.scaleX;
-      const scaleY = imageRef.current.scaleY;
-      const flipX = imageRef.current.flipX;
-      const filpY = imageRef.current.flipY;
-      const angle = imageRef.current.angle;
-
-      imageRef.current.angle = 0;
-      imageRef.current.scaleX = 1;
-      imageRef.current.scaleY = 1;
-      imageRef.current.flipX = false;
-      imageRef.current.flipY = false;
-
-      const originalViewportTransform = canvasRef.current.viewportTransform;
-      const originalZoom = canvasRef.current.getZoom();
-
-      // Reset to neutral
-      canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
-
-      canvasRef.current.setZoom(1);
-      canvasRef.current
-        .getObjects() // Canvas.getObjects() is okay, find might be an issue if empty.
-        .find((obj) => obj.setCoords());
-
       FabricImage.fromURL(base64Result).then((img) => {
         if (!img || !imageRef.current) return;
         resetFilters();
@@ -969,7 +913,11 @@ const AdjustSidebarAdvanced = ({
 
         //  set visible = true for all objects other than image type
         canvasRef.current.getObjects().forEach((obj) => {
-          if (obj.type !== "image" && obj?.name.startsWith("Frame")) {
+          if (
+            obj.type !== "image" && // @ts-ignore
+            obj?.name.startsWith("Frame") && // @ts-ignore
+            obj?.name.startsWith("liquifyCircle")
+          ) {
             obj.set("visible", true);
           }
         });
@@ -981,6 +929,10 @@ const AdjustSidebarAdvanced = ({
           .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
           .find((obj) => obj.setCoords());
 
+        if (frameObject) {
+          imageRef.current.clipPath = frameObject;
+        }
+        canvasRef.current.requestRenderAll();
         setTimeout(() => {
           imageRef.current.filters = []; // not sure if it is needed
           currentFiltersRef.current = [];
@@ -989,7 +941,6 @@ const AdjustSidebarAdvanced = ({
           disableSavingIntoStackRef.current = false;
           setLoadState(false);
 
-          canvasRef.current.requestRenderAll();
           canvasRef.current.fire("object:modified");
         }, 1000);
       });
@@ -997,14 +948,68 @@ const AdjustSidebarAdvanced = ({
   };
 
   const applyContrastStreching = async () => {
-    setLoadState(true);
-    // 1. Get the base64 image
-    const canvasImageBase64 = getCanvasDataUrl(
-      canvasRef.current,
-      imageRef.current,
-      false,
-      true
+    disableSavingIntoStackRef.current = true;
+
+    const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      //@ts-ignore
+      (f) => f.filterName
     );
+    allFiltersRef.current = allFiltersRef.current
+      .concat(filtersInCanvas)
+      .concat(["contrast streching"]);
+    setLoadState(true);
+
+    // Temporarily set visible = false for all objects other than image type
+    canvasRef.current.getObjects().forEach((obj) => {
+      if (obj.type !== "image") {
+        obj.visible = false;
+      }
+    });
+
+    const scaleX = imageRef.current.scaleX;
+    const scaleY = imageRef.current.scaleY;
+    const flipX = imageRef.current.flipX;
+    const filpY = imageRef.current.flipY;
+    const angle = imageRef.current.angle;
+
+    imageRef.current.angle = 0;
+    imageRef.current.scaleX = 1;
+    imageRef.current.scaleY = 1;
+    imageRef.current.flipX = false;
+    imageRef.current.flipY = false;
+
+    const originalViewportTransform = canvasRef.current.viewportTransform;
+    const originalZoom = canvasRef.current.getZoom();
+
+    // Reset to neutral
+    canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    canvasRef.current.setZoom(1);
+    canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+
+    // get the bounding rect of the image
+    const bounds = getRotatedBoundingBox(imageRef.current);
+
+    // find the frame Object
+    const frameObject = canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+
+    // if clipPath exist make it null so that we get the correct dataUrl
+    if (imageRef.current.clipPath && frameObject) {
+      imageRef.current.clipPath = null;
+    }
+
+    // @ts-ignore
+    const canvasImageBase64 = canvasRef.current.toDataURL({
+      format: "png",
+      left: bounds.left,
+      top: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+    });
 
     // 2. Load image and get pixel data
     const img = new window.Image();
@@ -1078,44 +1083,6 @@ const AdjustSidebarAdvanced = ({
       ctx.putImageData(imageData, 0, 0);
       const base64Result = tempCanvas.toDataURL("image/png");
 
-      disableSavingIntoStackRef.current = true;
-      // currentFilters can be null, map is on array. filterName is valid on FilterEntry.
-      const filtersInCanvas: string[] = currentFiltersRef.current.map(
-        (f) => f.filterName
-      );
-
-      allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
-
-      // Temporarily set visible = false for all objects other than image type
-      canvasRef.current.getObjects().forEach((obj) => {
-        if (obj.type !== "image") {
-          obj.visible = false;
-        }
-      });
-
-      const scaleX = imageRef.current.scaleX;
-      const scaleY = imageRef.current.scaleY;
-      const flipX = imageRef.current.flipX;
-      const filpY = imageRef.current.flipY;
-      const angle = imageRef.current.angle;
-
-      imageRef.current.angle = 0;
-      imageRef.current.scaleX = 1;
-      imageRef.current.scaleY = 1;
-      imageRef.current.flipX = false;
-      imageRef.current.flipY = false;
-
-      const originalViewportTransform = canvasRef.current.viewportTransform;
-      const originalZoom = canvasRef.current.getZoom();
-
-      // Reset to neutral
-      canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
-
-      canvasRef.current.setZoom(1);
-      canvasRef.current
-        .getObjects() // Canvas.getObjects() is okay, find might be an issue if empty.
-        .find((obj) => obj.setCoords());
-
       FabricImage.fromURL(base64Result).then((img) => {
         if (!img || !imageRef.current) return;
         resetFilters();
@@ -1138,7 +1105,11 @@ const AdjustSidebarAdvanced = ({
 
         //  set visible = true for all objects other than image type
         canvasRef.current.getObjects().forEach((obj) => {
-          if (obj.type !== "image" && obj?.name.startsWith("Frame")) {
+          if (
+            obj.type !== "image" && // @ts-ignore
+            obj?.name.startsWith("Frame") && // @ts-ignore
+            obj?.name.startsWith("liquifyCircle")
+          ) {
             obj.set("visible", true);
           }
         });
@@ -1150,6 +1121,10 @@ const AdjustSidebarAdvanced = ({
           .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
           .find((obj) => obj.setCoords());
 
+        if (frameObject) {
+          imageRef.current.clipPath = frameObject;
+        }
+        canvasRef.current.requestRenderAll();
         setTimeout(() => {
           imageRef.current.filters = []; // not sure if it is needed
           currentFiltersRef.current = [];
@@ -1158,7 +1133,6 @@ const AdjustSidebarAdvanced = ({
           disableSavingIntoStackRef.current = false;
           setLoadState(false);
 
-          canvasRef.current.requestRenderAll();
           canvasRef.current.fire("object:modified");
         }, 1000);
       });
@@ -1166,14 +1140,69 @@ const AdjustSidebarAdvanced = ({
   };
 
   const applyWhiteBalance = async () => {
-    setLoadState(true);
-    // 1. Get the base64 image
-    const canvasImageBase64 = getCanvasDataUrl(
-      canvasRef.current,
-      imageRef.current,
-      false,
-      true
+    disableSavingIntoStackRef.current = true;
+
+    const filtersInCanvas: string[] = currentFiltersRef.current.map(
+      //@ts-ignore
+      (f) => f.filterName
     );
+
+    allFiltersRef.current = allFiltersRef.current
+      .concat(filtersInCanvas)
+      .concat(["white balance"]);
+    setLoadState(true);
+
+    // Temporarily set visible = false for all objects other than image type
+    canvasRef.current.getObjects().forEach((obj) => {
+      if (obj.type !== "image") {
+        obj.visible = false;
+      }
+    });
+
+    const scaleX = imageRef.current.scaleX;
+    const scaleY = imageRef.current.scaleY;
+    const flipX = imageRef.current.flipX;
+    const filpY = imageRef.current.flipY;
+    const angle = imageRef.current.angle;
+
+    imageRef.current.angle = 0;
+    imageRef.current.scaleX = 1;
+    imageRef.current.scaleY = 1;
+    imageRef.current.flipX = false;
+    imageRef.current.flipY = false;
+
+    const originalViewportTransform = canvasRef.current.viewportTransform;
+    const originalZoom = canvasRef.current.getZoom();
+
+    // Reset to neutral
+    canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    canvasRef.current.setZoom(1);
+    canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.setCoords());
+
+    // get the bounding rect of the image
+    const bounds = getRotatedBoundingBox(imageRef.current);
+
+    // find the frame Object
+    const frameObject = canvasRef.current
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+
+    // if clipPath exist make it null so that we get the correct dataUrl
+    if (imageRef.current.clipPath && frameObject) {
+      imageRef.current.clipPath = null;
+    }
+
+    // @ts-ignore
+    const canvasImageBase64 = canvasRef.current.toDataURL({
+      format: "png",
+      left: bounds.left,
+      top: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+    });
 
     // 2. Load image and get pixel data
     const img = new window.Image();
@@ -1306,44 +1335,6 @@ const AdjustSidebarAdvanced = ({
       ctx.putImageData(imageData, 0, 0);
       const base64Result = tempCanvas.toDataURL("image/png");
 
-      disableSavingIntoStackRef.current = true;
-      // currentFilters can be null, map is on array. filterName is valid on FilterEntry.
-      const filtersInCanvas: string[] = currentFiltersRef.current.map(
-        (f) => f.filterName
-      );
-
-      allFiltersRef.current = allFiltersRef.current.concat(filtersInCanvas);
-
-      // Temporarily set visible = false for all objects other than image type
-      canvasRef.current.getObjects().forEach((obj) => {
-        if (obj.type !== "image") {
-          obj.visible = false;
-        }
-      });
-
-      const scaleX = imageRef.current.scaleX;
-      const scaleY = imageRef.current.scaleY;
-      const flipX = imageRef.current.flipX;
-      const filpY = imageRef.current.flipY;
-      const angle = imageRef.current.angle;
-
-      imageRef.current.angle = 0;
-      imageRef.current.scaleX = 1;
-      imageRef.current.scaleY = 1;
-      imageRef.current.flipX = false;
-      imageRef.current.flipY = false;
-
-      const originalViewportTransform = canvasRef.current.viewportTransform;
-      const originalZoom = canvasRef.current.getZoom();
-
-      // Reset to neutral
-      canvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
-
-      canvasRef.current.setZoom(1);
-      canvasRef.current
-        .getObjects() // Canvas.getObjects() is okay, find might be an issue if empty.
-        .find((obj) => obj.setCoords());
-
       FabricImage.fromURL(base64Result).then((img) => {
         if (!img || !imageRef.current) return;
         resetFilters();
@@ -1366,7 +1357,11 @@ const AdjustSidebarAdvanced = ({
 
         //  set visible = true for all objects other than image type
         canvasRef.current.getObjects().forEach((obj) => {
-          if (obj.type !== "image" && obj?.name.startsWith("Frame")) {
+          if (
+            obj.type !== "image" && // @ts-ignore
+            obj?.name.startsWith("Frame") && // @ts-ignore
+            obj?.name.startsWith("liquifyCircle")
+          ) {
             obj.set("visible", true);
           }
         });
@@ -1378,6 +1373,10 @@ const AdjustSidebarAdvanced = ({
           .getObjects() // fabric.Canvas.getObjects() is okay, find might be an issue if empty.
           .find((obj) => obj.setCoords());
 
+        if (frameObject) {
+          imageRef.current.clipPath = frameObject;
+        }
+        canvasRef.current.requestRenderAll();
         setTimeout(() => {
           imageRef.current.filters = []; // not sure if it is needed
           currentFiltersRef.current = [];
@@ -1386,7 +1385,6 @@ const AdjustSidebarAdvanced = ({
           disableSavingIntoStackRef.current = false;
           setLoadState(false);
 
-          canvasRef.current.requestRenderAll();
           canvasRef.current.fire("object:modified");
         }, 1000);
       });
@@ -1402,10 +1400,10 @@ const AdjustSidebarAdvanced = ({
         className="w-full flex-1 flex flex-col rounded-none"
       >
         <div className="border-b border-gray-200 dark:border-gray-800">
-          <TabsList className="w-full grid grid-cols-4 rounded-none">
+          <TabsList className="w-full grid grid-cols-3 rounded-none">
             <TabsTrigger value="reflect">Reflect</TabsTrigger>
             <TabsTrigger value="morph">Liquify</TabsTrigger>
-            <TabsTrigger value="edge">Edge</TabsTrigger>
+            {/* <TabsTrigger value="edge">Edge</TabsTrigger> */}
             <TabsTrigger value="hist">Hist</TabsTrigger>
           </TabsList>
         </div>
@@ -1670,7 +1668,7 @@ const AdjustSidebarAdvanced = ({
           </div>
         </TabsContent>
 
-        <TabsContent
+        {/* <TabsContent
           value="edge"
           className="w-full flex flex-col justify-center items-center space-y-2"
         >
@@ -1701,7 +1699,7 @@ const AdjustSidebarAdvanced = ({
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent
           value="hist"

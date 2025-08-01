@@ -69,13 +69,6 @@ const DetailFiltersTab = ({ canvas, imageRef }: Props) => {
   ).current;
 
   const handleDetailsFilters = (filterName: string, value: number) => {
-    addLog({
-      section: "adjust",
-      tab: "detail",
-      event: "update",
-      message: `${filterName} filter value changed from ${value} to ${value}`,
-    });
-
     const filtersList = [...(currentFiltersRef.current || [])];
     console.log("old filters", filtersList);
 
@@ -221,7 +214,14 @@ const DetailFiltersTab = ({ canvas, imageRef }: Props) => {
                 onValueChange={(e) => {
                   throttledOpacity(e[0]);
                 }}
-                onValueCommit={() => {
+                onValueCommit={(e) => {
+                  const filterName = "opacity";
+                  addLog({
+                    section: "adjust",
+                    tab: "detail",
+                    event: "update",
+                    message: `${filterName} filter value changed to ${e[0]}`,
+                  });
                   canvas.fire("object:modified");
                 }}
               />
@@ -241,7 +241,14 @@ const DetailFiltersTab = ({ canvas, imageRef }: Props) => {
                 onValueChange={(e) => {
                   throttledBlur(e[0]);
                 }}
-                onValueCommit={() => {
+                onValueCommit={(e) => {
+                  const filterName = "blur";
+                  addLog({
+                    section: "adjust",
+                    tab: "detail",
+                    event: "update",
+                    message: `${filterName} filter value changed to ${e[0]}`,
+                  });
                   canvas.fire("object:modified");
                 }}
               />
@@ -261,7 +268,14 @@ const DetailFiltersTab = ({ canvas, imageRef }: Props) => {
                 onValueChange={(e) => {
                   throttledNoise(e[0]);
                 }}
-                onValueCommit={() => {
+                onValueCommit={(e) => {
+                  const filterName = "noise";
+                  addLog({
+                    section: "adjust",
+                    tab: "detail",
+                    event: "update",
+                    message: `${filterName} filter value changed to ${e[0]}`,
+                  });
                   canvas.fire("object:modified");
                 }}
               />
@@ -281,7 +295,14 @@ const DetailFiltersTab = ({ canvas, imageRef }: Props) => {
                 onValueChange={(e) => {
                   throttledPixelate(e[0]);
                 }}
-                onValueCommit={() => {
+                onValueCommit={(e) => {
+                  const filterName = "pixelate";
+                  addLog({
+                    section: "adjust",
+                    tab: "detail",
+                    event: "update",
+                    message: `${filterName} filter value changed to ${e[0]}`,
+                  });
                   canvas.fire("object:modified");
                 }}
               />
@@ -301,7 +322,14 @@ const DetailFiltersTab = ({ canvas, imageRef }: Props) => {
                 onValueChange={(e) => {
                   throttledSharpen(e[0]);
                 }}
-                onValueCommit={() => {
+                onValueCommit={(e) => {
+                  const filterName = "sharpen";
+                  addLog({
+                    section: "adjust",
+                    tab: "detail",
+                    event: "update",
+                    message: `${filterName} filter value changed to ${e[0]}`,
+                  });
                   canvas.fire("object:modified");
                 }}
               />

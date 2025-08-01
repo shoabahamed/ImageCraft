@@ -19,6 +19,7 @@ export default function TemplatePreview({ objects }) {
       width: containerWidth,
       height: containerHeight,
       enableRetinaScaling: false,
+      backgroundColor: "#969696",
     });
 
     fabricCanvasRef.current = fabricCanvas;

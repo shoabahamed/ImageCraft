@@ -8,10 +8,11 @@ import {
   Download,
   Save,
   Trash,
+  SquareSquare,
 } from "lucide-react";
 import IconComponent from "./icon-component";
 
-import { Canvas, FabricImage } from "fabric";
+import { Canvas, FabricImage, Point } from "fabric";
 import { useToast } from "@/hooks/use-toast";
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 import { useLogContext } from "@/hooks/useLogContext";
@@ -21,6 +22,7 @@ import { useAdjustStore } from "@/hooks/appStore/AdjustStore";
 import {
   base64ToFile,
   getCanvasDataUrl,
+  getDownloadUrl,
   getRotatedBoundingBox,
   isBase64,
   urlToBase64,
@@ -37,8 +39,8 @@ type mapStateType = {
 };
 
 type Props = {
-  canvas: Canvas;
-  image: FabricImage;
+  canvasRef: React.RefObject<Canvas>;
+  imageRef: React.RefObject<FabricImage>;
   backupImage: FabricImage;
   canvasId: string;
   imageUrl: string;
@@ -48,8 +50,8 @@ type Props = {
 };
 
 const Footer = ({
-  canvas,
-  image,
+  canvasRef,
+  imageRef,
   canvasId,
   imageUrl,
   setLoadState,
@@ -66,6 +68,7 @@ const Footer = ({
     allFiltersRef,
     currentFiltersRef,
     loadedFromSaved,
+    setZoomValue,
   } = useCanvasObjects();
   const { user } = useAuthContext();
   const { logs, addLog } = useLogContext();
@@ -104,6 +107,9 @@ const Footer = ({
       event: "save",
       message: `Saving project`,
     });
+
+    const canvas = canvasRef.current;
+    const image = imageRef.current;
 
     if (!canvas) return;
     setLoadState(true);
@@ -157,8 +163,8 @@ const Footer = ({
       const interImage = base64ToFile(mainImageSrc, "inter_image");
       let filterNames = [];
       if (currentFiltersRef.current) {
-        // @ts-ignore
         filterNames = currentFiltersRef.current.map(
+          // @ts-ignore
           (filter) => filter.filterName
         );
       }
@@ -273,13 +279,16 @@ const Footer = ({
       message: `Downloading project`,
     });
 
-    if (!canvas || !image) return;
+    const canvas = canvasRef.current;
+    const image = imageRef.current;
 
-    const dataURL = getCanvasDataUrl(canvas, image, false);
+    if (!canvas || !image) return;
+    const format = "png";
+    const dataURL = getDownloadUrl(canvas, image, true, format);
 
     const link = document.createElement("a");
     link.href = dataURL;
-    link.download = "canvas-image.png";
+    link.download = "canvas-image" + "." + format;
     link.click();
   };
 
@@ -309,8 +318,8 @@ const Footer = ({
         objType: selectedObject.type,
       });
 
-      canvas.remove(selectedObject);
-      canvas.renderAll();
+      canvasRef.current.remove(selectedObject);
+      canvasRef.current.requestRenderAll();
     }
   };
 
@@ -339,8 +348,8 @@ const Footer = ({
   const handleRestore = () => {
     // removing all objects from the canvas
 
-    canvas.getObjects().map((obj) => {
-      if (obj.type.toLowerCase() !== "image") canvas.remove(obj);
+    canvasRef.current.getObjects().map((obj) => {
+      if (obj.type.toLowerCase() !== "image") canvasRef.current.remove(obj);
     });
 
     // removing all filters
@@ -348,7 +357,8 @@ const Footer = ({
 
     // restoring the original image
     FabricImage.fromURL(imageUrl).then((img) => {
-      if (!img || !image) return;
+      if (!img || !imageRef.current) return;
+      const image = imageRef.current;
       image.setElement(img.getElement());
 
       // reset the scale to 1
@@ -383,7 +393,7 @@ const Footer = ({
 
       // Refresh canvas
       image.setCoords();
-      canvas.requestRenderAll();
+      canvasRef.current.requestRenderAll();
     });
 
     addLog({
@@ -392,6 +402,60 @@ const Footer = ({
       event: "reset",
       message: `reseted whole canvas `,
     });
+  };
+
+  const handleScreenFit = () => {
+    const containerWidth = canvasRef.current.getWidth();
+    const containerHeight = canvasRef.current.getHeight();
+
+    const imageWidth = downloadImageDimensions.imageWidth;
+    const imageHeight = downloadImageDimensions.imageHeight;
+
+    const scaleX = containerWidth / imageWidth;
+    const scaleY = containerHeight / imageHeight;
+
+    console.log("Scale X:", scaleX, "Scale Y:", scaleY);
+    const zoom = Math.min(scaleX, scaleY);
+
+    if (zoom <= 1) {
+      // Apply zoom to canvas
+      canvasRef.current.setZoom(zoom);
+      setZoomValue(zoom);
+
+      // Calculate the viewport transform to center the image
+      const vp = canvasRef.current.viewportTransform!;
+      vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+      vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+
+      imageRef.current.set({
+        left: imageWidth / 2,
+        top: imageHeight / 2,
+        originX: "center",
+        originY: "center",
+      });
+
+      const canvasRect = canvasRef.current
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.name?.startsWith("canvasRect"));
+
+      canvasRect.set({
+        left: imageWidth / 2,
+        top: imageHeight / 2,
+        originX: "center",
+        originY: "center",
+      });
+
+      canvasRef.current.setViewportTransform(vp);
+      canvasRef.current.requestRenderAll();
+    } else {
+      const center = new Point(containerWidth / 2, containerHeight / 2);
+
+      canvasRef.current.zoomToPoint(center, zoom); // handles zoom + centering together
+      setZoomValue(zoom);
+      imageRef.current.setCoords();
+
+      canvasRef.current.requestRenderAll();
+    }
   };
 
   return (
@@ -423,6 +487,15 @@ const Footer = ({
           extraStyles="px-0 py-0 md:px-1 py-1"
           handleClick={() => {
             handleRestore();
+          }}
+        />
+
+        <IconComponent
+          icon={<SquareSquare />}
+          iconName={"Fit"}
+          extraStyles="px-0 py-0 md:px-1 py-1"
+          handleClick={() => {
+            handleScreenFit();
           }}
         />
         <IconComponent

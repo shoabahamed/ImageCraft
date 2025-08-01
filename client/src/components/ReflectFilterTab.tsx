@@ -626,10 +626,10 @@ const ReflectFilterTab = ({ canvasRef, imageRef }: Props) => {
                 </svg>
               </div>
               <span className="text-sm font-medium pointer-events-none">
-                Left Diagonal
+                Right Diagonal
               </span>
             </div>
-
+            {/* 
             <div
               onClick={() =>
                 handleReflectFilter(
@@ -667,7 +667,7 @@ const ReflectFilterTab = ({ canvasRef, imageRef }: Props) => {
               <span className="text-sm font-medium pointer-events-none">
                 Right Diagonal
               </span>
-            </div>
+            </div> */}
           </div>
 
           <button

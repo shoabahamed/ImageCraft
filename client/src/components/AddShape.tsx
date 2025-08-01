@@ -557,7 +557,7 @@ const AddShape = ({ canvasRef }: Props) => {
         </Card>
       ) : null}
 
-      {shapeType === "brush" && <Draw canvas={canvasRef.current} />}
+      {shapeType === "brush" && <Draw canvasRef={canvasRef} />}
     </div>
   );
 };

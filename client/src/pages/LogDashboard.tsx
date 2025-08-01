@@ -415,7 +415,8 @@ export function Histograms({
       });
 
       const canvas = document.createElement("canvas");
-      canvas.backgroundColor = "#111111";
+
+      // canvas.backgroundColor = "#111111";
       canvas.width = img.width;
       canvas.height = img.height;
 

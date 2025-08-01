@@ -74,96 +74,195 @@ function getRotatedBoundingBox(obj: fabric.Object) {
   };
 }
 
-const getCanvasDataUrl = (  canvas: fabric.Canvas,
-  image: fabric.FabricImage, downloadFrame:boolean=false, changeAngle:boolean=false) => {
-
-    
-    const currentAngle = image.angle
-    if(changeAngle) {image.angle = 0}
-    
-
-    let dataURL: string = "";
-    const originalViewportTransform = canvas.viewportTransform;
-    const originalZoom = canvas.getZoom();
-    
-
-
-
-    // Reset to neutral
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-
-    canvas.setZoom(1);
-    canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.setCoords());
-
-
-    
-    const frameObject = canvas
-    .getObjects() // @ts-ignore
-    .find((obj) => obj.name?.startsWith("Frame"));
-
-    if(changeAngle && frameObject){
-      image.clipPath = null
-    }
-    let frameStrokeWidth;
-
-    const backgroundColor = canvas.backgroundColor
-    // Find the object named "Frame" or starting with "Frame"
-    let bounds = getRotatedBoundingBox(image);
-
-    if (frameObject && image.clipPath) {
-      canvas.backgroundColor = 'transparent'
-      frameStrokeWidth = frameObject.strokeWidth
-      frameObject.visible = false
-      frameObject.strokeWidth = 0
-      bounds = getRotatedBoundingBox(frameObject);
-    }
-
-    console.log(bounds);
-    // TODO: since scale has changed I also need to scale other objects too. No need as we never change the image size only scales changes which is show in ui
-    // @ts-ignore
-    dataURL = canvas.toDataURL({
-      format: "png",
-      left: bounds.left,
-      top: bounds.top,
-      width: bounds.width,
-      height: bounds.height,
-    });
-
-
-
-    // Restore zoom & transform
-    canvas.setViewportTransform(originalViewportTransform);
-    canvas.setZoom(originalZoom);
-    canvas
-      .getObjects() // @ts-ignore
-      .find((obj) => obj.setCoords());
-
-    //the next two line is new
-    if(frameObject && image.clipPath){
-        frameObject.visible = true
-        frameObject.strokeWidth = frameStrokeWidth
-        canvas.backgroundColor =  backgroundColor
-        frameObject.visible = true
-    }
-    
-
-    if(changeAngle) {
-      image.angle = currentAngle
-      if(frameObject){
-        frameObject.absolutePositioned = true;
-        image.clipPath = frameObject
-      }
+  const getDownloadUrl = (  canvas: fabric.Canvas,
+    image: fabric.FabricImage, downloadFrame:boolean=false, format: "jpeg" | 'png' = 'png') => {
+  
+  
+      let dataURL: string = "";
+      const originalViewportTransform = canvas.viewportTransform;
+      const originalZoom = canvas.getZoom();
       
-    }
+  
+         
+      const frameObject = canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
 
-    canvas.renderAll();
+
+
+      let frameStrokeWidth;
+      let storkeDashArray;
+      let backgroundColor; 
+
+      // if we want to download the cropped portion of the image we need set the canvas background, strokewidth and strokeDashArray to 0
+      // as they interfere with cropping
+
+      if (frameObject && image.clipPath && downloadFrame) {
+        backgroundColor = canvas.backgroundColor;
+        frameStrokeWidth = frameObject.strokeWidth;
+        storkeDashArray = frameObject.strokeDashArray;
+
+        // removing extra display options 
+        frameObject.visible = false;
+        canvas.backgroundColor = 'transparent'  
+        frameObject.strokeWidth = 0  
+        frameObject.strokeDashArray = []   
+       }
+
+  
+  
+      // Reset to neutral
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+  
+      canvas.setZoom(1);
+      canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.setCoords());
+  
+  
+
+      // Find the object named "Frame" or starting with "Frame"
+      let bounds = getRotatedBoundingBox(image);
+  
+
+      if (frameObject && image.clipPath && downloadFrame) {
+        bounds = getRotatedBoundingBox(frameObject);
+      }
+
+    
+ 
+      // @ts-ignore
+      dataURL = canvas.toDataURL({
+        format: format,
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
+      });
    
 
-    return dataURL
+
+
+
+  
+  
+      // Restore zoom & transform
+      canvas.setViewportTransform(originalViewportTransform);
+      canvas.setZoom(originalZoom);
+      canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.setCoords());
+
+        
+
+      if (frameObject && image.clipPath && downloadFrame) {
+          // restoring extra display options
+          frameObject.visible = true;
+          canvas.backgroundColor = backgroundColor 
+          frameObject.strokeWidth = frameStrokeWidth
+          frameObject.strokeDashArray = storkeDashArray
+         }
+  
+
+  
+      canvas.renderAll();
+     
+  
+      return dataURL
+        
+    }
+
+
+  const getCanvasDataUrl = (  canvas: fabric.Canvas,
+    image: fabric.FabricImage, downloadFrame:boolean=false, changeAngle:boolean=false) => {
+  
       
-  }
+      const currentAngle = image.angle
+      if(changeAngle) {image.angle = 0}
+      
+  
+      let dataURL: string = "";
+      const originalViewportTransform = canvas.viewportTransform;
+      const originalZoom = canvas.getZoom();
+      
+  
+  
+  
+      // Reset to neutral
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+  
+      canvas.setZoom(1);
+      canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.setCoords());
+  
+  
+      
+      const frameObject = canvas
+      .getObjects() // @ts-ignore
+      .find((obj) => obj.name?.startsWith("Frame"));
+  
+      if(changeAngle && frameObject){
+        image.clipPath = null
+      }
+      let frameStrokeWidth;
+  
+      const backgroundColor = canvas.backgroundColor
+      // Find the object named "Frame" or starting with "Frame"
+      let bounds = getRotatedBoundingBox(image);
+  
+      if (frameObject && image.clipPath) {
+        canvas.backgroundColor = 'transparent'
+        frameStrokeWidth = frameObject.strokeWidth
+        frameObject.visible = false
+        frameObject.strokeWidth = 0
+        bounds = getRotatedBoundingBox(frameObject);
+      }
+  
+      console.log(bounds);
+      // TODO: since scale has changed I also need to scale other objects too. No need as we never change the image size only scales changes which is show in ui
+      // @ts-ignore
+      dataURL = canvas.toDataURL({
+        format: "png",
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
+      });
+  
+  
+  
+      // Restore zoom & transform
+      canvas.setViewportTransform(originalViewportTransform);
+      canvas.setZoom(originalZoom);
+      canvas
+        .getObjects() // @ts-ignore
+        .find((obj) => obj.setCoords());
+  
+      //the next two line is new
+      if(frameObject && image.clipPath){
+          frameObject.visible = true
+          frameObject.strokeWidth = frameStrokeWidth
+          canvas.backgroundColor =  backgroundColor
+          frameObject.visible = true
+      }
+      
+  
+      if(changeAngle) {
+        image.angle = currentAngle
+        if(frameObject){
+          frameObject.absolutePositioned = true;
+          image.clipPath = frameObject
+        }
+        
+      }
+  
+      canvas.renderAll();
+     
+  
+      return dataURL
+        
+    }
 
 
   const updateOrInsert = (
@@ -221,7 +320,7 @@ function throttle<T extends (...args: any[]) => void>(func: T, limit: number) {
   };
 }
 
-export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert, setActiveToolNameRef, throttle}
+export {urlToBase64, base64ToFile, urlToFile, getRotatedBoundingBox, isBase64, getCanvasDataUrl, updateOrInsert, setActiveToolNameRef, throttle, getDownloadUrl}
 
 
 

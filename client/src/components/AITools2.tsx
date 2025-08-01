@@ -52,7 +52,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const [backendImage, setBackendImage] = useState<null | string>(null);
   const [showImageAddButton, setShowImageAddButton] = useState(false);
   const [styleImages, setStyleImages] = useState<StyleTemplate[] | []>([]);
-  const [stylizeRatio, setStylizeRatio] = useState(0.5);
+  const [stylizeRatio, setStylizeRatio] = useState(1.0);
   const currentFilters = useCommonProps((state) => state.currentFilters);
   const resetFilters = useAdjustStore((state) => state.resetFilters);
   const { setFinalImageDimensions, disableSavingIntoStackRef } =
@@ -92,6 +92,10 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
     } else {
       get_style_images();
     }
+
+    return () => {
+      removeTempStylizeImage();
+    };
   }, []);
 
   const handleImageUpload = (event) => {
@@ -169,14 +173,12 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 
         if (uploadedImage) {
           toast({
-            className: "bg-green-500 text-gray-900",
             title: "Style Transfer Successfull",
             duration: 3000,
           });
         } else {
           showStylizeImagePreview(base64Image);
           toast({
-            className: "bg-green-500 text-gray-900",
             title: "Style Transfer Successfull",
             description:
               "Do you want to replace the original image with the new one?",
@@ -307,8 +309,8 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 
     canvas.getObjects().forEach(function (obj) {
       if (
-        obj.type.toLowerCase() !== "image" &&
-        obj?.name === "canvasRect" &&
+        obj.type.toLowerCase() !== "image" && // @ts-ignore
+        obj?.name === "canvasRect" && // @ts-ignore
         obj?.name === "liquifyCircle"
       ) {
         canvas.remove(obj);
@@ -324,7 +326,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
           <DialogTrigger asChild>
             <div className="flex flex-col gap-3">
               <button className="custom-button w-full flex items-center justify-center gap-2">
-                <Crown className="w-5 h-5 text-yellow-500" />
+                {/* <Crown className="w-5 h-5 text-yellow-500" /> */}
                 Stylize Image
               </button>
             </div>
@@ -334,9 +336,9 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
               <DialogTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
                 <Crown className="w-6 h-6 text-yellow-500" />
                 Image Processing{" "}
-                <span className="text-xs font-normal text-yellow-500 ml-2">
+                {/* <span className="text-xs font-normal text-yellow-500 ml-2">
                   Premium
-                </span>
+                </span> */}
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 h-[80%]">

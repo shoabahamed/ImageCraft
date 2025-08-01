@@ -79,6 +79,10 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
   };
 
   const handleWidthChange = (e) => {
+    console.log("width change", e.target.value);
+    if (e.target.value === "") return;
+    if (isNaN(parseInt(e.target.value))) return;
+
     const newWidth = parseInt(e.target.value);
     const oldHeight = image.height;
     const oldWidth = image.width;
@@ -88,6 +92,8 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
 
     let scaleY = newHeight / oldHeight;
     const scaleX = newWidth / oldWidth;
+
+    if (scaleX <= 0 || scaleY <= 0) return;
 
     if (newWidth > 0) {
       if (maintainAspectRatio) {
@@ -135,6 +141,9 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     handleRenderingFinalDimension();
   };
   const handleHeightChange = (e) => {
+    if (e.target.value === "") return;
+    if (isNaN(parseInt(e.target.value))) return;
+
     const newHeight = parseInt(e.target.value);
     const oldHeight = image.height;
     const oldWidth = image.width;
@@ -144,6 +153,8 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
 
     const scaleY = newHeight / oldHeight;
     let scaleX = newWidth / oldWidth;
+
+    if (scaleX <= 0 || scaleY <= 0) return;
 
     if (newHeight > 0) {
       if (maintainAspectRatio) {
@@ -259,9 +270,9 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
               <Label htmlFor="height">Height</Label>
               <Input
                 id="height"
-                type="number"
+                type="text"
                 name="height"
-                value={finalImageDimensions.imageHeight}
+                value={finalImageDimensions.imageHeight.toString()}
                 onChange={handleHeightChange}
               />
             </div>
@@ -269,9 +280,9 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
               <Label htmlFor="width">Width</Label>
               <Input
                 id="width"
-                type="number"
+                type="text"
                 name="width"
-                value={finalImageDimensions.imageWidth}
+                value={finalImageDimensions.imageWidth.toString()}
                 onChange={handleWidthChange}
               />
             </div>

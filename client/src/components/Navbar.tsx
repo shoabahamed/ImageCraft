@@ -10,6 +10,7 @@ import {
   Image,
   Gem,
   Crown,
+  Shield,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -84,11 +85,10 @@ export default function Navbar({
 }: {
   canvasRef?: React.RefObject<Canvas>;
   canvasId?: string;
-  imageUrl: string;
+  imageUrl?: string;
 }) {
   const { setTheme } = useTheme();
   const { user, dispatch } = useAuthContext();
-  const { logs } = useLogContext();
   const {
     finalImageDimensions,
     originalImageDimensions,
@@ -143,6 +143,7 @@ export default function Navbar({
   // }, []);
 
   // 1. Define your form.
+
   const signupform = useForm<z.infer<typeof signupformSchema>>({
     resolver: zodResolver(signupformSchema),
     defaultValues: {
@@ -386,13 +387,14 @@ export default function Navbar({
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Gallery", href: "/gallery", icon: Image },
-    { name: "Pricing", href: "/pricing", icon: Crown },
+    // { name: "Pricing", href: "/pricing", icon: Crown },
     {
       name: "Profile",
       href: `/profile/${user?.userId}`,
       icon: User,
       protected: true,
     },
+    { name: "Admin", href: "/admin", icon: Shield, protected: true },
   ];
 
   return (
@@ -472,7 +474,9 @@ export default function Navbar({
                     </div>
 
                     {navItems.map((item) =>
-                      !item.protected || user ? (
+                      (!item.protected || user) &&
+                      (item.name !== "Admin" ||
+                        (item.name === "Admin" && user?.role === "admin")) ? (
                         <DropdownMenuItem
                           key={item.name}
                           className="cursor-pointer flex items-center hover:bg-gray-100 dark:hover:bg-gray-900 px-4 py-2"
@@ -560,7 +564,7 @@ export default function Navbar({
                           Sign up
                         </Button>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                      {/* <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
                       <DropdownMenuItem asChild>
                         <a
                           href="/pricing"
@@ -569,7 +573,7 @@ export default function Navbar({
                           <Camera className="mr-2 h-4 w-4" />
                           Pricing
                         </a>
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

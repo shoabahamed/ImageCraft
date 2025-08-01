@@ -712,7 +712,7 @@ const PredefinedFilterTab = ({ canvas, imageRef }: Props) => {
 
                     <Slider
                       value={[softness]}
-                      min={0}
+                      min={0.01}
                       max={1}
                       step={0.01}
                       onValueChange={(e) => {

@@ -223,7 +223,7 @@ const AdminReportSection = () => {
       const fileContent =
         typeof content === "object"
           ? JSON.stringify(content, null, 2)
-          : content;
+          : content; // @ts-ignore
       const file = new Blob([fileContent], { type: "application/json" });
       const element = document.createElement("a");
       element.href = URL.createObjectURL(file);

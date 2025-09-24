@@ -301,6 +301,22 @@ const AdminReportSection = () => {
       setMessageContent("");
       setMessageTitle("");
       setSelectedReportId(null); // Reset selected project
+
+      setReports(
+        reports.map((report) =>
+          report.id === selectedReportId
+            ? {
+                ...report,
+                has_admin_response: "true",
+                admin_response: {
+                  ...report.admin_response,
+                  title: messageTitle,
+                  message: messageContent,
+                },
+              }
+            : report
+        )
+      );
     } catch {
       toast({
         description: "Failed to send message.",
@@ -643,14 +659,14 @@ const AdminReportSection = () => {
                     </svg>
                     Dashboard
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="sm"
                     className="text-blue-600 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     onClick={() => grantLogs(report.id)}
                   >
                     <FileText size={16} className="mr-1" /> Grant Logs
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outline"
                     size="sm"

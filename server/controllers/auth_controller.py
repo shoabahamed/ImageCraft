@@ -74,7 +74,8 @@ def callback():
             role = "user"
             image_url = ""
             hashed_password = "gmail_login"
-            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": image_url, "subscription_plan": "free"}
+            subscription_plan = "free"
+            user_data = {"username": username, "email": valid_email, "password": hashed_password, "role": role, "bookmarked": [], "image_url": image_url, "subscription_plan": subscription_plan}
             user = users_collection.insert_one(user_data)
             # Generate JWT token
             token = create_token(str(user.inserted_id), role=role)

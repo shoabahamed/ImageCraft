@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LoadingBox from "@/components/LoadingBox";
 import PageFooter from "@/components/PageFooter";
+import axios from "axios";
 
 const sortTypes = [
   { label: "Newest", value: "date" },
@@ -118,6 +119,7 @@ export default function Gallery() {
 
   useEffect(() => {
     console.log("refreshed");
+    localStorage.removeItem("canvasId");
   }, []);
 
   // Update URL when state changes
@@ -307,13 +309,16 @@ export default function Gallery() {
       );
       toast({
         description: "Rating submitted successfully!",
-        className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
       setOpenRate(false);
     } catch (error) {
+      let message = error.message;
+      if (axios.isAxiosError(error)) {
+        message = error.response.data.message;
+      }
       toast({
-        description: "Failed to submit rating.",
+        description: "Failed to submit rating: " + message,
         className: "bg-red-500 text-gray-900",
         duration: 3000,
       });
@@ -338,7 +343,6 @@ export default function Gallery() {
       );
       toast({
         description: "Bookmark updated!",
-        className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
       // update the local state to reflect the new bookmark status
@@ -393,7 +397,6 @@ export default function Gallery() {
       );
       toast({
         description: "Report submitted successfully!",
-        className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
       setOpenReport(false);

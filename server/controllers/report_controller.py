@@ -323,10 +323,10 @@ def send_message():
 
         
         # Fetch project details from the project_id in the report
-        project = projects_collection.find_one({"project_id": report["project_id"]})
+        # project = projects_collection.find_one({"project_id": report["project_id"]})
         
-        if not project:
-            return jsonify({"success": False, "message": "Project not found"}), 404
+        # if not project:
+        #     return jsonify({"success": False, "message": "Project not found"}), 404
         
         
 
@@ -363,7 +363,7 @@ def get_project_log(project_id):
             granted_logs = []
         
         
-        if(role.lower() == "admin" or user_id in granted_logs):
+        if(role.lower() == "admin" or role.lower() == 'super admin' or user_id in granted_logs):
             project["_id"] = str(project["_id"])  # MongoDB ObjectId needs to be converted to string
             
             
@@ -497,14 +497,18 @@ def send_notice():
         data = request.get_json()
 
         admin_id = data['adminId']
+        print(admin_id)
         user_id = data['userId']
-        
+        print(user_id)
         title = data['title']
+        print(title)
         message = data['message']
+        print(message)
         role = g.role
+        print(role)
         
         
-        if role.lower() == 'admin':
+        if role.lower() == 'admin' or role.lower() == 'super admin':
             # insert notice
             notice_collection.insert_one({"admin_id": admin_id, "user_id":user_id, "title": title, "message": message,  "created_at": datetime.datetime.utcnow()})
             return jsonify({"success": True, "message": "Message sent successfully"}), 200

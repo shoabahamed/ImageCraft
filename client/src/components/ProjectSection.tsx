@@ -217,7 +217,6 @@ const ProjectSection = ({
         description: isPublic
           ? "Project made public successfully"
           : "Project made private successfully",
-        className: "bg-green-500 text-gray-900",
       });
 
       setProjects((prevProjects) =>
@@ -259,7 +258,6 @@ const ProjectSection = ({
       // setCurrentPageNo(1);
       toast({
         description: "Project deleted successfully.",
-        className: "bg-green-500 text-gray-900",
       });
     } catch {
       toast({
@@ -279,7 +277,7 @@ const ProjectSection = ({
     filter_names: string[] | [],
     project_name: string,
     imageUrl: string,
-    all_filters_applied: string[] | [],
+    all_filters_applied: string[] | []
   ) => {
     localStorage.setItem("canvasId", project_id);
     localStorage.setItem("project_data", JSON.stringify(project_data));
@@ -301,9 +299,16 @@ const ProjectSection = ({
       JSON.stringify(download_image_shape)
     );
     localStorage.setItem("filter_names", JSON.stringify(filter_names));
-    localStorage.setItem("all_filters_applied", JSON.stringify(JSON.stringify(all_filters_applied)));
+    localStorage.setItem(
+      "all_filters_applied",
+      JSON.stringify(JSON.stringify(all_filters_applied))
+    );
     navigate("/mainpage", { state: { imageUrl } });
   };
+
+  useEffect(() => {
+    localStorage.removeItem("canvasId");
+  }, []);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;

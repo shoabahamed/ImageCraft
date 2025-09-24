@@ -14,12 +14,14 @@ import { useLogContext } from "@/hooks/useLogContext";
 import { Label } from "./ui/label";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getRotatedBoundingBox } from "@/utils/commonFunctions";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 type ImageSizeProps = {
   canvas: Canvas;
   image: FabricImage;
 };
+
+const DEBOUNCE_DELAY = 500; // ms
 
 const ImageSize = ({ canvas, image }: ImageSizeProps) => {
   const { user } = useAuthContext();
@@ -32,6 +34,31 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
   } = useCanvasObjects();
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
   const { addLog } = useLogContext();
+
+  const useDebounceFn = (fn: (...args: any[]) => void, delay: number) => {
+    const timerRef = useRef<number | null>(null);
+
+    const debounced = useCallback(
+      (...args: any[]) => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => {
+          fn(...args);
+        }, delay);
+      },
+      [fn, delay]
+    );
+
+    return debounced;
+  };
+
+  const debouncedScaleAndRender = useDebounceFn(
+    (scaleX: number, scaleY: number) => {
+      image.scaleX = scaleX;
+      image.scaleY = scaleY;
+      handleRenderingFinalDimension();
+    },
+    DEBOUNCE_DELAY
+  );
 
   const handleRenderingFinalDimension = () => {
     const originalViewportTransform = canvas.viewportTransform;
@@ -62,8 +89,9 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       .find((obj) => obj.name?.startsWith("canvasRect"));
 
     // Restore zoom & transform
-    canvas.setViewportTransform(originalViewportTransform);
     canvas.setZoom(originalZoom);
+    canvas.setViewportTransform(originalViewportTransform);
+
     canvas
       .getObjects() // @ts-ignore
       .find((obj) => obj.setCoords());
@@ -135,10 +163,11 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       }
     }
 
-    image.scaleX = scaleX;
-    image.scaleY = scaleY;
+    debouncedScaleAndRender(scaleX, scaleY);
+    // image.scaleX = scaleX;
+    // image.scaleY = scaleY;
 
-    handleRenderingFinalDimension();
+    // handleRenderingFinalDimension();
   };
   const handleHeightChange = (e) => {
     if (e.target.value === "") return;
@@ -195,10 +224,11 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
       }
     }
 
-    image.scaleX = scaleX;
-    image.scaleY = scaleY;
+    // image.scaleX = scaleX;
+    // image.scaleY = scaleY;
 
-    handleRenderingFinalDimension();
+    // handleRenderingFinalDimension();
+    debouncedScaleAndRender(scaleX, scaleY);
   };
 
   const handleImageResizeReset = () => {

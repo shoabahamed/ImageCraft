@@ -2,7 +2,7 @@ import React from "react";
 
 const PageFooter = () => {
   return (
-    <footer className="w-full bg-blue-700 dark:bg-[#05101c] text-white dark:text-blue-200 py-8 px-4 mt-auto border-t border-blue-800 dark:border-blue-900 transition-colors duration-300">
+    <footer className="w-full bg-blue-700 dark:bg-[#05101c] text-white dark:text-blue-200 py-8 px-4 mt-auto border-t border-blue-800 dark:border-blue-900 transition-colors duration-300 flex-end">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <svg

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from bson import ObjectId
 import datetime
 from utils.common import get_user_paths
-from cloudinary.uploader import upload
+from cloudinary.uploader import upload, destroy
 
 load_dotenv()
 
@@ -84,9 +84,11 @@ def save_project():
             if(os.getenv("DEPLOY_PRODUCTION").lower() == 'true'):
                 # we are in production mode and have to save everything online in cloudnary and mongodb
                 _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths("", user_id)
-                original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
-                inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
-                canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+                filename = image_filename.split(".")[0]
+                original_image_path = f"{ORG_IMG_FOLDER}{filename}"
+                inter_image_path = f"{INTER_IMG_FOLDER}{filename}"
+                canvas_image_path = f"{CANVAS_IMG_FOLDER}{filename}"
 
                 cloud_inter_result = upload(
                     inter_image_file,
@@ -158,10 +160,13 @@ def save_project():
             if(os.getenv("DEPLOY_PRODUCTION").lower() == 'true'):
                 # we are in production mode and have to save everything online in cloudnary and mongodb
                 _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths("", user_id)
-                original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
-                inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
-                canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+                
+                filename = image_filename.split(".")[0]
+                original_image_path = f"{ORG_IMG_FOLDER}{filename}"
+                inter_image_path = f"{INTER_IMG_FOLDER}{filename}"
+                canvas_image_path = f"{CANVAS_IMG_FOLDER}{filename}"
 
+                print('canvas id', original_image_path)
                 cloud_org_result = upload(
                     original_image_file,
                     public_id=original_image_path,  # This sets the folder and filename
@@ -273,12 +278,13 @@ def get_projects(user_id):
   try:
 
     current_user_id = g._id
+    role = g.role
 
     if(current_user_id == user_id):
         # Query the database for projects, excluding the `_id` field
         projects_cursor = projects_collection.find({"user_id": user_id})
     else:
-        projects_cursor = projects_collection.find({"user_id": user_id}, {'project_data':0, 'project_logs':0, 'granted_logs':0, 'original_image_shape':0, 'final_image_shape': 0})
+        projects_cursor = projects_collection.find({"user_id": user_id, "is_public": "true"}, {'original_image_shape':0, 'final_image_shape': 0})
     
     # Convert the cursor to a list of dictionaries
     projects = list(projects_cursor)
@@ -435,7 +441,6 @@ def query_projects():
             project['bookmarked'] = project.get('project_id') in bookmarked_projects
             project["total_rating"] = int(project.get('total_rating', 0))
             project['rating_count'] = int(project.get('rating_count', 0))
-            project['project_logs'] = []
 
         response = {
             "projects": projects,
@@ -488,18 +493,35 @@ def delete_project(project_id):
         
         image_filename = secure_filename(f"{project_id}.png") 
         
-        _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
-        original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
-        inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
-        canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
 
-        for path in [original_image_path, canvas_image_path, inter_image_path]:
-            if os.path.exists(path):
-                os.remove(path)
+        if(os.getenv("DEPLOY_PRODUCTION").lower() == 'true'):
+            # we are in production mode and have to save everything online in cloudnary and mongodb
+            _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths("", user_id)
+            
+            filename = image_filename.split(".")[0]
+            original_image_path = f"{ORG_IMG_FOLDER}{filename}"
+            inter_image_path = f"{INTER_IMG_FOLDER}{filename}"
+            canvas_image_path = f"{CANVAS_IMG_FOLDER}{filename}"
+            print('canvas id', original_image_path)
+
+    
+            destroy(original_image_path, resource_type = "image")
+            destroy(inter_image_path, resource_type = "image")
+            destroy(canvas_image_path, resource_type = "image")
+        else:
+            _, ORG_IMG_FOLDER,CANVAS_IMG_FOLDER, INTER_IMG_FOLDER=  get_user_paths(os.getenv("USER_COMMON_PATH"), user_id)
+            original_image_path = f"{ORG_IMG_FOLDER}/{image_filename}"
+            inter_image_path = f"{INTER_IMG_FOLDER}/{image_filename}"
+            canvas_image_path = f"{CANVAS_IMG_FOLDER}/{image_filename}"
+
+            for path in [original_image_path, canvas_image_path, inter_image_path]:
+                if os.path.exists(path):
+                    os.remove(path)
 
         return jsonify({"success": True, "message": "Project deleted successfully"}), 200
 
     except Exception as e:
+        print("error", str(e))
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
  
 
@@ -612,6 +634,7 @@ def update_project_bookmark():
 
 def rate_project():
     try:
+        id = str(g._id)  # Extracted by the middleware
         data = request.get_json()
         project_id = data.get('project_id')
         rating = data.get('rating')
@@ -623,6 +646,8 @@ def rate_project():
         # Fetch project by project_id from the database
         project = projects_collection.find_one({"project_id": project_id})
 
+        if project.get("user_id") == id:
+            return jsonify({"success": False, "message": "You cannot rate your own project"}), 400
         
         total_rating = int(project.get("total_rating", 0)) + rating
         rating_count = int(project.get("rating_count", 1)) + 1

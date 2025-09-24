@@ -98,6 +98,18 @@ const AdjustSidebarAdvanced = ({
       deactivateSwril(false);
       deactivateBulge(false);
       setActivateLiquidifyTool("");
+
+      // Find or create the circle
+      const liquifyCircle = canvasRef.current
+        .getObjects() // @ts-ignore
+        .find((obj) => obj?.name === "liquifyCircle");
+
+      liquifyCircle?.set({
+        visible: false,
+        selectable: false,
+        hasControls: false,
+      });
+      canvasRef.current?.requestRenderAll();
     };
   }, []);
 
@@ -335,7 +347,11 @@ const AdjustSidebarAdvanced = ({
       pointer.y < imageBounds.top ||
       pointer.y > imageBounds.top + imageBounds.height
     ) {
-      liquifyCircle.set({ visible: false });
+      liquifyCircle.set({
+        visible: false,
+        selectable: false,
+        hasControls: false,
+      });
       canvasRef.current.requestRenderAll();
       return;
     }
@@ -345,6 +361,8 @@ const AdjustSidebarAdvanced = ({
       top: pointer.y,
       radius: radiusPx,
       visible: true,
+      selectable: false,
+      hasControls: false,
     });
 
     canvasRef.current.bringObjectToFront(liquifyCircle);
@@ -530,7 +548,11 @@ const AdjustSidebarAdvanced = ({
       pointer.y < imageBounds.top ||
       pointer.y > imageBounds.top + imageBounds.height
     ) {
-      liquifyCircle.set({ visible: false });
+      liquifyCircle.set({
+        visible: false,
+        selectable: false,
+        hasControls: false,
+      });
       canvasRef.current.requestRenderAll();
       return;
     }
@@ -540,8 +562,11 @@ const AdjustSidebarAdvanced = ({
       top: pointer.y,
       radius: radiusPx,
       visible: true,
+      selectable: false,
+      hasControls: false,
     });
 
+    liquifyCircle.setCoords();
     canvasRef.current.bringObjectToFront(liquifyCircle);
 
     canvasRef.current.requestRenderAll();
@@ -751,6 +776,13 @@ const AdjustSidebarAdvanced = ({
   };
 
   const applyHistogram = async () => {
+    addLog({
+      section: "adjust",
+      tab: "hist",
+      event: "update",
+      message: `Applied histogram equalization`,
+    });
+
     disableSavingIntoStackRef.current = true;
 
     const filtersInCanvas: string[] = currentFiltersRef.current.map(
@@ -915,8 +947,8 @@ const AdjustSidebarAdvanced = ({
         canvasRef.current.getObjects().forEach((obj) => {
           if (
             obj.type !== "image" && // @ts-ignore
-            obj?.name.startsWith("Frame") && // @ts-ignore
-            obj?.name.startsWith("liquifyCircle")
+            !obj?.name?.startsWith("Frame") && // @ts-ignore
+            !obj?.name?.startsWith("liquifyCircle")
           ) {
             obj.set("visible", true);
           }
@@ -948,6 +980,13 @@ const AdjustSidebarAdvanced = ({
   };
 
   const applyContrastStreching = async () => {
+    addLog({
+      section: "adjust",
+      tab: "hist",
+      event: "update",
+      message: `Applied contrast stretching`,
+    });
+
     disableSavingIntoStackRef.current = true;
 
     const filtersInCanvas: string[] = currentFiltersRef.current.map(
@@ -1107,8 +1146,8 @@ const AdjustSidebarAdvanced = ({
         canvasRef.current.getObjects().forEach((obj) => {
           if (
             obj.type !== "image" && // @ts-ignore
-            obj?.name.startsWith("Frame") && // @ts-ignore
-            obj?.name.startsWith("liquifyCircle")
+            !obj?.name?.startsWith("Frame") && // @ts-ignore
+            !obj?.name?.startsWith("liquifyCircle")
           ) {
             obj.set("visible", true);
           }
@@ -1140,6 +1179,13 @@ const AdjustSidebarAdvanced = ({
   };
 
   const applyWhiteBalance = async () => {
+    addLog({
+      section: "adjust",
+      tab: "hist",
+      event: "update",
+      message: `Applied white balance`,
+    });
+
     disableSavingIntoStackRef.current = true;
 
     const filtersInCanvas: string[] = currentFiltersRef.current.map(
@@ -1359,8 +1405,8 @@ const AdjustSidebarAdvanced = ({
         canvasRef.current.getObjects().forEach((obj) => {
           if (
             obj.type !== "image" && // @ts-ignore
-            obj?.name.startsWith("Frame") && // @ts-ignore
-            obj?.name.startsWith("liquifyCircle")
+            !obj?.name?.startsWith("Frame") && // @ts-ignore
+            !obj?.name?.startsWith("liquifyCircle")
           ) {
             obj.set("visible", true);
           }
@@ -1404,7 +1450,7 @@ const AdjustSidebarAdvanced = ({
             <TabsTrigger value="reflect">Reflect</TabsTrigger>
             <TabsTrigger value="morph">Liquify</TabsTrigger>
             {/* <TabsTrigger value="edge">Edge</TabsTrigger> */}
-            <TabsTrigger value="hist">Hist</TabsTrigger>
+            <TabsTrigger value="hist">Global</TabsTrigger>
           </TabsList>
         </div>
 
@@ -1536,7 +1582,7 @@ const AdjustSidebarAdvanced = ({
                       />
                     </div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Bulge
+                      Magnify
                     </span>
                   </div>
                 </div>

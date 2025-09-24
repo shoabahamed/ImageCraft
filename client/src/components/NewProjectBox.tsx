@@ -29,6 +29,7 @@ interface ProjectJson {
   original_image_shape: { imageWidth: number; imageHeight: number };
   download_image_shape: { imageWidth: number; imageHeight: number };
   imageUrl: string;
+  canvasImageUrl: string;
   filter_names: string[];
   all_filters_applied: any;
 }
@@ -479,20 +480,15 @@ const NewProjectBox = (props: {
                   <input {...getJsonInputProps()} />
                   {jsonFile ? (
                     <div className="text-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        height="50"
-                        width="50"
-                        className="text-green-500 dark:text-green-400 mx-auto"
-                      >
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
                       <p className="mt-2 text-sm text-green-600 dark:text-green-400">
                         JSON file loaded successfully!
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        {Object.keys(jsonFile).join(", ")}
+                        <img
+                          src={jsonFile.canvasImageUrl}
+                          alt=""
+                          className="w-full max-h-[300px] object-contain rounded-lg shadow-md"
+                        />
                       </p>
                     </div>
                   ) : (

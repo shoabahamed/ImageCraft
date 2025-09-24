@@ -52,11 +52,11 @@ import TemplatePreview from "./TemplatePreview";
 // TODO: when
 
 type AddTextProps = {
-  canvas: Canvas;
-  image: FabricImage;
+  canvasRef: React.RefObject<Canvas>;
+  imageRef: React.RefObject<FabricImage>;
 };
 
-const AddText = ({ canvas, image }: AddTextProps) => {
+const AddText = ({ canvasRef, imageRef }: AddTextProps) => {
   const { toast } = useToast();
   const { user } = useAuthContext();
   const { selectedObject, setSelectedObject } = useCanvasObjects();
@@ -134,6 +134,9 @@ const AddText = ({ canvas, image }: AddTextProps) => {
 
   // Add text to canvas
   const addText = () => {
+    const image = imageRef.current;
+    const canvas = canvasRef.current;
+
     const textId = crypto.randomUUID();
     const baseFontSize = Math.round(image.width * image.scaleX * 0.05);
     const charSpacing = Math.round(baseFontSize * 0.2);
@@ -184,13 +187,13 @@ const AddText = ({ canvas, image }: AddTextProps) => {
         message: `deleted text ${selectedObject.text}`,
       });
 
-      canvas.remove(selectedObject);
+      canvasRef.current.remove(selectedObject);
       setSelectedObject(null); // Clear state after deletion
     }
   };
 
   const handleTextWeightChange = (value) => {
-    const selectedObject = canvas.getActiveObject();
+    const selectedObject = canvasRef.current.getActiveObject();
     if (selectedObject) {
       if (isBold) {
         addLog({
@@ -219,13 +222,14 @@ const AddText = ({ canvas, image }: AddTextProps) => {
       setBold(value);
 
       selectedObject.setCoords();
-      canvas.fire("object:modified");
+      canvasRef.current.fire("object:modified");
 
-      canvas.renderAll();
+      canvasRef.current.renderAll();
     }
   };
 
   const handleTextUnderlineChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       if (isUnderLine) {
@@ -262,6 +266,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextItalicChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       if (isItalic) {
@@ -298,6 +303,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextUpperChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       if (isUpper) {
@@ -334,6 +340,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleFontChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -357,6 +364,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
     }
   };
   const handleTextAlignChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -382,6 +390,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextSizeChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -406,6 +415,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextOpacityChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -430,6 +440,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextLineSpacingChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -454,6 +465,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextCharSpacingChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -478,6 +490,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleTextChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -503,6 +516,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleFillChange = (value) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -528,6 +542,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleShadowToggle = (checked: boolean) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject) {
       addLog({
@@ -559,6 +574,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleShadowColor = (value: string) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
       addLog({
@@ -581,6 +597,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleShadowBlur = (value: number) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
       addLog({
@@ -603,6 +620,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleShadowOffsetX = (value: number) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
       addLog({
@@ -625,6 +643,7 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const handleShadowOffsetY = (value: number) => {
+    const canvas = canvasRef.current;
     const selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject.shadow) {
       addLog({
@@ -647,6 +666,8 @@ const AddText = ({ canvas, image }: AddTextProps) => {
   };
 
   const addSelectedTemplate = (template: Template) => {
+    const canvas = canvasRef.current;
+    const image = imageRef.current;
     const containerWidth = image.getScaledWidth();
     const containerHeight = image.getScaledHeight();
     util.enlivenObjects([template.template_data]).then(([fabricObject]) => {

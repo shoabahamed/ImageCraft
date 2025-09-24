@@ -29,13 +29,31 @@ SUPER_RESOULTION_PRO_COMPUTE = int(os.getenv("SUPER_RESOULTION_PRO_COMPUTE", 100
 STYLE_ULTIMATE_COMPUTE = int(os.getenv("STYLE_ULTIMATE_COMPUTE", 99999))
 SUPER_RESOULTION_ULTIMATE_COMPUTE = int(os.getenv("SUPER_RESOULTION_ULTIMATE_COMPUTE", 99999))
 
+
+
+
+
+
+
 def apply_style_transfer():
   try:
     if 'originalImage' not in request.files or 'styleImage' not in request.files:
         return jsonify({"success": False, "message": "Both originalImage and styleImage must be provided"}), 400
     
     user_id = str(g._id)
+    user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
+    subscription_plan = user.get("subscription_plan", "free")
+    style_completion = user.get("style_completion", 0) 
+    
+  
 
+    if(subscription_plan == 'free'):
+        return jsonify({"success": False, "message": "Upgrade to To Premium"}), 201
+    
+    if(subscription_plan == 'pro' and style_completion >= STYLE_PRO_COMPUTE):
+        return jsonify({"success": False, "message": "Style Completion Quota Complete"}), 202
+
+    
     
 
     original_image_file = request.files['originalImage']
@@ -106,11 +124,14 @@ def apply_style_transfer():
     
     
 
-    # result = users_collection.update_one(
-    #         {"_id": ObjectId(user_id)},
-    #         {"$set": {"style_completion": style_completion + 1}}
-    #     )
+    result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"style_completion": style_completion + 1}}
+        )
 
+    
+    print(result)
+    
     
 
     
@@ -176,6 +197,18 @@ def find_similar_image():
 def apply_super_resolution():
     try:
         user_id = str(g._id)
+        user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
+        subscription_plan = user.get("subscription_plan", "free")
+        upscale_completion = user.get("upscale_completion")  
+
+        if(subscription_plan == 'free'):
+            return jsonify({"success": False, "message": "Upgrade to To Premium"}), 201
+    
+        
+        if(subscription_plan == 'pro' and upscale_completion >= SUPER_RESOULTION_PRO_COMPUTE):
+            return jsonify({"success": False, "message": "Style Completion Quota Complete"}), 202
+
+        print("DEBUG: Starting apply_super_resolution function")
 
         # Check if the file is provided
         if 'originalImage' not in request.files:
@@ -240,7 +273,11 @@ def apply_super_resolution():
         print("DEBUG: Image encoded to base64")
         
     
-
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"upscale_completion": upscale_completion + 1}}
+        )
+        print(result)
 
         return jsonify({"success": True, "message": "Super-resolution applied successfully", 'image': image_base64}), 200
 
@@ -248,206 +285,4 @@ def apply_super_resolution():
         print(f"DEBUG: Exception occurred - {str(e)}")
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
 
-
-# code with works with payemnt system
-# def apply_super_resolution():
-#     try:
-#         user_id = str(g._id)
-#         user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
-#         subscription_plan = user.get("subscription_plan", "free")
-#         upscale_completion = user.get("upscale_completion")  
-
-#         if(subscription_plan == 'free'):
-#             return jsonify({"success": False, "message": "Upgrade to To Premium"}), 201
-    
-        
-#         if(subscription_plan == 'pro' and upscale_completion >= SUPER_RESOULTION_PRO_COMPUTE):
-#             return jsonify({"success": False, "message": "Style Completion Quota Complete"}), 202
-
-#         print("DEBUG: Starting apply_super_resolution function")
-
-#         # Check if the file is provided
-#         if 'originalImage' not in request.files:
-#             print("DEBUG: originalImage not found in request.files")
-#             return jsonify({"success": False, "message": "originalImage must be provided"}), 400
-
-#         # Get the image and resolution
-#         image_data = request.files['originalImage']
-#         resolution = request.form.get("scale")
-#         print(f"DEBUG: Received resolution: {resolution}")
-
-#         if not resolution:
-#             print("DEBUG: Resolution not provided in request.form")
-#             return jsonify({"success": False, "message": "Resolution must be provided"}), 400
-
-#         resolution = int(resolution)
-#         print(f"DEBUG: Parsed resolution: {resolution}")
-
-#         # Open the image
-#         image = Image.open(image_data).convert("RGB")
-#         print("DEBUG: Image successfully opened and converted to RGB")
-
-#         # Apply transformation
-#         transform = get_super_resolution_transform()
-#         image = transform(image)
-#         print("DEBUG: Image transformed to tensor")
-
-#         # Load the model
-#         print("DEBUG: Loading MDSR model")
-#         model = MDSR(num_res_blocks=80, num_feats=64, scales=[2, 3, 4]).to(CFG.device)
-#         model_checkpoint = torch.load(CFG.super_resolution_model_path, map_location=CFG.device, weights_only=True)
-#         model.load_state_dict(model_checkpoint['model_state'])
-#         print("DEBUG: Model loaded successfully")
-
-#         # Apply super-resolution based on the scale
-#         if resolution in [2, 3, 4]:
-#             print(f"DEBUG: Applying super-resolution for scale {resolution}")
-#             with torch.no_grad():
-#                 image = image * 255
-#                 image = torch.clip(model(image.unsqueeze(0).to(CFG.device), resolution), min=0, max=255).to('cpu').squeeze(0)
-#                 image = image / 255
-#             print(f"DEBUG: Super-resolution applied for scale {resolution}")
-#         else:
-#             print(f"DEBUG: Invalid resolution: {resolution}")
-#             return jsonify({"success": False, "message": f"Resolution {resolution} is not supported"}), 400
-
-#         # Clean up
-#         del model
-#         torch.cuda.empty_cache()
-#         gc.collect()
-#         print("DEBUG: Model and cache cleared")
-
-#         # Convert tensor back to image
-#         image = T.ToPILImage()(image)
-#         print("DEBUG: Tensor converted back to PIL image")
-
-#         # Encode image to base64
-#         buffer = io.BytesIO()
-#         image.save(buffer, format="png")
-#         buffer.seek(0)
-#         image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-#         print("DEBUG: Image encoded to base64")
-        
-        
-#         result = users_collection.update_one(
-#             {"_id": ObjectId(user_id)},
-#             {"$set": {"upscale_completion": upscale_completion + 1}}
-#         )
-#         print(result)
-
-
-#         return jsonify({"success": True, "message": "Super-resolution applied successfully", 'image': image_base64}), 200
-
-#     except Exception as e:
-#         print(f"DEBUG: Exception occurred - {str(e)}")
-#         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
-
-# code that works with payemnt system
-# def apply_style_transfer():
-#   try:
-#     if 'originalImage' not in request.files or 'styleImage' not in request.files:
-#         return jsonify({"success": False, "message": "Both originalImage and styleImage must be provided"}), 400
-    
-#     user_id = str(g._id)
-#     user = users_collection.find_one({"_id": ObjectId(user_id)}, {})
-#     subscription_plan = user.get("subscription_plan", "free")
-#     style_completion = user.get("style_completion", 0) 
-    
-  
-
-#     if(subscription_plan == 'free'):
-#         return jsonify({"success": False, "message": "Upgrade to To Premium"}), 201
-    
-#     if(subscription_plan == 'pro' and style_completion >= STYLE_PRO_COMPUTE):
-#         return jsonify({"success": False, "message": "Style Completion Quota Complete"}), 202
-
-    
-#     # raw_data = request.get_data()
-#     # print(f"🔍 Content-Type: {request.content_type}")
-#     # print(f"Raw request size: {len(raw_data) / (1024 * 1024)} bytes")
-#     # print(request.files)
-#     # Get the files
-#     original_image_file = request.files['originalImage']
-#     style_image_file = request.files['styleImage']
-#     print(request.files)
-#     print(request.form.get("alpha"))
-#     alpha_value = float(request.form.get("alpha"))
-    
-
-
-
-#     # loading model
-#     vgg_encoder = VGG_ENCODER(CFG.style_transfer_encoder_path).to(CFG.device)
-#     vgg_decoder = VGG_DECODER.to(CFG.device)
-#     style_transfer_model = Network(vgg_encoder, vgg_decoder).to(CFG.device)
-
-#     style_transfer_model.decoder.load_state_dict(torch.load(CFG.style_transfer_decoder_path, map_location=CFG.device, weights_only=True))
-
-#     # Open the original image
-#     original_image = Image.open(original_image_file).convert('RGB')
-#     # Open the style image
-#     style_image = Image.open(style_image_file).convert("RGB")
-
-#     org_width, org_height = original_image.width, original_image.height
-
-    
-
-#     # Determine the resizing logic based on the original image dimensions
-#     min_dim = min(org_width, org_height)
-#     if min_dim < 512:
-#         img_size = None  # No resizing
-#     elif min_dim < 1024:
-#         img_size = 512  
-#     else:
-#         img_size = 1024  
-
-    
-
-
-#     original_image_transfrom = get_style_transfer_transform(img_size=img_size)
-#     style_image_transform = get_style_transfer_transform(img_size=512)
-    
-#     original_image = original_image_transfrom(original_image).unsqueeze(0).to(CFG.device)
-#     style_image = style_image_transform(style_image).unsqueeze(0).to(CFG.device)
-    
-
-#     print(original_image.shape, style_image.shape)
-
-#     with torch.no_grad():
-#         stylized_img = style_transfer_model.stylize_image(original_image, style_image, alpha=alpha_value).to('cpu')[0]
-
-#     stylized_img = T.ToPILImage()(stylized_img)
-#     stylized_img = stylized_img.resize((org_width, org_height))
-
-#     del style_transfer_model, original_image, style_image
-#     torch.cuda.empty_cache()
-#     gc.collect()
-
-
-
-#     # encode to base64
-#     buffer = io.BytesIO()
-#     stylized_img.save(buffer, format="png")
-#     buffer.seek(0)
-#     image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    
-    
-    
-    
-
-#     result = users_collection.update_one(
-#             {"_id": ObjectId(user_id)},
-#             {"$set": {"style_completion": style_completion + 1}}
-#         )
-
-    
-#     print(result)
-    
-    
-    
-    
-#     return jsonify({"success": True, "message": "Style Trasnfer Successfull", "image": image_base64}), 200
-
-#   except Exception as e:
-#     return jsonify({"success": False, "message": f"An Error has occurced {str(e)}"}), 500
 

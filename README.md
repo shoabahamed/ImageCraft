@@ -1,4 +1,4 @@
-# Image Editing Website
+# ImageCraft
 
 ![HomePage](./assets/home_page.png)
 

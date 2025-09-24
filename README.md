@@ -32,22 +32,22 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 <figure style="text-align: center;">
   <img src="./assets/edit.png" alt="Editing Page">
-  <figcaption  >Figure: Main Editing Page</figcaption>
+  <figcaption style="text-align: center;">Figure: Main Editing Page</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/filters.png" alt="Style Transfer">
-  <figcaption>Figure: Color Filters</figcaption>
+  <figcaption style="text-align: center;">Figure: Color Filters</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/style_transfer.png" alt="Style Transfer">
-  <figcaption>Figure: Style Transfer</figcaption>
+  <figcaption style="text-align: center;">Figure: Style Transfer</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/super_resolution.png" alt="Style Transfer">
-  <figcaption>Figure: 2X, 3X, 4X Super Resolution</figcaption>
+  <figcaption style="text-align: center;">Figure: 2X, 3X, 4X Super Resolution</figcaption>
 </figure>
 
 ### 📊 User Dashboard
@@ -61,12 +61,12 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 <figure style="text-align: center;">
   <img src="./assets/profile.png" alt="HomePage">
-  <figcaption>Figure: Profile Page</figcaption>
+  <figcaption style="text-align: center;">Figure: Profile Page</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/dashboard.png" alt="HomePage">
-  <figcaption>Figure: Project Dashboard</figcaption>
+  <figcaption style="text-align: center;">Figure: Project Dashboard</figcaption>
 </figure>
 
 ### 📸 Gallery
@@ -79,7 +79,7 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 <figure style="text-align: center;">
   <img src="./assets/gallery.png" alt="HomePage">
-  <figcaption>Figure: Gallery</figcaption>
+  <figcaption style="text-align: center;">Figure: Gallery</figcaption>
 </figure>
 
 **TODO**: **Find similar images using semantic search**
@@ -92,12 +92,12 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 <figure style="text-align: center;">
   <img src="./assets/admin.png" alt="HomePage">
-  <figcaption>Figure: Admin Management</figcaption>
+  <figcaption style="text-align: center;">Figure: Admin Management</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/admin_text.png" alt="HomePage">
-  <figcaption>Figure: Add Templates</figcaption>
+  <figcaption style="text-align: center;">Figure: Add Templates</figcaption>
 </figure>
 
 ### 💳 Subscription System
@@ -110,17 +110,17 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 <figure style="text-align: center;">
   <img src="./assets/pricing.png" alt="HomePage">
-  <figcaption>Figure: Pricing</figcaption>
+  <figcaption style="text-align: center;">Figure: Pricing</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/stripe.png" alt="HomePage">
-  <figcaption>Figure: Stripe Subscription</figcaption>
+  <figcaption style="text-align: center;">Figure: Stripe Subscription</figcaption>
 </figure>
 
 <figure style="text-align: center;">
   <img src="./assets/current_plan.png" alt="HomePage">
-  <figcaption>Figure: Current Plan</figcaption>
+  <figcaption style="text-align: center;">Figure: Current Plan</figcaption>
 </figure>
 
 ---

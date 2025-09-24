@@ -5,7 +5,7 @@
 An advanced real time web application using **GPU** for editing, enhancing, and sharing images.  
 Built with **React (Vite)** on the frontend and **Flask** on the backend, with cloud storage using cloudnary and subscription based payemnt with **Stripe**
 
-You can find the project demo [here](). As it is a free service backend may not work.
+You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-projects.vercel.app/). As it is a free service backend may not work.
 
 ---
 
@@ -32,7 +32,7 @@ You can find the project demo [here](). As it is a free service backend may not 
 
 <figure style="text-align: center;">
   <img src="./assets/edit.png" alt="Editing Page">
-  <figcaption >Figure: Main Editing Page</figcaption>
+  <figcaption  >Figure: Main Editing Page</figcaption>
 </figure>
 
 <figure style="text-align: center;">

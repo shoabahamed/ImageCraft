@@ -90,6 +90,7 @@ export function ProjectDownloadDialog({
       filter_names: project.filter_names,
       all_filters_applied: project.all_filters_applied,
       imageUrl: project.original_image_url,
+      canvasImageUrl: project.canvas_image_url,
     };
 
     // Create JSON blob

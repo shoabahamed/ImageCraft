@@ -1,6 +1,6 @@
 import IconComponent from "@/components/icon-component";
 
-import { Diamond, Home } from "lucide-react";
+import { Diamond, Home, Volleyball } from "lucide-react";
 import { Crop, RotateCwSquare, ListPlus, Type, Cpu } from "lucide-react";
 import { useEffect, useRef, useState, CSSProperties } from "react";
 
@@ -52,6 +52,9 @@ import { Hysteris } from "@/utils/Hysteris";
 import { SobelFilter } from "@/utils/SobelFilter";
 import { VerticalEdgeFilter } from "@/utils/VerticalFilter";
 import { HorizontalEdgeFilter } from "@/utils/HorizontalEdge";
+import apiClient from "@/utils/appClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 // TODO: the whole update or insert here feels redunant when doing from database or history may be I should fix that
 
@@ -370,7 +373,72 @@ const Test = () => {
     (state) => state.setShadowOffsetY
   );
 
+  const { user } = useAuthContext();
+
   // this function runs whenever the window size changes
+  // const handleContainerResize = () => {
+  //   const container = document.getElementById("CanvasContainer");
+  //   if (!container || !mainCanvasRef.current || !currentImageRef.current)
+  //     return;
+
+  //   const { width: containerWidth, height: containerHeight } =
+  //     container.getBoundingClientRect();
+
+  //   mainCanvasRef.current.setDimensions({
+  //     width: containerWidth,
+  //     height: containerHeight,
+  //   });
+
+  //   const imageWidth = downloadImageDimensionsRef.current.imageWidth;
+  //   const imageHeight = downloadImageDimensionsRef.current.imageHeight;
+
+  //   // Recalculate zoom to fit
+  //   const scaleX = containerWidth / imageWidth;
+  //   const scaleY = containerHeight / imageHeight;
+  //   const zoom = Math.min(scaleX, scaleY);
+
+  //   if (zoom <= 1) {
+  //     mainCanvasRef.current.setZoom(zoom);
+  //     setZoomValue(zoom);
+
+  //     // Re-center the image using viewport transform
+  //     const vp = mainCanvasRef.current.viewportTransform!;
+  //     vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+  //     vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+  //     mainCanvasRef.current.setViewportTransform(vp);
+
+  //     currentImageRef.current.set({
+  //       left: imageWidth / 2,
+  //       top: imageHeight / 2,
+  //       originX: "center",
+  //       originY: "center",
+  //     });
+
+  //     const canvasRect = mainCanvasRef.current
+  //       .getObjects() // @ts-ignore
+  //       .find((obj) => obj.name?.startsWith("canvasRect"));
+
+  //     canvasRect.set({
+  //       left: imageWidth / 2,
+  //       top: imageHeight / 2,
+  //       originX: "center",
+  //       originY: "center",
+  //     });
+
+  //     mainCanvasRef.current.renderAll();
+  //   } else {
+  //     const center = new fabric.Point(containerWidth / 2, containerHeight / 2);
+
+  //     mainCanvasRef.current.zoomToPoint(center, zoom); // handles zoom + centering together
+  //     setZoomValue(zoom);
+  //     currentImageRef.current.setCoords();
+
+  //     mainCanvasRef.current.requestRenderAll();
+
+  //     mainCanvasRef.current.renderAll();
+  //   }
+  // };
+
   const handleContainerResize = () => {
     const container = document.getElementById("CanvasContainer");
     if (!container || !mainCanvasRef.current || !currentImageRef.current)
@@ -384,54 +452,30 @@ const Test = () => {
       height: containerHeight,
     });
 
-    const imageWidth = downloadImageDimensionsRef.current.imageWidth;
-    const imageHeight = downloadImageDimensionsRef.current.imageHeight;
+    // Use the actual image object instead of ref dimensions
+    const image = currentImageRef.current;
 
-    // Recalculate zoom to fit
-    const scaleX = containerWidth / imageWidth;
-    const scaleY = containerHeight / imageHeight;
+    // Get the true visual bounding box including transformations
+    const boundingRect = image.getBoundingRect();
+
+    const scaleX = containerWidth / boundingRect.width;
+    const scaleY = containerHeight / boundingRect.height;
     const zoom = Math.min(scaleX, scaleY);
 
-    if (zoom <= 1) {
-      mainCanvasRef.current.setZoom(zoom);
-      setZoomValue(zoom);
+    mainCanvasRef.current.setZoom(zoom);
+    setZoomValue(zoom);
 
-      // Re-center the image using viewport transform
-      const vp = mainCanvasRef.current.viewportTransform!;
-      vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
-      vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
-      mainCanvasRef.current.setViewportTransform(vp);
+    // Calculate center of the actual image bounds
+    const centerX = boundingRect.left + boundingRect.width / 2;
+    const centerY = boundingRect.top + boundingRect.height / 2;
 
-      currentImageRef.current.set({
-        left: imageWidth / 2,
-        top: imageHeight / 2,
-        originX: "center",
-        originY: "center",
-      });
+    // Adjust viewport to center the image
+    const vp = mainCanvasRef.current.viewportTransform;
+    vp[4] = containerWidth / 2 - centerX * zoom;
+    vp[5] = containerHeight / 2 - centerY * zoom;
 
-      const canvasRect = mainCanvasRef.current
-        .getObjects() // @ts-ignore
-        .find((obj) => obj.name?.startsWith("canvasRect"));
-
-      canvasRect.set({
-        left: imageWidth / 2,
-        top: imageHeight / 2,
-        originX: "center",
-        originY: "center",
-      });
-
-      mainCanvasRef.current.renderAll();
-    } else {
-      const center = new fabric.Point(containerWidth / 2, containerHeight / 2);
-
-      mainCanvasRef.current.zoomToPoint(center, zoom); // handles zoom + centering together
-      setZoomValue(zoom);
-      currentImageRef.current.setCoords();
-
-      mainCanvasRef.current.requestRenderAll();
-
-      mainCanvasRef.current.renderAll();
-    }
+    mainCanvasRef.current.setViewportTransform(vp);
+    mainCanvasRef.current.requestRenderAll();
   };
 
   const handleObjectSelected = () => {
@@ -609,6 +653,30 @@ const Test = () => {
     return { canvasRect, liquifyCircle };
   };
 
+  const templates = useAddTextStore((state) => state.templates);
+  const setTemplates = useAddTextStore((state) => state.setTemplates);
+
+  useEffect(() => {
+    const get_templates = async () => {
+      try {
+        const response = await apiClient.get("/all_templates", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token}`,
+          },
+        });
+        const templates = response.data.data;
+        setTemplates(templates);
+      } catch (error) {
+        console.error("Failed to fetch text templates:", error);
+      }
+    };
+
+    if (templates.length === 0) {
+      get_templates();
+    }
+  }, []);
+
   // the below code is responsible for handling canvas and image loading
   useEffect(() => {
     if (canvasRef.current) {
@@ -643,9 +711,16 @@ const Test = () => {
           JSON.parse(localStorage.getItem("original_image_shape")!);
 
         const filterNames = JSON.parse(localStorage.getItem("filter_names")!);
-        const allFiltersApplied = JSON.parse(
+
+        let allFiltersApplied = JSON.parse(
           localStorage.getItem("all_filters_applied")!
         );
+
+        if (!Array.isArray(allFiltersApplied)) {
+          allFiltersApplied = JSON.parse(allFiltersApplied);
+        }
+
+        console.log(typeof allFiltersApplied);
         const project_logs = JSON.parse(localStorage.getItem("project_logs"));
 
         const projectName = localStorage.getItem("project_name");
@@ -829,6 +904,7 @@ const Test = () => {
 
             if (localStorage.getItem("canvasId")) {
               // console.log(localStorage.getItem("canvasId"), "sdfsk");
+              // localStorage.removeItem("canvasId");
               setShowUpdateButton(true);
             }
 
@@ -1089,8 +1165,19 @@ const Test = () => {
   useEffect(() => {
     if (!isUndoRedoAction.current) return;
 
+    addLog({
+      section: "undo-redo",
+      tab: "undo-redo",
+      event: "update",
+      message: `Undo/Redo action performed`,
+      param: "action",
+      objType: "canvas",
+    });
+
     setSpinnerLoading(true);
     setShapeType(null);
+    // selectedObject(null)
+    // setSelectedObject(null)
 
     const canvasJSON = currentSnapshot.project_data;
     const finalImageShape: { imageWidth: number; imageHeight: number } =
@@ -1228,7 +1315,14 @@ const Test = () => {
           canvasRect.set({
             selectable: false,
             hasControls: false,
+            width: downloadImageDimensionsRef.current.imageWidth,
+            height: downloadImageDimensionsRef.current.imageHeight,
+            originX: "center",
+            originY: "center",
+            left: imageObject.width / 2,
+            top: imageObject.height / 2,
           });
+
           setBackgroundColor(fillColor);
         }
 
@@ -1237,6 +1331,10 @@ const Test = () => {
           frameObject.absolutePositioned = true;
           // selectedObject.absolutePositioned = true;
           imageObject.clipPath = frameObject;
+
+          if (sidebarName !== "Crop") {
+            frameObject.selectable = false;
+          }
         }
 
         // @ts-ignore
@@ -1267,6 +1365,21 @@ const Test = () => {
         } else {
           setActivateLiquidifyTool("");
         }
+
+        const liquifyCircle = newCanvas
+          .getObjects() // @ts-ignore
+          .find((obj) => obj.name?.startsWith("liquifyCircle"));
+
+        liquifyCircle.set({
+          selectable: false,
+          hasControls: false,
+        });
+
+        newCanvas
+          .getObjects() // @ts-ignore
+          .find((obj) => obj.setCoords());
+
+        newCanvas.renderAll();
       });
     } catch (error) {
       console.error("Failed to load canvas data:", error);
@@ -1872,7 +1985,7 @@ const Test = () => {
             />
 
             <IconComponent
-              icon={<ListPlus />}
+              icon={<Volleyball />}
               iconName="Morph"
               sidebarName={sidebarName}
               setSidebarName={setSidebarName}
@@ -1994,8 +2107,8 @@ const Test = () => {
                 </div>
                 <div className="max-h-[580px]  overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <AddText
-                    canvas={mainCanvasRef.current!}
-                    image={currentImageRef.current}
+                    canvasRef={mainCanvasRef}
+                    imageRef={currentImageRef}
                   />
                 </div>
               </div>

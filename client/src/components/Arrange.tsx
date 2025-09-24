@@ -275,15 +275,15 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       }, 1000);
     });
 
-    canvas.getObjects().forEach(function (obj) {
-      if (
-        obj.type.toLowerCase() !== "image" && // @ts-ignore
-        obj?.name === "canvasRect" && // @ts-ignore
-        obj?.name === "liquifyCircle"
-      ) {
-        canvas.remove(obj);
-      }
-    });
+    // canvas.getObjects().forEach(function (obj) {
+    //   if (
+    //     obj.type.toLowerCase() !== "image" && // @ts-ignore
+    //     obj?.name === "canvasRect" && // @ts-ignore
+    //     obj?.name === "liquifyCircle"
+    //   ) {
+    //     canvas.remove(obj);
+    //   }
+    // });
     canvas.requestRenderAll();
   };
 
@@ -296,11 +296,11 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     }
 
     if (
-      finalImageDimensionsRef.current.imageWidth >= 814 &&
+      finalImageDimensionsRef.current.imageWidth >= 814 ||
       finalImageDimensionsRef.current.imageHeight >= 814
     ) {
       toast({
-        description: "Image size is too big. Scale down first",
+        description: "Image size is too big. Max size is 814px",
       });
 
       return;
@@ -308,6 +308,11 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
 
     try {
       setSpinnerLoading(true);
+      canvas.getObjects().map((obj) => {
+        if (obj.type.toLowerCase() !== "image") {
+          obj.set({ visible: false });
+        }
+      });
       const formData = new FormData();
 
       const canvasImageBase64 = getCanvasDataUrl(
@@ -379,6 +384,18 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       }
     } catch (error) {
       console.error("Error sending image to backend:", error);
+    } finally {
+      canvas.getObjects().forEach((obj) => {
+        if (
+          obj.type !== "image" && // @ts-ignore
+          !obj?.name?.startsWith("Frame") && // @ts-ignore
+          !obj?.name?.startsWith("liquifyCircle")
+        ) {
+          obj.set("visible", true);
+        }
+      });
+
+      canvas.requestRenderAll();
     }
   };
 
@@ -766,9 +783,9 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
                   <CardDescription className="text-lg font-medium text-gray-800 dark:text-yellow-400 flex items-center gap-2">
                     <Crown className="w-5 h-5 text-yellow-500" />
                     Enhance Image
-                    {/* <span className="text-xs font-normal text-yellow-500 ml-2">
+                    <span className="text-xs font-normal text-yellow-500 ml-2">
                       Premium
-                    </span> */}
+                    </span>
                   </CardDescription>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">

@@ -55,8 +55,11 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
   const [stylizeRatio, setStylizeRatio] = useState(1.0);
   const currentFilters = useCommonProps((state) => state.currentFilters);
   const resetFilters = useAdjustStore((state) => state.resetFilters);
-  const { setFinalImageDimensions, disableSavingIntoStackRef } =
-    useCanvasObjects();
+  const {
+    setFinalImageDimensions,
+    disableSavingIntoStackRef,
+    downloadImageDimensionsRef,
+  } = useCanvasObjects();
   const setFlipX = useArrangeStore((state) => state.setFlipX);
   const setFlipY = useArrangeStore((state) => state.setFlipY);
 
@@ -250,8 +253,8 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       fabricImage.set({
         originX: "center",
         originY: "center",
-        top: imageRef.current.height / 2,
-        left: imageRef.current.width / 2,
+        top: imageRef.current.top,
+        left: imageRef.current.left,
         angle: imageRef.current.angle,
       });
 
@@ -280,7 +283,6 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       });
       // Replace the image content
 
-      console.log("djf");
       imageRef.current.setElement(img.getElement());
 
       imageRef.current.scaleX = 1;
@@ -288,14 +290,14 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
 
       imageRef.current.flipX = false;
       imageRef.current.flipY = false;
-      console.log("dj");
+
       setFlipX(false);
       setFlipY(false);
       setFinalImageDimensions({
         imageWidth: img.width,
         imageHeight: img.height,
       });
-      console.log("dj");
+
       resetFilters();
 
       // Refresh canvas
@@ -326,7 +328,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
           <DialogTrigger asChild>
             <div className="flex flex-col gap-3">
               <button className="custom-button w-full flex items-center justify-center gap-2">
-                {/* <Crown className="w-5 h-5 text-yellow-500" /> */}
+                <Crown className="w-5 h-5 text-yellow-500" />
                 Stylize Image
               </button>
             </div>
@@ -336,9 +338,9 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
               <DialogTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
                 <Crown className="w-6 h-6 text-yellow-500" />
                 Image Processing{" "}
-                {/* <span className="text-xs font-normal text-yellow-500 ml-2">
+                <span className="text-xs font-normal text-yellow-500 ml-2">
                   Premium
-                </span> */}
+                </span>
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 h-[80%]">

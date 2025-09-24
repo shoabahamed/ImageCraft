@@ -89,6 +89,14 @@ function getRotatedBoundingBox(obj: fabric.Object) {
       .find((obj) => obj.name?.startsWith("Frame"));
 
 
+       const liquifyCircle = canvas
+          .getObjects() // @ts-ignore
+          .find((obj) => obj.name?.startsWith("liquifyCircle"));
+
+      const isLiquifyCircleVisible = liquifyCircle?.visible ?? false;
+
+      liquifyCircle.visible = false;
+
 
       let frameStrokeWidth;
       let storkeDashArray;
@@ -162,7 +170,10 @@ function getRotatedBoundingBox(obj: fabric.Object) {
           frameObject.strokeWidth = frameStrokeWidth
           frameObject.strokeDashArray = storkeDashArray
          }
-  
+         
+      if(isLiquifyCircleVisible){
+        liquifyCircle.visible = true;
+      }
 
   
       canvas.renderAll();

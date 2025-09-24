@@ -44,7 +44,7 @@ export default function AdminPanel() {
   }, [user]);
 
   return (
-    <div className=" bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div className="bg-gradient-to-b from-blue-50 to-white dark:from-[#05101c] dark:to-[#0a192f] dark:bg-gradient-to-b min-h-screen">
       {/* Header */}
       <Navbar />
 

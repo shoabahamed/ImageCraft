@@ -112,6 +112,7 @@ const UsersSection = () => {
 
   const sendMessage = async () => {
     if (messageContent.trim() && currentUser) {
+      console.log(currentUser);
       try {
         await apiClient.post(
           "/send_notice",

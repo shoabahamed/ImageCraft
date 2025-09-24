@@ -63,6 +63,7 @@ const Footer = ({
     finalImageDimensions,
     originalImageDimensions,
     downloadImageDimensions,
+    downloadImageDimensionsRef,
     setDownloadImageDimensions,
     setFinalImageDimensions,
     allFiltersRef,
@@ -236,7 +237,6 @@ const Footer = ({
         console.log("canvas saved successfully");
         toast({
           description: "Canvas Successfully saved.",
-          className: "bg-green-500 text-gray-900",
           duration: 2000,
         });
         // Restore the canvas and image to their previous dimensions
@@ -244,7 +244,6 @@ const Footer = ({
       } else if (response.status === 200) {
         toast({
           description: "Canvas Updated Successfully.",
-          className: "bg-green-500 text-gray-900",
           duration: 2000,
         });
         console.log("updated canvas");
@@ -265,7 +264,6 @@ const Footer = ({
       toast({
         variant: "destructive",
         description: "Unexpected Error" + error,
-        className: "bg-green-500 text-gray-900",
         duration: 3000,
       });
     }
@@ -288,7 +286,7 @@ const Footer = ({
 
     const link = document.createElement("a");
     link.href = dataURL;
-    link.download = "canvas-image" + "." + format;
+    link.download = projectName + "." + format;
     link.click();
   };
 
@@ -310,13 +308,26 @@ const Footer = ({
         tab = "text";
       }
 
-      addLog({
-        section: section,
-        tab: tab,
-        event: "deletion",
-        message: `deleted shape ${selectedObject.type}`,
-        objType: selectedObject.type,
-      });
+      if (selectedObject?.name?.startsWith("Frame")) {
+        section = "crop";
+        tab = "crop";
+        addLog({
+          section: section,
+          tab: tab,
+          event: "deletion",
+          message: `deleted clippath ${selectedObject.type}`,
+          objType: selectedObject.type,
+        });
+        imageRef.current.clipPath = null;
+      } else {
+        addLog({
+          section: section,
+          tab: tab,
+          event: "deletion",
+          message: `deleted shape ${selectedObject.type}`,
+          objType: selectedObject.type,
+        });
+      }
 
       canvasRef.current.remove(selectedObject);
       canvasRef.current.requestRenderAll();
@@ -354,6 +365,10 @@ const Footer = ({
 
     // removing all filters
     resetFilters();
+
+    currentFiltersRef.current = [];
+    imageRef.current.filters = [];
+    imageRef.current.applyFilters();
 
     // restoring the original image
     FabricImage.fromURL(imageUrl).then((img) => {
@@ -393,7 +408,8 @@ const Footer = ({
 
       // Refresh canvas
       image.setCoords();
-      canvasRef.current.requestRenderAll();
+      image.applyFilters();
+      canvasRef.current.renderAll();
     });
 
     addLog({
@@ -404,58 +420,93 @@ const Footer = ({
     });
   };
 
+  // const handleScreenFit = () => {
+  //   const containerWidth = canvasRef.current.getWidth();
+  //   const containerHeight = canvasRef.current.getHeight();
+
+  //   const imageWidth = downloadImageDimensionsRef.current.imageWidth;
+  //   const imageHeight = downloadImageDimensionsRef.current.imageHeight;
+
+  //   const scaleX = containerWidth / imageWidth;
+  //   const scaleY = containerHeight / imageHeight;
+
+  //   console.log("Scale X:", scaleX, "Scale Y:", scaleY);
+  //   const zoom = Math.min(scaleX, scaleY);
+
+  //   if (zoom) {
+  //     // Apply zoom to canvas
+  //     canvasRef.current.setZoom(zoom);
+  //     setZoomValue(zoom);
+
+  //     // Calculate the viewport transform to center the image
+  //     const vp = canvasRef.current.viewportTransform!;
+  //     vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
+  //     vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+
+  //     console.log("Viewport Transform:", vp);
+  //     console.log(imageHeight, imageWidth);
+  //     console.log(zoom);
+
+  //     imageRef.current.set({
+  //       left: imageWidth / 2,
+  //       top: imageHeight / 2,
+  //       originX: "center",
+  //       originY: "center",
+  //     });
+
+  //     const canvasRect = canvasRef.current
+  //       .getObjects() // @ts-ignore
+  //       .find((obj) => obj.name?.startsWith("canvasRect"));
+
+  //     canvasRect.set({
+  //       left: imageWidth / 2,
+  //       top: imageHeight / 2,
+  //       originX: "center",
+  //       originY: "center",
+  //     });
+
+  //     canvasRef.current.setViewportTransform(vp);
+  //     canvasRef.current.requestRenderAll();
+  //   } else {
+  //     const center = new Point(containerWidth / 2, containerHeight / 2);
+
+  //     canvasRef.current.zoomToPoint(center, zoom); // handles zoom + centering together
+  //     setZoomValue(zoom);
+  //     imageRef.current.setCoords();
+
+  //     canvasRef.current.requestRenderAll();
+  //   }
+  // };
+
   const handleScreenFit = () => {
-    const containerWidth = canvasRef.current.getWidth();
-    const containerHeight = canvasRef.current.getHeight();
+    const canvas = canvasRef.current;
+    const containerWidth = canvas.getWidth();
+    const containerHeight = canvas.getHeight();
 
-    const imageWidth = downloadImageDimensions.imageWidth;
-    const imageHeight = downloadImageDimensions.imageHeight;
+    // Use the actual image object instead of ref dimensions
+    const image = imageRef.current;
 
-    const scaleX = containerWidth / imageWidth;
-    const scaleY = containerHeight / imageHeight;
+    // Get the true visual bounding box including transformations
+    const boundingRect = image.getBoundingRect();
 
-    console.log("Scale X:", scaleX, "Scale Y:", scaleY);
+    const scaleX = containerWidth / boundingRect.width;
+    const scaleY = containerHeight / boundingRect.height;
     const zoom = Math.min(scaleX, scaleY);
 
-    if (zoom <= 1) {
-      // Apply zoom to canvas
-      canvasRef.current.setZoom(zoom);
-      setZoomValue(zoom);
+    canvas.setZoom(zoom);
+    setZoomValue(zoom);
 
-      // Calculate the viewport transform to center the image
-      const vp = canvasRef.current.viewportTransform!;
-      vp[4] = (containerWidth - imageWidth * zoom) / 2; // translateX
-      vp[5] = (containerHeight - imageHeight * zoom) / 2; // translateY
+    // Calculate center of the actual image bounds
+    const centerX = boundingRect.left + boundingRect.width / 2;
+    const centerY = boundingRect.top + boundingRect.height / 2;
 
-      imageRef.current.set({
-        left: imageWidth / 2,
-        top: imageHeight / 2,
-        originX: "center",
-        originY: "center",
-      });
+    // Adjust viewport to center the image
+    const vp = canvas.viewportTransform;
+    vp[4] = containerWidth / 2 - centerX * zoom;
+    vp[5] = containerHeight / 2 - centerY * zoom;
 
-      const canvasRect = canvasRef.current
-        .getObjects() // @ts-ignore
-        .find((obj) => obj.name?.startsWith("canvasRect"));
-
-      canvasRect.set({
-        left: imageWidth / 2,
-        top: imageHeight / 2,
-        originX: "center",
-        originY: "center",
-      });
-
-      canvasRef.current.setViewportTransform(vp);
-      canvasRef.current.requestRenderAll();
-    } else {
-      const center = new Point(containerWidth / 2, containerHeight / 2);
-
-      canvasRef.current.zoomToPoint(center, zoom); // handles zoom + centering together
-      setZoomValue(zoom);
-      imageRef.current.setCoords();
-
-      canvasRef.current.requestRenderAll();
-    }
+    canvas.setViewportTransform(vp);
+    canvas.requestRenderAll();
   };
 
   return (
@@ -524,7 +575,6 @@ const Footer = ({
             } else {
               toast({
                 description: "You need to log in first",
-                className: "bg-green-500 text-gray-900",
                 duration: 3000,
               });
             }

@@ -18,6 +18,6 @@ export const useArrangeStore = create<ArrangeStroe>((set) => ({
   setFlipX: (value) => set({ flipX: value }),
   setFlipY: (value) => set({ flipY: value }),
   setImageRotation: (value) => set({ imageRotation: value }),
-  backgroundColor: "#111111",
+  backgroundColor: "transparent",
   setBackgroundColor: (value) => set({ backgroundColor: value }),
 }));

@@ -194,7 +194,6 @@ export default function Navbar({
         dispatch({ type: "LOGIN", payload: userData });
         toast({
           description: "Sign up Successfull.",
-          className: "bg-green-500 text-gray-900",
           duration: 2000,
         });
       } else {
@@ -216,7 +215,6 @@ export default function Navbar({
         toast({
           variant: "destructive",
           description: "Unexpected error",
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
         console.error("Unexpected error:", error);
@@ -259,14 +257,12 @@ export default function Navbar({
         dispatch({ type: "LOGIN", payload: userData });
         toast({
           description: "Log in Successfull.",
-          className: "bg-green-500 text-gray-900",
           duration: 2000,
         });
       } else {
         toast({
           variant: "destructive",
           description: "Log in Failed.",
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
         console.error("Login failed:", response.data.message);
@@ -276,7 +272,6 @@ export default function Navbar({
         toast({
           variant: "destructive",
           description: "Log in Failed." + error.response.data.message,
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
         console.error("Error during login:", error.response.data.message);
@@ -284,7 +279,6 @@ export default function Navbar({
         toast({
           variant: "destructive",
           description: "Unexpected error",
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
         console.error("Unexpected error:", error);
@@ -359,14 +353,12 @@ export default function Navbar({
         toast({
           variant: "destructive",
           description: "Google Log in Failed." + error.response.data.message,
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
       } else {
         toast({
           variant: "destructive",
           description: "Unexpected error",
-          className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
         console.error("Unexpected error:", error);
@@ -379,15 +371,16 @@ export default function Navbar({
     dispatch({ type: "LOGOUT" });
     toast({
       description: "Log Out Successfull.",
-      className: "bg-green-500 text-gray-900",
       duration: 2000,
     });
+
+    navigate("/");
   };
 
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Gallery", href: "/gallery", icon: Image },
-    // { name: "Pricing", href: "/pricing", icon: Crown },
+    { name: "Pricing", href: "/pricing", icon: Crown },
     {
       name: "Profile",
       href: `/profile/${user?.userId}`,
@@ -405,7 +398,19 @@ export default function Navbar({
           <div className="flex items-center">
             <a href="/" className="flex-shrink-0 flex items-center">
               <div className="flex items-center">
-                <Camera className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                {/* <Camera className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                 */}
+                <img
+                  src="/hero.png"
+                  alt="ImageCraft Hero"
+                  className="h-10 w-10 object-contain"
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, white 85%, transparent 100%)",
+                    maskImage:
+                      "linear-gradient(to bottom, white 85%, transparent 100%)",
+                  }}
+                />
                 <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-300">
                   Image Craft
                 </span>
@@ -476,7 +481,8 @@ export default function Navbar({
                     {navItems.map((item) =>
                       (!item.protected || user) &&
                       (item.name !== "Admin" ||
-                        (item.name === "Admin" && user?.role === "admin")) ? (
+                        (item.name === "Admin" &&
+                          user?.role.includes("admin"))) ? (
                         <DropdownMenuItem
                           key={item.name}
                           className="cursor-pointer flex items-center hover:bg-gray-100 dark:hover:bg-gray-900 px-4 py-2"
@@ -564,7 +570,7 @@ export default function Navbar({
                           Sign up
                         </Button>
                       </DropdownMenuItem>
-                      {/* <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                      <DropdownMenuSeparator className="my-1 border-t border-gray-100 dark:border-gray-800" />
                       <DropdownMenuItem asChild>
                         <a
                           href="/pricing"
@@ -573,7 +579,7 @@ export default function Navbar({
                           <Camera className="mr-2 h-4 w-4" />
                           Pricing
                         </a>
-                      </DropdownMenuItem> */}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -647,7 +653,7 @@ export default function Navbar({
                                       }
                                     >
                                       {showPassword ? (
-                                        <EyeIcon className="w-5 h-5" />
+                                        <EyeIcon className="w-5 h-5 dark:bg-black" />
                                       ) : (
                                         <EyeOffIcon className="w-5 h-5" />
                                       )}

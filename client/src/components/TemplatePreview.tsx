@@ -72,7 +72,7 @@ export default function TemplatePreview({ objects }) {
         });
 
         fabricCanvas.add(obj);
-        fabricCanvas.requestRenderAll();
+        fabricCanvas.renderAll();
       });
     };
 

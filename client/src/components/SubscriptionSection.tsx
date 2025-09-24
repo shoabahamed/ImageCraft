@@ -113,12 +113,6 @@ const SubscriptionSection = () => {
         });
 
         if (res.data.url) window.location.href = res.data.url;
-
-        toast({
-          description: "Successfully upgraded to ultimate tier",
-        });
-
-        redirect("/");
       } else {
         toast({
           description: "You need to sign in first",

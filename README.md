@@ -3,9 +3,9 @@
 ![HomePage](./assets/home_page.png)
 
 An advanced real time web application using **GPU** for editing, enhancing, and sharing images.  
-Built with **React (Vite)** on the frontend and **Flask** on the backend, with cloud storage using cloudnary and subscription based payemnt with **Stripe**
+Built with **React (Vite)** on the frontend and **Flask** on the backend, with cloud storage using Cloudinary and subscription-based payment with **Stripe**.
 
-You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-projects.vercel.app/). As it is a free service backend may not work.
+You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-projects.vercel.app/). As it is a free service, backend may not work.
 
 ---
 
@@ -19,36 +19,36 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 ### 🖌️ Image Editing Tools
 
-- Supports Any Image Size From Local Disk, Online Url, Canvas Json File
-- Adjust Colors, Details and of the image
+- Supports Any Image Size From Local Disk, Online URL, Canvas JSON File
+- Adjust Colors, Details of the image
 - Custom Preset Filters
-- Reflect, Swril, Bulge/Pinch Filters, Histogram Equlization, Contrast Streching
+- Reflect, Swirl, Bulge/Pinch Filters, Histogram Equalization, Contrast Stretching
 - Add **text** and **shapes**
 - Preset Text Templates
 - **Crop** and **resize**
 - **Style transfer** (with templates & any image)
 - **Super resolution** (upscaling)
-- **Undo Redo Feature**
+- **Undo/Redo Feature**
 
-<figure style="text-align: center;">
-  <img src="./assets/edit.png" alt="Editing Page">
-  <figcaption style="text-align: center;">Figure: Main Editing Page</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/edit.png" alt="Editing Page" width="600">
+  <p>Figure: Main Editing Page</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/filters.png" alt="Style Transfer">
-  <figcaption style="text-align: center;">Figure: Color Filters</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/filters.png" alt="Color Filters" width="600">
+  <p>Figure: Color Filters</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/style_transfer.png" alt="Style Transfer">
-  <figcaption style="text-align: center;">Figure: Style Transfer</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/style_transfer.png" alt="Style Transfer" width="600">
+  <p>Figure: Style Transfer</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/super_resolution.png" alt="Style Transfer">
-  <figcaption style="text-align: center;">Figure: 2X, 3X, 4X Super Resolution</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/super_resolution.png" alt="Super Resolution" width="600">
+  <p>Figure: 2X, 3X, 4X Super Resolution</p>
+</div>
 
 ### 📊 User Dashboard
 
@@ -56,18 +56,17 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 - Bookmarks
 - Manage Subscriptions
 - Reports & Notices
-- Access Project Informations Dashboard
-- Manage Subscriptions
+- Access Project Information Dashboard
 
-<figure style="text-align: center;">
-  <img src="./assets/profile.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Profile Page</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/profile.png" alt="Profile Page" width="600">
+  <p>Figure: Profile Page</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/dashboard.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Project Dashboard</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/dashboard.png" alt="Project Dashboard" width="600">
+  <p>Figure: Project Dashboard</p>
+</div>
 
 ### 📸 Gallery
 
@@ -77,10 +76,10 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 - **Report** inappropriate content
 - Pagination
 
-<figure style="text-align: center;">
-  <img src="./assets/gallery.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Gallery</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/gallery.png" alt="Gallery" width="600">
+  <p>Figure: Gallery</p>
+</div>
 
 **TODO**: **Find similar images using semantic search**
 
@@ -88,40 +87,40 @@ You can find the project demo [here](https://pixeltune-lxxmqe90w-shoab-ahameds-p
 
 - Review and manage reported images
 - Manage Admins
-- Add New Text and style Transfer Templates
+- Add New Text and Style Transfer Templates
 
-<figure style="text-align: center;">
-  <img src="./assets/admin.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Admin Management</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/admin.png" alt="Admin Management" width="600">
+  <p>Figure: Admin Management</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/admin_text.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Add Templates</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/admin_text.png" alt="Add Templates" width="600">
+  <p>Figure: Add Templates</p>
+</div>
 
 ### 💳 Subscription System
 
 - **Stripe integration** for subscription plans
 - Webhooks to:
-  - Update subscription plains
+  - Update subscription plans
   - Subscription Cancellations
   - Reset user quotas (`style_completion` and `upscale_completion`)
 
-<figure style="text-align: center;">
-  <img src="./assets/pricing.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Pricing</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/pricing.png" alt="Pricing" width="600">
+  <p>Figure: Pricing</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/stripe.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Stripe Subscription</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/stripe.png" alt="Stripe Subscription" width="600">
+  <p>Figure: Stripe Subscription</p>
+</div>
 
-<figure style="text-align: center;">
-  <img src="./assets/current_plan.png" alt="HomePage">
-  <figcaption style="text-align: center;">Figure: Current Plan</figcaption>
-</figure>
+<div align="center">
+  <img src="./assets/current_plan.png" alt="Current Plan" width="600">
+  <p>Figure: Current Plan</p>
+</div>
 
 ---
 

@@ -109,15 +109,19 @@ def save_project():
                         obj["src"] = cloud_inter_result['secure_url']
 
                 projects_collection.update_one(
-                    {"project_id": canvas_id, "user_id": user_id}, 
+                    {"project_id": canvas_id, "user_id": user_id},
                     {"$set": {
                         "project_data": canvas_data,
-                        "project_logs": canvas_logs, 
-                        "final_image_shape": final_image_shape, 
+                        "project_logs": canvas_logs,
+                        "final_image_shape": final_image_shape,
                         "download_image_shape": download_image_shape,
                         "filter_names": filter_names,
                         "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
+                        # Cloudinary issues a NEW versioned secure_url on overwrite, so the
+                        # url stored at creation keeps resolving to the pre-update render.
+                        # Dev doesn't need this because its static path is overwritten in place.
+                        "canvas_image_url": cloud_canvas_result["secure_url"],
                         "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
                     }}
                 )
@@ -244,6 +248,7 @@ def save_project():
                     "canvas_image_url": os.getenv("BACKEND_SERVER") + "/server/static/" + user_id + "/canvas/" + image_filename,
                     "total_rating": 5,
                     "rating_count": 1,
+                    "avg_rating": 5,
                     "total_views": 1,
                     "total_bookmark": 0,
                     "original_image_shape": original_image_shape,
@@ -398,9 +403,13 @@ def get_all_projects():
 
 def query_projects():
     try:
-        user_id = str(g._id)
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
-        bookmarked_projects = user.get('bookmarked', [])
+        # Anonymous visitors are allowed here; they just have no bookmarks.
+        user_id = getattr(g, "_id", None)
+        bookmarked_projects = []
+        if user_id:
+            user = users_collection.find_one({"_id": ObjectId(user_id)})
+            if user:
+                bookmarked_projects = user.get('bookmarked', [])
 
         # Get query params
         search = request.args.get("search", "").strip()

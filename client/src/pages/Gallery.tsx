@@ -18,7 +18,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import apiClient from "@/utils/appClient";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import NewProjectBox from "@/components/NewProjectBox";
@@ -46,7 +46,6 @@ const sortTypes = [
   { label: "Newest", value: "date" },
   { label: "Highest Rated", value: "rating" },
   { label: "Most Viewed", value: "views" },
-  { label: "Alphabetical", value: "name" },
   { label: "Bookmarked", value: "bookmarked" },
 ];
 
@@ -143,13 +142,17 @@ export default function Gallery() {
           sort: searchParams.get("sort") || "date",
           dir: searchParams.get("dir") || "desc",
           page: searchParams.get("page") || "1",
-          page_size: 8,
+          page_size: 24,
         };
         const response = await apiClient.get("/projects/query", {
           params,
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token}`,
+            // Omit entirely when logged out so the server treats this as an
+            // anonymous request rather than parsing "Bearer undefined".
+            ...(user?.token
+              ? { Authorization: `Bearer ${user.token}` }
+              : {}),
           },
         });
         const data = response.data.data;
@@ -247,10 +250,16 @@ export default function Gallery() {
     return pages;
   };
 
-  // Calculate average rating
-  const calculateRating = (total: number, count: number) => {
-    if (!count) return 0;
-    return (total / count).toFixed(1);
+  // These actions hit auth-gated endpoints, so bounce anonymous visitors with a
+  // clear message instead of letting the request come back as a 401.
+  const requireLogin = (action: string) => {
+    if (user) return true;
+    toast({
+      description: `Please log in to ${action}.`,
+      className: "bg-red-500 text-gray-900",
+      duration: 3000,
+    });
+    return false;
   };
 
   // Handle download image
@@ -270,11 +279,13 @@ export default function Gallery() {
         }
       );
 
-      // Update local state to reflect new view count
+      // Update local state to reflect new view count. The API still returns
+      // total_views as a string for some projects, so coerce before adding —
+      // otherwise this concatenates ("2" + 1 = "21") instead of incrementing.
       setProjects(
         projects.map((p) =>
           p.project_id === project.project_id
-            ? { ...p, total_views: p.total_views + 1 }
+            ? { ...p, total_views: Number(p.total_views) + 1 }
             : p
         )
       );
@@ -327,6 +338,8 @@ export default function Gallery() {
   };
 
   const handleBookmark = async (projectId: string, bookmark: boolean) => {
+    if (!requireLogin("bookmark a project")) return;
+
     try {
       const response = await apiClient.post(
         "/projects/toggle_bookmark", // API endpoint to toggle bookmark
@@ -506,106 +519,84 @@ export default function Gallery() {
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 bg-gradient-to-b from-blue-50 to-white dark:from-[#05101c] dark:to-[#0a192f] dark:bg-gradient-to-b duration-300">
-          {loading ? (
-            <div className="col-span-full text-center text-blue-600 dark:text-blue-300 text-lg">
-              Loading...
+        {loading ? (
+          <div className="mb-8 text-center text-blue-600 dark:text-blue-300 text-lg">
+            Loading...
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="mb-8 text-center py-12">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md mx-auto">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                />
+              </svg>
+              <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+                No projects found
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Try adjusting your search or filters to find what you're looking
+                for.
+              </p>
             </div>
-          ) : projects.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md mx-auto">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
-                  No projects found
-                </h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Try adjusting your search or filters to find what you're
-                  looking for.
-                </p>
-              </div>
-            </div>
-          ) : (
-            projects.map((project) => (
+          </div>
+        ) : (
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 mb-8 duration-300">
+            {projects.map((project) => (
               <div
                 key={project.project_id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700"
+                className="group relative mb-4 break-inside-avoid overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow duration-300"
               >
-                {/* Project Image */}
-                <div className="relative w-full">
-                  <img
-                    src={project.canvas_image_url}
-                    alt={project.project_name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <ArrowDownToLine
-                    className="absolute top-2 right-2 z-10 w-6 h-6 p-1 bg-white dark:bg-gray-800 bg-opacity-75 rounded-full text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-opacity-100 transition-all"
-                    onClick={() =>
-                      downloadImage(project.canvas_image_url, project)
-                    }
-                  />
-                </div>
+                <img
+                  src={project.canvas_image_url}
+                  alt={project.project_name}
+                  loading="lazy"
+                  className="block w-full h-auto"
+                />
 
-                {/* Project Content */}
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-blue-800 dark:text-blue-300">
-                      {project.project_name}
-                    </h3>
-                    <div className="flex items-center space-x-1">
-                      <div className="flex items-center bg-yellow-50 dark:bg-yellow-900/30 rounded-md px-1.5 py-0.5">
-                        <svg
-                          className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400 mr-0.5"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
-                          {calculateRating(
-                            project.total_rating,
-                            project.rating_count
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center bg-gray-100 dark:bg-gray-800/50 rounded-md px-1.5 py-0.5">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {project.rating_count}{" "}
-                          {project.rating_count === 1 ? "review" : "reviews"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Creator and Date */}
-                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
-                    By
-                    <Link
-                      to={`/profile/${project.user_id}`}
-                      className="pl-1 text-blue-500 dark:text-blue-400 hover:underline italic"
+                {/* Hover overlay: actions only, image stays unobstructed at rest */}
+                <div className="absolute inset-0 flex flex-col justify-between p-3 bg-gradient-to-b from-black/40 via-transparent to-black/60 transition-opacity duration-200 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:pointer-events-none md:group-hover:pointer-events-auto">
+                  {/* Top actions */}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      aria-label={
+                        project.bookmarked ? "Remove bookmark" : "Bookmark"
+                      }
+                      className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors"
+                      onClick={() =>
+                        handleBookmark(project.project_id, project.bookmarked)
+                      }
                     >
-                      {project.username}
-                    </Link>
-                    <span className="mx-2">•</span>
-                    <span>{project.updated_at.toLocaleDateString()}</span>
+                      <Bookmark
+                        className={`w-4 h-4 ${
+                          project.bookmarked ? "fill-current" : "fill-none"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      aria-label="Download"
+                      className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors"
+                      onClick={() =>
+                        downloadImage(project.canvas_image_url, project)
+                      }
+                    >
+                      <ArrowDownToLine className="w-4 h-4" />
+                    </button>
                   </div>
 
-                  {/* Stats and Actions */}
-                  <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                  {/* Bottom stats and actions */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white text-xs">
                       <svg
-                        className="w-4 h-4 mr-1"
+                        className="w-4 h-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -626,11 +617,12 @@ export default function Gallery() {
                       {project.total_views}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2">
                       <button
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        aria-label="Rate project"
+                        className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors"
                         onClick={() => {
+                          if (!requireLogin("rate a project")) return;
                           setOpenRate(true);
                           setSelectedProjectId(project.project_id);
                           setSelectedProjectUserId(project.user_id);
@@ -639,27 +631,16 @@ export default function Gallery() {
                         <Star
                           className={`w-4 h-4 ${
                             project.rating_count > 0
-                              ? "fill-yellow-500 dark:fill-yellow-400"
+                              ? "fill-yellow-400 text-yellow-400"
                               : ""
                           }`}
                         />
                       </button>
                       <button
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        onClick={() =>
-                          handleBookmark(project.project_id, project.bookmarked)
-                        }
-                      >
-                        <Bookmark
-                          className={`w-4 h-4 ${
-                            project.bookmarked ? "fill-current" : "fill-none"
-                          }`}
-                        />
-                      </button>
-
-                      <button
-                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                        aria-label="Report project"
+                        className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white hover:text-red-400 transition-colors"
                         onClick={() => {
+                          if (!requireLogin("report a project")) return;
                           setOpenReport(true);
                           setSelectedProjectId(project.project_id);
                           setSelectedProjectUserId(project.user_id);
@@ -671,9 +652,9 @@ export default function Gallery() {
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Pagination */}
         <Pagination className="flex justify-end p-7">

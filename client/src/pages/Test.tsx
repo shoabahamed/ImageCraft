@@ -100,6 +100,21 @@ const Test = () => {
 
   const [spinnerLoading, setSpinnerLoading] = useState(false);
 
+  // Covers the initial restore of a project. Kept separate from spinnerLoading
+  // because the [filtersUI] effect clears that one on a 500ms timer, which would
+  // uncover the canvas before a slow image has finished decoding.
+  const [initialLoading, setInitialLoading] = useState(
+    () => !!localStorage.getItem("project_data")
+  );
+
+  // Ceiling, so a load that never settles can't leave the page stuck behind the
+  // overlay. Cleared as soon as the real signal arrives.
+  useEffect(() => {
+    if (!initialLoading) return;
+    const timer = setTimeout(() => setInitialLoading(false), 15000);
+    return () => clearTimeout(timer);
+  }, [initialLoading]);
+
   //arrange states
 
   const setImageRotation = useArrangeStore((state) => state.setImageRotation);
@@ -919,11 +934,17 @@ const Test = () => {
             if (idFromState) {
               canvasIdRef.current = idFromState;
             }
-          });
+          })
+            // loadFromJSON's 2nd arg is a per-object reviver; the returned promise
+            // is the real completion signal and only settles once enlivenObjects
+            // has finished decoding every image.
+            .then(() => setInitialLoading(false))
+            .catch(() => setInitialLoading(false));
           // localStorage.removeItem("CanvasId");
           // localStorage.removeItem("project_data");
         } catch (error) {
           console.error("Failed to load canvas data:", error);
+          setInitialLoading(false);
         }
       } else {
         fabric.FabricImage.fromURL(imageUrl, {
@@ -1187,7 +1208,10 @@ const Test = () => {
     const originalImageShape: { imageWidth: number; imageHeight: number } =
       currentSnapshot.original_image_shape;
     const filterNames = currentSnapshot.filter_names;
-    const allFiltersApplied = currentSnapshot.all_filters_applied;
+    // The two snapshots built during mount omit this key entirely (only
+    // handleObjectModified writes it), so undoing to the initial state used to set
+    // allFiltersRef.current = undefined and crash every consumer that calls .concat.
+    const allFiltersApplied = currentSnapshot.all_filters_applied ?? [];
     const lastActiveToolName = currentSnapshot.last_active_tool_name;
 
     console.log(currentHistoryIndex, "history index");
@@ -1351,6 +1375,11 @@ const Test = () => {
           if (previouslySelectedObject) {
             newCanvas.setActiveObject(previouslySelectedObject);
             handleObjectSelected(); // This will update the UI state
+          } else {
+            // Not present in this snapshot. The old instance belongs to the canvas
+            // we just disposed, so keeping it would leave the sidebars bound to a
+            // ghost object (stale values, and remove() silently doing nothing).
+            setSelectedObject(null);
           }
         }
 
@@ -1410,33 +1439,12 @@ const Test = () => {
 
     isUndoRedoAction.current = false;
 
-    return () => {
-      // newCanvas.dispose();
-
-      newCanvas.off("mouse:wheel", function (opt) {
-        const delta = opt.e.deltaY;
-        let zoom = newCanvas.getZoom();
-        zoom *= 0.999 ** delta;
-        if (zoom > 100) zoom = 100;
-        if (zoom < 0.001) zoom = 0.001; //@ts-ignore
-        newCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-        setZoomValue(zoom);
-        opt.e.preventDefault();
-        opt.e.stopPropagation();
-      });
-
-      newCanvas.off("object:scaling", hanldeObjectScaled);
-
-      newCanvas.off("selection:created", handleObjectSelected);
-
-      newCanvas.off("selection:updated", handleObjectSelected);
-
-      newCanvas.off("selection:cleared", handleObjectDeselected);
-
-      newCanvas.off("text:changed", handleTextChanged);
-
-      // newCanvas.off("object:modified", handleObjectModified);
-    };
+    // NOTE: deliberately no cleanup here.
+    // This effect re-runs on every currentHistoryIndex change (i.e. on every edit),
+    // but only re-registers listeners when isUndoRedoAction is set. A cleanup would
+    // therefore detach the listeners on the first edit after an undo/redo and never
+    // put them back, silently killing selection/text handling on the live canvas.
+    // These listeners are torn down by oldCanvas.dispose() above on the next rebuild.
   }, [currentHistoryIndex]);
 
   // this only runs if we load a project from the database else it does not do anything
@@ -1925,7 +1933,9 @@ const Test = () => {
     setTimeout(() => {
       setSpinnerLoading(false);
       dbLoadingRef.current = false;
-      mainCanvasRef.current.requestRenderAll();
+      // null on mount until the canvas finishes building, which is now common
+      // because a slow project restore can outlast this 500ms timer.
+      mainCanvasRef.current?.requestRenderAll();
     }, 500);
   }, [filtersUI]);
 
@@ -1938,11 +1948,11 @@ const Test = () => {
       />
       <div className="w-full flex-1 flex items-center relative flex-col md:flex-row dark:bg-[#05101c]">
         {/* Full-screen overlay */}
-        {spinnerLoading && (
+        {(spinnerLoading || initialLoading) && (
           <div className="fixed w-full h-full top-0 left-0 z-50 flex bg-black opacity-40 justify-center items-center">
             <ClipLoader
               color={"#3B82F6"}
-              loading={spinnerLoading}
+              loading={spinnerLoading || initialLoading}
               cssOverride={override}
               size={70}
               aria-label="Loading Spinner"

@@ -4,6 +4,9 @@ from middleware.auth import auth_middleware
 
 project_routes = Blueprint("project_routes", __name__)
 
+# Endpoints readable without logging in. They only ever expose public projects.
+PUBLIC_ENDPOINTS = {"project_routes.query_projects_route"}
+
 # Attach the middleware to the blueprint
 @project_routes.before_request
 def use_auth_middleware():
@@ -13,6 +16,14 @@ def use_auth_middleware():
     # Skip middleware for preflight OPTIONS requests
     if request.method == "OPTIONS":
         return '', 204
+
+    # Public endpoints authenticate opportunistically: a valid token still
+    # populates `g` (so logged-in users get their bookmark state), but a
+    # missing or bad one falls through as an anonymous request.
+    if request.endpoint in PUBLIC_ENDPOINTS:
+        if request.headers.get("Authorization"):
+            auth_middleware()()
+        return
 
     # Proceed with auth middleware for other requests
     response = auth_middleware()()

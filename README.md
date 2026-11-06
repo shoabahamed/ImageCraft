@@ -71,6 +71,7 @@ You can find the project demo [here](https://pixeltune-theta.vercel.app/). As it
 ### 📸 Gallery
 
 - Share edited images with the community
+- Search images through semantic search with text input
 - Sort by **bookmarks** and **views**
 - **Like** / **rate** images
 - **Report** inappropriate content
@@ -81,7 +82,7 @@ You can find the project demo [here](https://pixeltune-theta.vercel.app/). As it
   <p>Figure: Gallery</p>
 </div>
 
-**TODO**: **Find similar images using semantic search**
+**TODO**: **Find similar images using semantic search with image input**
 
 ### 👨‍💻 Admin Dashboard
 

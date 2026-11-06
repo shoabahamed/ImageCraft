@@ -122,10 +122,13 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
     setLoadSate(true);
     removeTempStylizeImage();
 
-    if (!user)
+    if (!user) {
       toast({
         description: "You need to sign in first",
       });
+      setLoadSate(false);
+      return;
+    }
 
     try {
       const formData = new FormData();
@@ -134,7 +137,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
         canvas,
         imageRef.current,
         false,
-        true
+        true,
       );
 
       // if (!isBase64(originalImageBase64)) {
@@ -160,10 +163,11 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
         "/image_proc/style_transfer",
         formData,
         {
+          timeout: 40000,
           headers: {
             Authorization: `Bearer ${user?.token}`,
           },
-        }
+        },
       );
 
       if (response.status === 200) {
@@ -220,25 +224,23 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
           ),
         });
       } else {
+        setLoadSate(false);
         toast({
           variant: "destructive",
-          description: "Error Encountered during style transfer",
+          description: "Something went wrong",
           className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
       }
     } catch (error) {
-      let message = error.message;
-      if (axios.isAxiosError(error)) {
-        message = error.response.data.message;
-      }
+      setLoadSate(false);
       toast({
         variant: "destructive",
-        description: message,
+        description: "Something went wrong",
         duration: 8000,
       });
+      console.error("Error sending image to backend:", error);
     }
-    setLoadSate(false);
   };
 
   const showStylizeImagePreview = (base64Image: string) => {
@@ -352,7 +354,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
                       canvas,
                       imageRef.current,
                       false,
-                      true
+                      true,
                     )} // Get the image URL from FabricImage
                     alt="Fabric Image"
                     className="object-contain w-full h-full"

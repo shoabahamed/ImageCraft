@@ -99,7 +99,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
 
   const backgroundColor = useArrangeStore((state) => state.backgroundColor);
   const setBackgroundColor = useArrangeStore(
-    (state) => state.setBackgroundColor
+    (state) => state.setBackgroundColor,
   );
 
   const handleFlipX = (flipX: boolean) => {
@@ -136,7 +136,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     canvas
       .getObjects()
       .find((obj) =>
-        (obj as unknown as { setCoords?: () => void }).setCoords?.()
+        (obj as unknown as { setCoords?: () => void }).setCoords?.(),
       );
 
     const bounds = getRotatedBoundingBox(imageRef.current);
@@ -156,7 +156,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       .getObjects()
       // Fabric.js objects may have custom 'name' property
       .find((obj) =>
-        (obj as unknown as { name?: string }).name?.startsWith("canvasRect")
+        (obj as unknown as { name?: string }).name?.startsWith("canvasRect"),
       );
 
     // Restore zoom & transform
@@ -165,7 +165,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
     canvas
       .getObjects()
       .find((obj) =>
-        (obj as unknown as { setCoords?: () => void }).setCoords?.()
+        (obj as unknown as { setCoords?: () => void }).setCoords?.(),
       );
 
     canvasRect.set({
@@ -319,7 +319,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
         canvas,
         imageRef.current,
         false,
-        true
+        true,
       );
 
       const originalImageFile = base64ToFile(canvasImageBase64, "image");
@@ -328,6 +328,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       formData.append("scale", scale.toString());
 
       const response = await apiClient.post("/image_proc/super_res", formData, {
+        timeout: 40000,
         headers: {
           Authorization: `Bearer ${user?.token}`,
         },
@@ -377,12 +378,18 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
         setSpinnerLoading(false);
         toast({
           variant: "destructive",
-          description: "Error Encountered inference",
+          description: "Something went wrong",
           className: "bg-green-500 text-gray-900",
           duration: 3000,
         });
       }
     } catch (error) {
+      setSpinnerLoading(false);
+      toast({
+        variant: "destructive",
+        description: "Something went wrong",
+        duration: 8000,
+      });
       console.error("Error sending image to backend:", error);
     } finally {
       canvas.getObjects().forEach((obj) => {
@@ -401,7 +408,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
 
   const handleBackgroundColorChange = (
     color: string,
-    fireModified: boolean
+    fireModified: boolean,
   ) => {
     setBackgroundColor(color);
     // @ts-ignore
@@ -409,7 +416,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
       .getObjects()
       // Fabric.js objects may have custom 'name' property
       .find((obj) =>
-        (obj as unknown as { name?: string }).name?.startsWith("canvasRect")
+        (obj as unknown as { name?: string }).name?.startsWith("canvasRect"),
       );
 
     if (canvasRect) {
@@ -439,7 +446,7 @@ const Arrange = ({ canvas, imageRef, setSpinnerLoading }: ArrangeProps) => {
         .getObjects()
         // Fabric.js objects may have custom 'name' property
         .find((obj) =>
-          (obj as unknown as { name?: string }).name?.startsWith("canvasRect")
+          (obj as unknown as { name?: string }).name?.startsWith("canvasRect"),
         );
 
       if (canvasRect) {

@@ -14,14 +14,25 @@ import { useLogContext } from "@/hooks/useLogContext";
 import { Label } from "./ui/label";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getRotatedBoundingBox } from "@/utils/commonFunctions";
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, FocusEvent, KeyboardEvent } from "react";
 
 type ImageSizeProps = {
   canvas: Canvas;
   image: FabricImage;
 };
 
-const DEBOUNCE_DELAY = 500; // ms
+type FieldName = "width" | "height";
+
+const fmt = (n: number) => Math.round(n).toString();
+
+// Parse an arbitrary draft string into a positive number, or null when invalid/empty.
+const parsePositive = (text: string): number | null => {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
 
 const ImageSize = ({ canvas, image }: ImageSizeProps) => {
   const { user } = useAuthContext();
@@ -35,30 +46,38 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
   const { addLog } = useLogContext();
 
-  const useDebounceFn = (fn: (...args: any[]) => void, delay: number) => {
-    const timerRef = useRef<number | null>(null);
+  // Free-typing model: while a field is focused, its input is bound to a local
+  // string `draft` that accepts anything (empty, partial, garbage). The commit
+  // happens only on blur / Enter, so the canvas never fights the keystrokes.
+  const [draft, setDraft] = useState<{ width: string; height: string }>({
+    width: fmt(finalImageDimensions.imageWidth),
+    height: fmt(finalImageDimensions.imageHeight),
+  });
+  const [activeField, setActiveField] = useState<FieldName | null>(null);
+  const suppressNextCommitRef = useRef(false);
 
-    const debounced = useCallback(
-      (...args: any[]) => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = window.setTimeout(() => {
-          fn(...args);
-        }, delay);
-      },
-      [fn, delay]
-    );
+  const committedValue = (field: FieldName) =>
+    field === "width"
+      ? finalImageDimensions.imageWidth
+      : finalImageDimensions.imageHeight;
 
-    return debounced;
-  };
+  // Keep drafts in sync whenever the committed size changes elsewhere
+  // (load, super-resolution/replace, Reset, +2x/+4x) but never clobber
+  // the text the user is currently typing.
+  useEffect(() => {
+    if (activeField !== null) return;
+    setDraft({
+      width: fmt(finalImageDimensions.imageWidth),
+      height: fmt(finalImageDimensions.imageHeight),
+    });
+  }, [finalImageDimensions.imageWidth, finalImageDimensions.imageHeight, activeField]);
 
-  const debouncedScaleAndRender = useDebounceFn(
-    (scaleX: number, scaleY: number) => {
-      image.scaleX = scaleX;
-      image.scaleY = scaleY;
-      handleRenderingFinalDimension();
-    },
-    DEBOUNCE_DELAY
-  );
+  // The aspect ratio is derived from the image's natural size (matches the
+  // old lock-ON behavior which always used image.width / image.height).
+  const deriveHeight = (w: number) =>
+    image.width > 0 ? Math.round((w * image.height) / image.width) : w;
+  const deriveWidth = (h: number) =>
+    image.height > 0 ? Math.round((h * image.width) / image.height) : h;
 
   const handleRenderingFinalDimension = () => {
     const originalViewportTransform = canvas.viewportTransform;
@@ -106,129 +125,145 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
     canvas.fire("object:modified");
   };
 
-  const handleWidthChange = (e) => {
-    console.log("width change", e.target.value);
-    if (e.target.value === "") return;
-    if (isNaN(parseInt(e.target.value))) return;
+  // Apply one committed resize to the canvas + context. The scale is computed
+  // against the image's natural size, and the ref always mirrors exactly what
+  // was applied (no more state/ref desync).
+  const applyResize = (newW: number, newH: number, changed: FieldName) => {
+    const scaleX = image.width > 0 ? newW / image.width : 1;
+    const scaleY = image.height > 0 ? newH / image.height : 1;
+    image.scaleX = scaleX;
+    image.scaleY = scaleY;
+    canvas.renderAll();
 
-    const newWidth = parseInt(e.target.value);
-    const oldHeight = image.height;
-    const oldWidth = image.width;
+    const bothDimsChanged = maintainAspectRatio;
+    addLog({
+      section: "arrange",
+      tab: "image size",
+      event: "update",
+      message: bothDimsChanged
+        ? `image height change to ${newH} width changed to ${newW}`
+        : changed === "width"
+          ? `image width changed to ${newW}`
+          : `image height changed to ${newH}`,
+      param: "image size",
+      objType: "image",
+    });
 
-    const ratio = oldWidth / oldHeight;
-    const newHeight = Math.floor(newWidth / ratio);
+    finalImageDimensionsRef.current = {
+      imageWidth: newW,
+      imageHeight: newH,
+    };
+    setFinalImageDimensions({
+      imageWidth: newW,
+      imageHeight: newH,
+    });
+    setDraft({ width: fmt(newW), height: fmt(newH) });
 
-    let scaleY = newHeight / oldHeight;
-    const scaleX = newWidth / oldWidth;
-
-    if (scaleX <= 0 || scaleY <= 0) return;
-
-    if (newWidth > 0) {
-      if (maintainAspectRatio) {
-        setFinalImageDimensions({
-          imageHeight: newHeight,
-          imageWidth: newWidth,
-        });
-
-        finalImageDimensionsRef.current = {
-          imageHeight: newHeight,
-          imageWidth: newWidth,
-        };
-        addLog({
-          section: "arrange",
-          tab: "image size",
-          event: "update",
-          message: `image height change to ${newHeight} width changed to ${newWidth}`,
-          param: "image size",
-          objType: "image",
-        });
-      } else {
-        setFinalImageDimensions({
-          ...finalImageDimensions,
-          imageWidth: newWidth,
-        });
-        finalImageDimensionsRef.current = {
-          imageHeight: newHeight,
-          imageWidth: newWidth,
-        };
-        addLog({
-          section: "arrange",
-          tab: "image size",
-          event: "update",
-          message: `image width changed to ${newWidth}`,
-          param: "image size",
-          objType: "image",
-        });
-        scaleY = image.scaleY;
-      }
-    }
-
-    debouncedScaleAndRender(scaleX, scaleY);
-    // image.scaleX = scaleX;
-    // image.scaleY = scaleY;
-
-    // handleRenderingFinalDimension();
+    handleRenderingFinalDimension();
   };
-  const handleHeightChange = (e) => {
-    if (e.target.value === "") return;
-    if (isNaN(parseInt(e.target.value))) return;
 
-    const newHeight = parseInt(e.target.value);
-    const oldHeight = image.height;
-    const oldWidth = image.width;
+  // Single point of apply: parse the active field's draft and resize the
+  // image. Invalid / empty input reverts that field; an unchanged value is a
+  // no-op (so blurring without editing doesn't re-render or re-log).
+  const commitField = (field: FieldName) => {
+    const committedW = finalImageDimensions.imageWidth;
+    const committedH = finalImageDimensions.imageHeight;
 
-    const ratio = oldWidth / oldHeight;
-    const newWidth = Math.floor(newHeight * ratio);
+    const parsed = parsePositive(draft[field]);
+    if (parsed === null) {
+      setActiveField(null);
+      setDraft((d) => ({
+        ...d,
+        [field]: fmt(field === "width" ? committedW : committedH),
+      }));
+      return;
+    }
 
-    const scaleY = newHeight / oldHeight;
-    let scaleX = newWidth / oldWidth;
+    const target = Math.round(parsed);
+    let newW = committedW;
+    let newH = committedH;
 
-    if (scaleX <= 0 || scaleY <= 0) return;
-
-    if (newHeight > 0) {
-      if (maintainAspectRatio) {
-        setFinalImageDimensions({
-          imageHeight: newHeight,
-          imageWidth: newWidth,
-        });
-        finalImageDimensionsRef.current = {
-          imageHeight: newHeight,
-          imageWidth: newWidth,
-        };
-        addLog({
-          section: "arrange",
-          tab: "image size",
-          event: "update",
-          message: `image height change to ${newHeight} width changed to ${newWidth}`,
-          param: "image size",
-          objType: "image",
-        });
+    if (maintainAspectRatio) {
+      if (field === "width") {
+        newW = target;
+        newH = deriveHeight(target);
       } else {
-        addLog({
-          section: "arrange",
-          tab: "image size",
-          event: "update",
-          message: `image height change to ${newHeight}`,
-          param: "image size",
-          objType: "image",
-        });
-        setFinalImageDimensions({
-          ...finalImageDimensions,
-          imageHeight: newHeight,
-        });
-        finalImageDimensionsRef.current = {
-          imageHeight: newHeight,
-          imageWidth: newWidth,
-        };
-        scaleX = image.scaleX;
+        newH = target;
+        newW = deriveWidth(target);
+      }
+    } else if (field === "width") {
+      newW = target;
+    } else {
+      newH = target;
+    }
+
+    setActiveField(null);
+
+    if (newW <= 0 || newH <= 0) {
+      setDraft({ width: fmt(committedW), height: fmt(committedH) });
+      return;
+    }
+
+    if (newW === committedW && newH === committedH) {
+      setDraft({ width: fmt(committedW), height: fmt(committedH) });
+      return;
+    }
+
+    applyResize(newW, newH, field);
+  };
+
+  const handleFocus = (field: FieldName, e: FocusEvent<HTMLInputElement>) => {
+    suppressNextCommitRef.current = false;
+    setActiveField(field);
+    e.currentTarget.select();
+  };
+
+  const handleDraftChange = (
+    field: FieldName,
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    setDraft((d) => ({ ...d, [field]: e.currentTarget.value }));
+  };
+
+  const handleBlur = (field: FieldName) => {
+    if (suppressNextCommitRef.current) {
+      // Escape was pressed: revert without committing.
+      suppressNextCommitRef.current = false;
+      setActiveField(null);
+      setDraft((d) => ({ ...d, [field]: fmt(committedValue(field)) }));
+      return;
+    }
+    commitField(field);
+  };
+
+  const handleKeyDown = (field: FieldName, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur(); // commit via onBlur
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      suppressNextCommitRef.current = true;
+      e.currentTarget.blur(); // revert via onBlur
+    }
+  };
+
+  // What a field shows: its own free draft while focused; a live preview of the
+  // derived value when the paired field is being typed with the lock ON; the
+  // committed value otherwise.
+  const getVisibleValue = (field: FieldName): string => {
+    if (activeField === field) return draft[field];
+
+    const other: FieldName = field === "width" ? "height" : "width";
+    if (maintainAspectRatio && activeField === other) {
+      const n = parsePositive(draft[other]);
+      if (n !== null) {
+        return fmt(
+          field === "width" ? deriveWidth(Math.round(n)) : deriveHeight(Math.round(n))
+        );
       }
     }
 
-    // image.scaleX = scaleX;
-    // image.scaleY = scaleY;
-
-    // handleRenderingFinalDimension();
-    debouncedScaleAndRender(scaleX, scaleY);
+    return fmt(committedValue(field));
   };
 
   const handleImageResizeReset = () => {
@@ -302,8 +337,13 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
                 id="height"
                 type="text"
                 name="height"
-                value={finalImageDimensions.imageHeight.toString()}
-                onChange={handleHeightChange}
+                inputMode="numeric"
+                autoComplete="off"
+                value={getVisibleValue("height")}
+                onFocus={(e) => handleFocus("height", e)}
+                onChange={(e) => handleDraftChange("height", e)}
+                onBlur={() => handleBlur("height")}
+                onKeyDown={(e) => handleKeyDown("height", e)}
               />
             </div>
             <div className="grid grid-cols-2  items-center justify-center">
@@ -312,8 +352,13 @@ const ImageSize = ({ canvas, image }: ImageSizeProps) => {
                 id="width"
                 type="text"
                 name="width"
-                value={finalImageDimensions.imageWidth.toString()}
-                onChange={handleWidthChange}
+                inputMode="numeric"
+                autoComplete="off"
+                value={getVisibleValue("width")}
+                onFocus={(e) => handleFocus("width", e)}
+                onChange={(e) => handleDraftChange("width", e)}
+                onBlur={() => handleBlur("width")}
+                onKeyDown={(e) => handleKeyDown("width", e)}
               />
             </div>
             <div className="mt-2 w-full flex justify-between items-center">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/utils/appClient";
 import { Progress } from "@/components/ui/progress";
+import { SubscriptionSkeleton } from "./ProfileSkeletons";
 import axios from "axios";
 import { redirect } from "react-router-dom";
 
@@ -131,7 +132,13 @@ const SubscriptionSection = () => {
     }
   };
 
-  if (!subScriptionData) return <h1>Loading</h1>;
+  if (!subScriptionData) {
+    return (
+      <div className="w-full flex justify-center items-end">
+        <SubscriptionSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex justify-center items-end ">

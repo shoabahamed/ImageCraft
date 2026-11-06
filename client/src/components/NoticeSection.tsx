@@ -13,6 +13,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { NoticesCardsSkeleton } from "./ProfileSkeletons";
 
 type Notice = {
   user_id: string;
@@ -96,11 +97,7 @@ const NoticeSection = ({ userId }: { userId: string }) => {
   }, [currentPageNo]);
 
   if (loading) {
-    return (
-      <div className="w-full flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <NoticesCardsSkeleton />;
   }
 
   if (error) {

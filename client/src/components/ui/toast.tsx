@@ -30,6 +30,8 @@ const toastVariants = cva(
         default: "border bg-background text-foreground",
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
+        // Soft informational toast used by the "use a larger device" editor warning.
+        info: "border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-[#16243a] dark:text-blue-100",
       },
     },
     defaultVariants: {

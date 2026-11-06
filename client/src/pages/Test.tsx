@@ -2,7 +2,7 @@ import IconComponent from "@/components/icon-component";
 
 import { Diamond, Home, Volleyball } from "lucide-react";
 import { Crop, RotateCwSquare, ListPlus, Type, Cpu } from "lucide-react";
-import { useEffect, useRef, useState, CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { filters } from "fabric";
 import * as fabric from "fabric";
@@ -16,7 +16,7 @@ import Footer from "@/components/Footer";
 
 import { useCanvasObjects } from "@/hooks/useCanvasObjectContext";
 
-import ClipLoader from "react-spinners/ClipLoader";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useCommonProps } from "@/hooks/appStore/CommonProps";
 import AddShape from "@/components/AddShape";
 import AITools2 from "@/components/AITools2";
@@ -62,17 +62,13 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 // TODO: I just realized something the way I am reloading a project from projects is very bad. It makes handling all the cases very difficult I think if we set the image src to '' then send the actual base64 to backend and save as a image then it would very efficient. Same with background image if we do this we do not need to mantain all this complete stuff like scale, dimensions etc everything would be handled by fabric js iteself
 //TODO: I think it would make more sense if we allow the user to grant access to an project to another user through perhaps notification
 
-const override: CSSProperties = {
-  borderWidth: "5px",
-};
-
 const Test = () => {
   const sidebarName = useCommonProps((state) => state.sidebarName);
   const { setLogs, addLog } = useLogContext();
   const setSidebarName = useCommonProps((state) => state.setSidebarName);
   const setProjectName = useCommonProps((state) => state.setProjectName);
   const setShowUpdateButton = useCommonProps(
-    (state) => state.setShowUpdateButton
+    (state) => state.setShowUpdateButton,
   );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -99,12 +95,13 @@ const Test = () => {
   const { setLoadedFromSaved, setZoomValue, zoomValue } = useCanvasObjects();
 
   const [spinnerLoading, setSpinnerLoading] = useState(false);
+  const { toast } = useToast();
 
   // Covers the initial restore of a project. Kept separate from spinnerLoading
   // because the [filtersUI] effect clears that one on a 500ms timer, which would
   // uncover the canvas before a slow image has finished decoding.
   const [initialLoading, setInitialLoading] = useState(
-    () => !!localStorage.getItem("project_data")
+    () => !!localStorage.getItem("project_data"),
   );
 
   // Ceiling, so a load that never settles can't leave the page stuck behind the
@@ -114,6 +111,25 @@ const Test = () => {
     const timer = setTimeout(() => setInitialLoading(false), 15000);
     return () => clearTimeout(timer);
   }, [initialLoading]);
+
+  // The editor is designed for larger screens — warn when the viewport drops below md (768px).
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 800px)");
+    const warnIfSmall = () => {
+      if (mql.matches) {
+        toast({
+          variant: "info",
+          title: "For the best experience",
+          description:
+            "Use a larger device with a mouse or trackpad. This editor is designed for desktop and laptop screens.",
+          duration: Infinity, // stays until the user closes it (hover the ×, or swipe on mobile)
+        });
+      }
+    };
+    warnIfSmall(); // fires immediately when the page loads small
+    mql.addEventListener("change", warnIfSmall); // fires each time the user shrinks below md
+    return () => mql.removeEventListener("change", warnIfSmall);
+  }, [toast]);
 
   //arrange states
 
@@ -137,7 +153,7 @@ const Test = () => {
 
   const backgroundColor = useArrangeStore((state) => state.backgroundColor);
   const setBackgroundColor = useArrangeStore(
-    (state) => state.setBackgroundColor
+    (state) => state.setBackgroundColor,
   );
 
   const setFlipX = useArrangeStore((state) => state.setFlipX);
@@ -146,47 +162,47 @@ const Test = () => {
   //adjust store values
 
   const setBlueBrightnessValue = useAdjustStore(
-    (state) => state.setBlueBrightnessValue
+    (state) => state.setBlueBrightnessValue,
   );
 
   const setGreenBrightnessValue = useAdjustStore(
-    (state) => state.setGreenBrightnessValue
+    (state) => state.setGreenBrightnessValue,
   );
 
   const setGammaBlueValue = useAdjustStore((state) => state.setGammaBlueValue);
   const setGammaGreenValue = useAdjustStore(
-    (state) => state.setGammaGreenValue
+    (state) => state.setGammaGreenValue,
   );
   const setGammaRedValue = useAdjustStore((state) => state.setGammaRedValue);
 
   const setEnableGrayScale = useAdjustStore(
-    (state) => state.setEnableGrayScale
+    (state) => state.setEnableGrayScale,
   );
   const setEnableVintage = useAdjustStore((state) => state.setEnableVintage);
   const setEnableSepia = useAdjustStore((state) => state.setEnableSepia);
   const setEnableTechnicolor = useAdjustStore(
-    (state) => state.setEnableTechnicolor
+    (state) => state.setEnableTechnicolor,
   );
   const setEnableKodachrome = useAdjustStore(
-    (state) => state.setEnableKodachrome
+    (state) => state.setEnableKodachrome,
   );
 
   const setEnableInvert = useAdjustStore((state) => state.setEnableInvert);
   const setEnableWarmFilter = useAdjustStore(
-    (state) => state.setEnableWarmFilter
+    (state) => state.setEnableWarmFilter,
   );
 
   const setEnableColdFilter = useAdjustStore(
-    (state) => state.setEnableColdFilter
+    (state) => state.setEnableColdFilter,
   );
 
   // Set functions for each value
   const setContrastValue = useAdjustStore((state) => state.setContrastValue);
   const setSaturationValue = useAdjustStore(
-    (state) => state.setSaturationValue
+    (state) => state.setSaturationValue,
   );
   const setRedBrightnessValue = useAdjustStore(
-    (state) => state.setRedBrightnessValue
+    (state) => state.setRedBrightnessValue,
   );
   const setVibranceValue = useAdjustStore((state) => state.setVibranceValue);
   const setHueValue = useAdjustStore((state) => state.setHueValue);
@@ -197,13 +213,13 @@ const Test = () => {
   const resetFilters = useAdjustStore((state) => state.resetFilters);
 
   const setEnableGaussianBlur = useAdjustStore(
-    (state) => state.setEnableGaussianBlur
+    (state) => state.setEnableGaussianBlur,
   );
   const setGaussianSigma = useAdjustStore((state) => state.setGaussianSigma);
   const setSharpenValue = useAdjustStore((state) => state.setSharpenValue);
 
   const setEnableFocusFilter = useAdjustStore(
-    (state) => state.setEnableFocusFilter
+    (state) => state.setEnableFocusFilter,
   );
 
   const setRadius = useAdjustStore((state) => state.setRadius);
@@ -212,73 +228,73 @@ const Test = () => {
   const setDarkFocus = useAdjustStore((state) => state.setDarkFocus);
 
   const setEnableLeftToRightReflect = useAdjustStore(
-    (state) => state.setEnableLeftToRightReflect
+    (state) => state.setEnableLeftToRightReflect,
   );
   const setEnableRightToLeftReflect = useAdjustStore(
-    (state) => state.setEnableRightToLeftReflect
+    (state) => state.setEnableRightToLeftReflect,
   );
   const setEnableTopToBottomReflect = useAdjustStore(
-    (state) => state.setEnableTopToBottomReflect
+    (state) => state.setEnableTopToBottomReflect,
   );
   const setEnableBottomToTopReflect = useAdjustStore(
-    (state) => state.setEnableBottomToTopReflect
+    (state) => state.setEnableBottomToTopReflect,
   );
   const setEnableTopLeftReflect = useAdjustStore(
-    (state) => state.setEnableTopLeftReflect
+    (state) => state.setEnableTopLeftReflect,
   );
   const setEnableTopRightReflect = useAdjustStore(
-    (state) => state.setEnableTopRightReflect
+    (state) => state.setEnableTopRightReflect,
   );
   const setEnableBottomLeftReflect = useAdjustStore(
-    (state) => state.setEnableBottomLeftReflect
+    (state) => state.setEnableBottomLeftReflect,
   );
   const setEnableBottomRightReflect = useAdjustStore(
-    (state) => state.setEnableBottomRightReflect
+    (state) => state.setEnableBottomRightReflect,
   );
 
   const setEnableLeftDiagonalReflect = useAdjustStore(
-    (state) => state.setEnableLeftDiagonalReflect
+    (state) => state.setEnableLeftDiagonalReflect,
   );
   const setEnableRightDiagonalReflect = useAdjustStore(
-    (state) => state.setEnableRightDiagonalReflect
+    (state) => state.setEnableRightDiagonalReflect,
   );
 
   const setBilateralKernelSize = useAdjustStore(
-    (state) => state.setBilateralKernelSize
+    (state) => state.setBilateralKernelSize,
   );
 
   const setMedianFilterMatrixSize = useAdjustStore(
-    (state) => state.setMedianFilterMatrixSize
+    (state) => state.setMedianFilterMatrixSize,
   );
 
   const setGaussianMatrixSize = useAdjustStore(
-    (state) => state.setGaussianMatrixSize
+    (state) => state.setGaussianMatrixSize,
   );
 
   const setBilateralSigmaS = useAdjustStore(
-    (state) => state.setBilateralSigmaS
+    (state) => state.setBilateralSigmaS,
   );
 
   const setBilateralSigmaC = useAdjustStore(
-    (state) => state.setBilateralSigmaC
+    (state) => state.setBilateralSigmaC,
   );
 
   const setEnableBilateralFilter = useAdjustStore(
-    (state) => state.setEnableBilateralFilter
+    (state) => state.setEnableBilateralFilter,
   );
 
   const setEnableMedianFilter = useAdjustStore(
-    (state) => state.setEnableMedianFilter
+    (state) => state.setEnableMedianFilter,
   );
 
   const setSelectedEdgeType = useAdjustStore(
-    (state) => state.setSelectedEdgeType
+    (state) => state.setSelectedEdgeType,
   );
   const setCannyLowerThreshold = useAdjustStore(
-    (state) => state.setCannyLowerThreshold
+    (state) => state.setCannyLowerThreshold,
   );
   const setCannyUpperThreshold = useAdjustStore(
-    (state) => state.setCannyUpperThreshold
+    (state) => state.setCannyUpperThreshold,
   );
 
   const setOpacityValue = useAdjustStore((state) => state.setOpacityValue);
@@ -291,11 +307,11 @@ const Test = () => {
   const setBulgeStrength = useAdjustStore((state) => state.setBulgeStrength);
 
   const setActivateLiquidifyTool = useAdjustStore(
-    (state) => state.setActivateLiquidifyTool
+    (state) => state.setActivateLiquidifyTool,
   );
 
   const activateLiquidifyTool = useAdjustStore(
-    (state) => state.activateLiquidifyTool
+    (state) => state.activateLiquidifyTool,
   );
 
   const { dbLoadingRef } = useCanvasObjects();
@@ -327,7 +343,7 @@ const Test = () => {
   const setLineOpacity = useShapeStore((state) => state.setLineOpacity);
   const setCircleStroke = useShapeStore((state) => state.setCircleStroke);
   const setCircleStrokeWidth = useShapeStore(
-    (state) => state.setCircleStrokeWidth
+    (state) => state.setCircleStrokeWidth,
   );
 
   const setCircleRadius = useShapeStore((state) => state.setCircleRadius);
@@ -338,7 +354,7 @@ const Test = () => {
 
   const setTriangleStroke = useShapeStore((state) => state.setTriangleStroke);
   const setTriangleStrokeWidth = useShapeStore(
-    (state) => state.setTriangleStrokeWidth
+    (state) => state.setTriangleStrokeWidth,
   );
 
   const setShadowEnabled = useShapeStore((state) => state.setShadowEnabled);
@@ -366,7 +382,7 @@ const Test = () => {
   const setTextSize = useAddTextStore((state) => state.setTextSize);
   const setTextOpacity = useAddTextStore((state) => state.setTextOpacity);
   const setTextLineSpacing = useAddTextStore(
-    (state) => state.setTextLineSpacing
+    (state) => state.setTextLineSpacing,
   );
   const setTextAlignValue = useAddTextStore((state) => state.setTextAlignValue);
   const setUpper = useAddTextStore((state) => state.setUpper);
@@ -377,15 +393,15 @@ const Test = () => {
   const setCharSpacing = useAddTextStore((state) => state.setCharSpacing);
 
   const setTextShadowEnabled = useAddTextStore(
-    (state) => state.setShadowEnabled
+    (state) => state.setShadowEnabled,
   );
   const setTextShadowColor = useAddTextStore((state) => state.setShadowColor);
   const setTextShadowBlur = useAddTextStore((state) => state.setShadowBlur);
   const setTextShadowOffsetX = useAddTextStore(
-    (state) => state.setShadowOffsetX
+    (state) => state.setShadowOffsetX,
   );
   const setTextShadowOffsetY = useAddTextStore(
-    (state) => state.setShadowOffsetY
+    (state) => state.setShadowOffsetY,
   );
 
   const { user } = useAuthContext();
@@ -718,7 +734,7 @@ const Test = () => {
 
       if (savedData) {
         const finalImageShape: { width: number; height: number } = JSON.parse(
-          localStorage.getItem("final_image_shape")!
+          localStorage.getItem("final_image_shape")!,
         );
         const downloadImageShape: { width: number; height: number } =
           JSON.parse(localStorage.getItem("download_image_shape")!);
@@ -728,7 +744,7 @@ const Test = () => {
         const filterNames = JSON.parse(localStorage.getItem("filter_names")!);
 
         let allFiltersApplied = JSON.parse(
-          localStorage.getItem("all_filters_applied")!
+          localStorage.getItem("all_filters_applied")!,
         );
 
         if (!Array.isArray(allFiltersApplied)) {
@@ -770,58 +786,131 @@ const Test = () => {
             });
           };
 
-          initCanvas.loadFromJSON(canvasJSON, async () => {
-            // Wait until all objects are fully added
-            await ensureSingleCallback(initCanvas);
+          initCanvas
+            .loadFromJSON(canvasJSON, async () => {
+              // Wait until all objects are fully added
+              await ensureSingleCallback(initCanvas);
 
-            const imageObject = initCanvas
-              .getObjects()
-              .find((obj: fabric.Object) => obj.type.toLowerCase() === "image");
+              const imageObject = initCanvas
+                .getObjects()
+                .find(
+                  (obj: fabric.Object) => obj.type.toLowerCase() === "image",
+                );
 
-            const frameObject = initCanvas
-              .getObjects() // @ts-ignore
-              .find((obj) => obj.name?.startsWith("Frame"));
+              const frameObject = initCanvas
+                .getObjects() // @ts-ignore
+                .find((obj) => obj.name?.startsWith("Frame"));
 
-            if (imageObject) {
-              // @ts-ignore
-              imageObject.crossOrigin = "anonymous";
+              if (imageObject) {
+                // @ts-ignore
+                imageObject.crossOrigin = "anonymous";
 
-              setOriginalImageDimensions({
-                imageWidth: originalImageShape.width,
-                imageHeight: originalImageShape.height,
-              });
+                setOriginalImageDimensions({
+                  imageWidth: originalImageShape.width,
+                  imageHeight: originalImageShape.height,
+                });
 
-              setDownloadImageDimensions({
-                imageWidth: downloadImageShape.width,
-                imageHeight: downloadImageShape.height,
-              });
+                setDownloadImageDimensions({
+                  imageWidth: downloadImageShape.width,
+                  imageHeight: downloadImageShape.height,
+                });
 
-              setFinalImageDimensions({
-                imageWidth: finalImageShape.width,
-                imageHeight: finalImageShape.height,
-              });
+                setFinalImageDimensions({
+                  imageWidth: finalImageShape.width,
+                  imageHeight: finalImageShape.height,
+                });
 
-              finalImageDimensionsRef.current = {
-                imageHeight: finalImageShape.height,
-                imageWidth: finalImageShape.width,
-              };
+                finalImageDimensionsRef.current = {
+                  imageHeight: finalImageShape.height,
+                  imageWidth: finalImageShape.width,
+                };
 
-              downloadImageDimensionsRef.current = {
-                imageHeight: downloadImageShape.height,
-                imageWidth: downloadImageShape.width,
-              };
+                downloadImageDimensionsRef.current = {
+                  imageHeight: downloadImageShape.height,
+                  imageWidth: downloadImageShape.width,
+                };
 
-              originalImageDimensionsRef.current = {
-                imageHeight: originalImageShape.height,
-                imageWidth: originalImageShape.width,
-              };
+                originalImageDimensionsRef.current = {
+                  imageHeight: originalImageShape.height,
+                  imageWidth: originalImageShape.width,
+                };
 
-              setLogs(project_logs);
+                setLogs(project_logs);
 
-              initCanvas.setDimensions({
-                width: containerWidth,
-                height: containerHeight,
-              });
+                initCanvas.setDimensions({
+                  width: containerWidth,
+                  height: containerHeight,
+                });
+
+                const canvasRect = initCanvas
+                  .getObjects() // @ts-ignore
+                  .find((obj) => obj.name?.startsWith("canvasRect"));
+
+                if (canvasRect) {
+                  const fillColor = canvasRect.get("fill");
+                  setBackgroundColor(fillColor);
+                }
+
+                setImageRotation(imageObject.angle);
+
+                // Calculate zoom to fit image in canvas while maintaining aspect ratio
+                const scaleX = containerWidth / imageObject.width;
+                const scaleY = containerHeight / imageObject.height;
+                const zoom = Math.min(scaleX, scaleY);
+
+                // Apply zoom to canvas
+                initCanvas.setZoom(zoom);
+                setZoomValue(zoom);
+
+                // Calculate the viewport transform to center the image
+                const vp = initCanvas.viewportTransform!;
+                vp[4] = (containerWidth - imageObject.width * zoom) / 2; // translateX
+                vp[5] = (containerHeight - imageObject.height * zoom) / 2; // translateY
+                initCanvas.setViewportTransform(vp);
+
+                imageObject.set({
+                  left: imageObject.width / 2,
+                  top: imageObject.height / 2,
+                  selectable: false,
+                  hoverCursor: "default",
+                  originX: "center",
+                  originY: "center",
+                });
+
+                const canvasData = initCanvas.toObject([
+                  "name",
+                  "isUpper",
+                  "id",
+                ]);
+
+                const allData = {
+                  project_data: canvasData,
+                  final_image_shape: {
+                    imageHeight: finalImageShape.height,
+                    imageWidth: finalImageShape.width,
+                  },
+                  original_image_shape: {
+                    imageHeight: originalImageShape.height,
+                    imageWidth: originalImageShape.width,
+                  },
+                  download_image_shape: {
+                    imageHeight: downloadImageShape.height,
+                    imageWidth: downloadImageShape.width,
+                  },
+                  filter_names: [],
+                  viewportTransform: initCanvas.viewportTransform,
+                  zoomValue: zoom,
+                };
+
+                allFiltersRef.current = allFiltersApplied;
+                dbLoadingRef.current = true;
+                databaseFiltersNameRef.current = filterNames;
+                databaseFiltersObjectRef.current =
+                  canvasJSON.objects[1].filters;
+                // oldFiltersNameRef.current = filterNames;
+                setFiltersUI(!filtersUI);
+                setHistoryValue(allData);
+              }
 
               const canvasRect = initCanvas
                 .getObjects() // @ts-ignore
@@ -829,112 +918,47 @@ const Test = () => {
 
               if (canvasRect) {
                 const fillColor = canvasRect.get("fill");
+
+                canvasRect.set({
+                  selectable: false,
+                  hasControls: false,
+                });
                 setBackgroundColor(fillColor);
               }
 
-              setImageRotation(imageObject.angle);
+              if (frameObject) {
+                imageObject.clipPath = null;
+                frameObject.absolutePositioned = true;
+                // selectedObject.absolutePositioned = true;
+                imageObject.clipPath = frameObject;
+              }
 
-              // Calculate zoom to fit image in canvas while maintaining aspect ratio
-              const scaleX = containerWidth / imageObject.width;
-              const scaleY = containerHeight / imageObject.height;
-              const zoom = Math.min(scaleX, scaleY);
+              // @ts-ignore
+              currentImageRef.current = imageObject; // Store the Fabric.js image object reference
+              mainCanvasRef.current = initCanvas; // Store the Fabric.js canvas reference
+              setFlipX(imageObject.flipX);
+              setFlipY(imageObject.flipY);
 
-              // Apply zoom to canvas
-              initCanvas.setZoom(zoom);
-              setZoomValue(zoom);
+              initCanvas.renderAll();
 
-              // Calculate the viewport transform to center the image
-              const vp = initCanvas.viewportTransform!;
-              vp[4] = (containerWidth - imageObject.width * zoom) / 2; // translateX
-              vp[5] = (containerHeight - imageObject.height * zoom) / 2; // translateY
-              initCanvas.setViewportTransform(vp);
+              if (localStorage.getItem("canvasId")) {
+                // console.log(localStorage.getItem("canvasId"), "sdfsk");
+                // localStorage.removeItem("canvasId");
+                setShowUpdateButton(true);
+              }
 
-              imageObject.set({
-                left: imageObject.width / 2,
-                top: imageObject.height / 2,
-                selectable: false,
-                hoverCursor: "default",
-                originX: "center",
-                originY: "center",
-              });
+              canvasIdRef.current = localStorage.getItem("canvasId")!;
+              // localStorage.removeItem("project_data");
+              // localStorage.removeItem("CanvasId");
 
-              const canvasData = initCanvas.toObject(["name", "isUpper", "id"]);
+              setProjectName(projectName);
 
-              const allData = {
-                project_data: canvasData,
-                final_image_shape: {
-                  imageHeight: finalImageShape.height,
-                  imageWidth: finalImageShape.width,
-                },
-                original_image_shape: {
-                  imageHeight: originalImageShape.height,
-                  imageWidth: originalImageShape.width,
-                },
-                download_image_shape: {
-                  imageHeight: downloadImageShape.height,
-                  imageWidth: downloadImageShape.width,
-                },
-                filter_names: [],
-                viewportTransform: initCanvas.viewportTransform,
-                zoomValue: zoom,
-              };
+              setLoadedFromSaved(true);
 
-              allFiltersRef.current = allFiltersApplied;
-              dbLoadingRef.current = true;
-              databaseFiltersNameRef.current = filterNames;
-              databaseFiltersObjectRef.current = canvasJSON.objects[1].filters;
-              // oldFiltersNameRef.current = filterNames;
-              setFiltersUI(!filtersUI);
-              setHistoryValue(allData);
-            }
-
-            const canvasRect = initCanvas
-              .getObjects() // @ts-ignore
-              .find((obj) => obj.name?.startsWith("canvasRect"));
-
-            if (canvasRect) {
-              const fillColor = canvasRect.get("fill");
-
-              canvasRect.set({
-                selectable: false,
-                hasControls: false,
-              });
-              setBackgroundColor(fillColor);
-            }
-
-            if (frameObject) {
-              imageObject.clipPath = null;
-              frameObject.absolutePositioned = true;
-              // selectedObject.absolutePositioned = true;
-              imageObject.clipPath = frameObject;
-            }
-
-            // @ts-ignore
-            currentImageRef.current = imageObject; // Store the Fabric.js image object reference
-            mainCanvasRef.current = initCanvas; // Store the Fabric.js canvas reference
-            setFlipX(imageObject.flipX);
-            setFlipY(imageObject.flipY);
-
-            initCanvas.renderAll();
-
-            if (localStorage.getItem("canvasId")) {
-              // console.log(localStorage.getItem("canvasId"), "sdfsk");
-              // localStorage.removeItem("canvasId");
-              setShowUpdateButton(true);
-            }
-
-            canvasIdRef.current = localStorage.getItem("canvasId")!;
-            // localStorage.removeItem("project_data");
-            // localStorage.removeItem("CanvasId");
-
-            setProjectName(projectName);
-
-            setLoadedFromSaved(true);
-
-            if (idFromState) {
-              canvasIdRef.current = idFromState;
-            }
-          })
+              if (idFromState) {
+                canvasIdRef.current = idFromState;
+              }
+            })
             // loadFromJSON's 2nd arg is a per-object reviver; the returned promise
             // is the real completion signal and only settles once enlivenObjects
             // has finished decoding every image.
@@ -1017,7 +1041,7 @@ const Test = () => {
 
           const { canvasRect, liquifyCircle } = createAuxillaryShapes(
             img.height,
-            img.width
+            img.width,
           );
 
           initCanvas.add(canvasRect);
@@ -1452,7 +1476,7 @@ const Test = () => {
     console.log(
       "loading from database",
       databaseFiltersNameRef.current,
-      databaseFiltersObjectRef.current
+      databaseFiltersObjectRef.current,
     );
 
     resetFilters();
@@ -1485,7 +1509,7 @@ const Test = () => {
               filtersList,
               "grayscale",
               new CustomGrayScale(),
-              true
+              true,
             );
 
             break;
@@ -1503,7 +1527,7 @@ const Test = () => {
               filtersList,
               "kodachrome",
               new filters.Kodachrome(),
-              true
+              true,
             );
             break;
           case "technicolor":
@@ -1512,7 +1536,7 @@ const Test = () => {
               filtersList,
               "technicolor",
               new filters.Technicolor(),
-              true
+              true,
             );
             break;
 
@@ -1522,7 +1546,7 @@ const Test = () => {
               filtersList,
               "sharpen",
               new SharpenFilter({ SharpenValue: filterData.sharpenValue }),
-              true
+              true,
             );
             break;
 
@@ -1546,7 +1570,7 @@ const Test = () => {
               filtersList,
               "gbrightness",
               new GBrightness({ GBrightness: filterData.GBrightness }),
-              true
+              true,
             );
             break;
           case "bbrightness":
@@ -1555,7 +1579,7 @@ const Test = () => {
               filtersList,
               "bbrightness",
               new BBrightness({ BBrightness: filterData.BBrightness }),
-              true
+              true,
             );
             break;
           case "rbrightness":
@@ -1564,7 +1588,7 @@ const Test = () => {
               filtersList,
               "rbrightness",
               new RBrightness({ RBrightness: filterData.RBrightness }),
-              true
+              true,
             );
             break;
           case "gamma":
@@ -1575,7 +1599,7 @@ const Test = () => {
               filtersList,
               "gamma",
               new filters.Gamma({ gamma: filterData.gamma }),
-              true
+              true,
             );
             break;
           case "contrast":
@@ -1584,7 +1608,7 @@ const Test = () => {
               filtersList,
               "contrast",
               new filters.Contrast({ contrast: filterData.contrast }),
-              true
+              true,
             );
             break;
           case "saturation":
@@ -1593,7 +1617,7 @@ const Test = () => {
               filtersList,
               "saturation",
               new filters.Saturation({ saturation: filterData.saturation }),
-              true
+              true,
             );
             break;
           case "vibrance":
@@ -1602,7 +1626,7 @@ const Test = () => {
               filtersList,
               "vibrance",
               new filters.Vibrance({ vibrance: filterData.vibrance }),
-              true
+              true,
             );
             break;
           case "blur":
@@ -1611,7 +1635,7 @@ const Test = () => {
               filtersList,
               "blur",
               new filters.Blur({ blur: filterData.blur }),
-              true
+              true,
             );
 
             break;
@@ -1621,7 +1645,7 @@ const Test = () => {
               filtersList,
               "hueRotation",
               new filters.HueRotation({ rotation: filterData.rotation }),
-              true
+              true,
             );
 
             break;
@@ -1631,7 +1655,7 @@ const Test = () => {
               filtersList,
               "noise",
               new filters.Noise({ noise: filterData.noise }),
-              true
+              true,
             );
 
             break;
@@ -1641,7 +1665,7 @@ const Test = () => {
               filtersList,
               "pixelate",
               new filters.Pixelate({ blocksize: filterData.blocksize }),
-              true
+              true,
             );
             break;
 
@@ -1657,7 +1681,7 @@ const Test = () => {
                 sigma: filterData.sigma,
                 matrixSize: filterData.matrixSize,
               }),
-              true
+              true,
             );
             break;
           case "focusFilter":
@@ -1674,7 +1698,7 @@ const Test = () => {
                 softness: filterData.softness,
                 dark: filterData.dark,
               }),
-              true
+              true,
             );
             break;
           case "leftToRight":
@@ -1683,7 +1707,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "leftToRight" }),
-              true
+              true,
             );
             break;
 
@@ -1693,7 +1717,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "rightToLeft" }),
-              true
+              true,
             );
             break;
 
@@ -1703,7 +1727,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "bottomToTop" }),
-              true
+              true,
             );
             break;
 
@@ -1713,7 +1737,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "topToBottom" }),
-              true
+              true,
             );
             break;
 
@@ -1723,7 +1747,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "topRight" }),
-              true
+              true,
             );
             break;
 
@@ -1733,7 +1757,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "topLeft" }),
-              true
+              true,
             );
             break;
 
@@ -1743,7 +1767,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "bottomRight" }),
-              true
+              true,
             );
             break;
           case "bottomLeft":
@@ -1752,7 +1776,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "bottomLeft" }),
-              true
+              true,
             );
             break;
 
@@ -1762,7 +1786,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "leftDiagonal" }),
-              true
+              true,
             );
             break;
 
@@ -1772,7 +1796,7 @@ const Test = () => {
               filtersList,
               "reflect",
               new ReflectFilter({ reflectType: "rightDiagonal" }),
-              true
+              true,
             );
             break;
 
@@ -1783,7 +1807,7 @@ const Test = () => {
               filtersList,
               "medianFilter",
               new MedianFilter({ matrixSize: filterData.matrixSize }),
-              true
+              true,
             );
             break;
 
@@ -1800,7 +1824,7 @@ const Test = () => {
                 sigmaC: filterData.sigmaC,
                 kernelSize: filterData.kernelSize,
               }),
-              true
+              true,
             );
             break;
 
@@ -1811,7 +1835,7 @@ const Test = () => {
                 filtersList,
                 "edge",
                 new HorizontalEdgeFilter(),
-                true
+                true,
               );
               setSelectedEdgeType("horizontal");
             } else if (filterData.type === "VerticalEdgeFilter") {
@@ -1820,7 +1844,7 @@ const Test = () => {
                 filtersList,
                 "edge",
                 new VerticalEdgeFilter(),
-                true
+                true,
               );
             } else if (filterData.type === "sobel") {
               setSelectedEdgeType("sobel");
@@ -1847,7 +1871,7 @@ const Test = () => {
                     new Hysteris(),
                   ],
                 }),
-                true
+                true,
               );
             } else {
               setSelectedEdgeType("none");
@@ -1884,7 +1908,7 @@ const Test = () => {
               new filters.Composed({
                 subFilters: composedSwirlFilters,
               }),
-              true
+              true,
             );
             break;
           }
@@ -1917,7 +1941,7 @@ const Test = () => {
               new filters.Composed({
                 subFilters: composedBulgeFilters,
               }),
-              true
+              true,
             );
             break;
           }
@@ -1947,17 +1971,16 @@ const Test = () => {
         imageUrl={imageUrl}
       />
       <div className="w-full flex-1 flex items-center relative flex-col md:flex-row dark:bg-[#05101c]">
-        {/* Full-screen overlay */}
-        {(spinnerLoading || initialLoading) && (
-          <div className="fixed w-full h-full top-0 left-0 z-50 flex bg-black opacity-40 justify-center items-center">
-            <ClipLoader
-              color={"#3B82F6"}
-              loading={spinnerLoading || initialLoading}
-              cssOverride={override}
-              size={70}
-              aria-label="Loading Spinner"
-              data-testid="loader"
-            />
+        {/* Initial restore: opaque branded screen */}
+        {initialLoading && (
+          <div className="fixed inset-0 z-50">
+            <LoadingScreen text="Loading your project..." />
+          </div>
+        )}
+        {/* Processing (save/update/AI): see-through branded overlay so the canvas stays visible */}
+        {spinnerLoading && !initialLoading && (
+          <div className="fixed inset-0 z-50">
+            <LoadingScreen translucent text="Processing..." />
           </div>
         )}
         {/* Sidebar */}
@@ -1966,7 +1989,7 @@ const Test = () => {
             sidebarName ? " md:w-[40%] lg:w-[25%]" : ""
           } flex-col md:flex-row`}
         >
-          <nav className="flex w-full md:w-auto flex-row md:flex-col gap-5 justify-center items-center border-slate-800 dark:border-slate-900 border-b-2 md:border-r-2 md:border-b-0 md:h-full">
+          <nav className="flex w-full md:w-auto flex-row md:flex-col gap-5 justify-center items-center border-slate-200 dark:border-slate-900 border-b-2 md:border-r-2 md:border-b-0 md:h-full">
             <IconComponent
               icon={<Home />}
               iconName="Home"
@@ -2155,7 +2178,7 @@ const Test = () => {
           </div>
           {/* Footer */}
           <div className="relative flex-none w-full">
-            <div className="absolute -top-5 left-0 bg-gray-800 text-white text-xs px-6 py-0.5 shadow z-50 pointer-events-none">
+            <div className="absolute -top-5 left-0 bg-white/40 text-gray-500 text-xs px-6 py-0.5 z-50 pointer-events-none dark:bg-gray-800 dark:text-white">
               {Math.floor(downloadImageDimensions.imageWidth)}X
               {Math.floor(downloadImageDimensions.imageHeight)}@
               {Math.round(zoomValue * 100)}%

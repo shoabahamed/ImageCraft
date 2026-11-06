@@ -510,13 +510,13 @@ const Footer = ({
   };
 
   return (
-    <div className="flex w-full items-center justify-between rounded-none bg-white dark:bg-gray-950 border-b border-slate-800 dark:border-slate-900 border-t-2 gap-0 lg:gap-4">
+    <div className="flex w-full items-center justify-between rounded-none bg-white dark:bg-gray-950 border-b border-slate-200 dark:border-slate-900 border-t-2 gap-0 lg:gap-4">
       <div className="px-2 flex items-center gap-0 lg:gap-2">
         <Pencil className="text-gray-400 w-2 h-2 lg:w-5 lg:h-5" />{" "}
         {/* Pencil icon */}
         <input
           type="text"
-          className="bg-gray-800 text-white font-semibold px-0 py-0 md:px-2 md:py-1 rounded-md border border-gray-800 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          className="bg-gray-100 text-gray-800 font-semibold px-0 py-0 md:px-2 md:py-1 rounded-md border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:bg-gray-800 dark:text-white dark:border-gray-800"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
         />

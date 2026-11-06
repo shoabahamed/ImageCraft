@@ -1,6 +1,6 @@
 from flask import jsonify, request, g
-import os 
-from config.db_config import get_db
+import os
+from config.db_config import get_db, VECTOR_INDEX_NAME
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import json
@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 from bson import ObjectId
 import datetime
 from utils.common import get_user_paths
+from utils.image_embedding import embed_pil_image, embed_text_query
 from cloudinary.uploader import upload, destroy
+from PIL import Image
 
 load_dotenv()
 
@@ -17,6 +19,9 @@ db = get_db()
 projects_collection = db["Projects"]
 users_collection = db["Users"]
 embedding_collection = db['Embedding']
+
+# Top-N semantically similar projects a text search considers before sort/pagination.
+SEARCH_POOL_SIZE = 200
 
 
 
@@ -72,9 +77,17 @@ def save_project():
             return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
         
         print("after converting string to json")
-        
+
+        # Embed the canvas render for semantic search. Synchronous for now — this
+        # will move to a background task once the pipeline is complete. Done before
+        # any .save()/upload() below consumes the upload stream.
+        canvas_image_file.stream.seek(0)
+        canvas_image = Image.open(canvas_image_file.stream).convert("RGB")
+        canvas_embedding = embed_pil_image(canvas_image).tolist()
+        canvas_image_file.stream.seek(0)  # reset so .save()/upload() below still work
+
         # Secure the filename and save it
-        image_filename = secure_filename(f"{canvas_id}.png") 
+        image_filename = secure_filename(f"{canvas_id}.png")
 
      
         # Check if a project with the given project_id already exists
@@ -118,6 +131,7 @@ def save_project():
                         "filter_names": filter_names,
                         "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
+                        "embedding": canvas_embedding,
                         # Cloudinary issues a NEW versioned secure_url on overwrite, so the
                         # url stored at creation keeps resolving to the pre-update render.
                         # Dev doesn't need this because its static path is overwritten in place.
@@ -154,6 +168,7 @@ def save_project():
                         "filter_names": filter_names,
                         "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
+                        "embedding": canvas_embedding,
                         "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
                     }}
                 )
@@ -215,6 +230,7 @@ def save_project():
                     "filter_names": filter_names,
                     "all_filters_applied": all_filters_applied,
                     "project_name": project_name,
+                    "embedding": canvas_embedding,
                     "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                     "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
                     
@@ -257,6 +273,7 @@ def save_project():
                     "filter_names": filter_names,
                     "all_filters_applied": all_filters_applied,
                     "project_name": project_name,
+                    "embedding": canvas_embedding,
                     "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                     "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
                     
@@ -403,6 +420,7 @@ def get_all_projects():
 
 def query_projects():
     try:
+        print("ksdjflkdsj")
         # Anonymous visitors are allowed here; they just have no bookmarks.
         user_id = getattr(g, "_id", None)
         bookmarked_projects = []
@@ -418,31 +436,54 @@ def query_projects():
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 8))
 
-        # Build MongoDB query
-        query = {"is_public": "true"}
         if search:
-            query["$or"] = [
-                {"project_name": {"$regex": search, "$options": "i"}},
-                {"username": {"$regex": search, "$options": "i"}},
-            ]
+            # Semantic search: rank public projects by relevance to the query text.
+            # sort/dir are intentionally ignored here.
+            query_vec = embed_text_query(search).tolist()
+            candidates = list(projects_collection.aggregate([
+                {
+                    "$vectorSearch": {
+                        "index": VECTOR_INDEX_NAME,
+                        "path": "embedding",
+                        "queryVector": query_vec,
+                        "numCandidates": max(150, SEARCH_POOL_SIZE * 20),
+                        "limit": SEARCH_POOL_SIZE,
+                        "filter": {"is_public": {"$eq": "true"}},
+                    }
+                },
+                {"$project": {"project_id": 1, "score": {"$meta": "vectorSearchScore"}}},
+            ]))
+            print(candidates)
+            matched_ids = [c["project_id"] for c in candidates]
+            
+            total_count = len(matched_ids)  # capped at SEARCH_POOL_SIZE
 
-        # Sorting
-        sort_map = {
-            "date": "updated_at",
-            "rating": "avg_rating",
-            "views": "total_views",
-            "name": "project_name",
-            "bookmarked": "total_bookmark",
-        }
-        sort_field = sort_map.get(sort, "updated_at")
-        sort_dir = -1 if dir == "desc" else 1
+            start = (page - 1) * page_size
+            page_ids = matched_ids[start:start + page_size]
 
-        # No special aggregation for rating, just sort by avg_rating
-        cursor = projects_collection.find(query)
-        cursor = cursor.sort(sort_field, sort_dir)
-        total_count = cursor.count() if hasattr(cursor, 'count') else projects_collection.count_documents(query)
-        cursor = cursor.skip((page - 1) * page_size).limit(page_size)
-        projects = list(cursor)
+            projects = []
+            if page_ids:
+                docs_by_id = {d["project_id"]: d for d in projects_collection.find(
+                    {"project_id": {"$in": page_ids}})}
+                projects = [docs_by_id[pid] for pid in page_ids if pid in docs_by_id]  # relevance order
+        else:
+            # Browse all public projects: existing query + chosen sort + pagination.
+            query = {"is_public": "true"}
+            sort_map = {
+                "date": "updated_at",
+                "rating": "avg_rating",
+                "views": "total_views",
+                "name": "project_name",
+                "bookmarked": "total_bookmark",
+            }
+            sort_field = sort_map.get(sort, "updated_at")
+            sort_dir = -1 if dir == "desc" else 1
+
+            cursor = projects_collection.find(query)
+            cursor = cursor.sort(sort_field, sort_dir)
+            total_count = cursor.count() if hasattr(cursor, 'count') else projects_collection.count_documents(query)
+            cursor = cursor.skip((page - 1) * page_size).limit(page_size)
+            projects = list(cursor)
 
         # Mark bookmarks and convert types
         for project in projects:

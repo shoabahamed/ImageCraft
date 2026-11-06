@@ -8,7 +8,8 @@ from routes.text_proc_routes import text_proc_routes
 from routes.subscription_route import subscription_routes
 from controllers.subscription_controller import stripe_webhook
 from dotenv import load_dotenv
-import os 
+from config.db_config import ensure_vector_search_index
+import os
 import cloudinary
 
 
@@ -88,6 +89,12 @@ def get_profile_image(user_id, filename):
 
 app.route("/api/webhook", methods=['POST'])(stripe_webhook)
 
+# Best-effort Atlas Vector Search index creation for the Projects collection.
+# Unsupported on a local/community MongoDB, so failures are logged, not fatal.
+try:
+    ensure_vector_search_index()
+except Exception as e:
+    print(f"⚠️ Could not ensure vector search index (is this an Atlas cluster?): {e}")
 
 # Register Blueprints for the routes
 app.register_blueprint(auth_routes)

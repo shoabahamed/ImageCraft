@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import NewProjectBox from "./NewProjectBox";
 import { ProjectDownloadDialog } from "./ProjectDownloadDialog";
+import { ProjectCardsSkeleton } from "./ProfileSkeletons";
 
 // TODO: I think I need to learn more about types usage when recieving and sending data between front end backend
 
@@ -310,7 +311,7 @@ const ProjectSection = ({
     localStorage.removeItem("canvasId");
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <ProjectCardsSkeleton />;
   if (error) return <div>{error}</div>;
 
   return (

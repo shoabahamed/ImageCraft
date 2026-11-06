@@ -29,6 +29,7 @@ import { Button } from "./ui/button";
 import SubmitRating from "./SubmitRating";
 import NewProjectBox from "./NewProjectBox";
 import { ProjectDownloadDialog } from "./ProjectDownloadDialog";
+import { ProjectCardsSkeleton } from "./ProfileSkeletons";
 
 interface Project {
   _id: string;
@@ -322,7 +323,7 @@ const BookmarkSection = ({ userId }: { userId: string }) => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <ProjectCardsSkeleton />;
   if (error) return <div>{error}</div>;
 
   return (

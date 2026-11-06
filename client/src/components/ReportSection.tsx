@@ -14,6 +14,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ReportsCardsSkeleton } from "./ProfileSkeletons";
 
 interface AdminResponse {
   granted_log: boolean | null;
@@ -118,12 +119,7 @@ const ReportSection = ({ userId }: { userId: string }) => {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500 dark:border-blue-400"></div>
-      </div>
-    );
+  if (loading) return <ReportsCardsSkeleton />;
 
   if (error)
     return (

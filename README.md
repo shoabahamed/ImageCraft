@@ -29,7 +29,7 @@ You can find the live link [here](https://pixeltune-theta.vercel.app/). As hoste
 
 ### 🖌️ Image Editing Tools
 
-- Supports Any Image Size From Local Disk, Online URL, Canvas JSON File
+- Supports Image From Local Disk, Online URL, Canvas JSON File
 - Adjust Colors, Details of the image
 - Custom Preset Filters
 - Reflect, Swirl, Bulge/Pinch Filters, Histogram Equalization, Contrast Stretching

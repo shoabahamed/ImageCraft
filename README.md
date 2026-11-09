@@ -1,11 +1,21 @@
-# ImageCraft
+# ImageCraft- A Web Based Image Editing Platform
 
-![HomePage](./assets/home_page.png)
+<p align="center">
+  <a href="https://youtu.be/Upbi_eWr4W8">
+    <img src="./assets/home_page.png" alt="Watch the Demo" width="100%" />
+  </a>
+  <br/>
+  <i>▶ Click the image above to watch the full demo on YouTube</i>
+</p>
+
 
 An advanced real time web application using **GPU** for editing, enhancing, and sharing images.  
-Built with **React (Vite)** on the frontend and **Flask** on the backend, with cloud storage using Cloudinary and subscription-based payment with **Stripe**.
+Built with **React (Vite)** on the frontend and **Flask** on the backend, with cloud storage using Cloudinary, subscription-based payment with **Stripe**, and an event-driven **RabbitMQ(CloudAMQP)** pipeline that generates **Voyage AI** embeddings asynchronously for semantic search.
 
-You can find the project demo [here](https://pixeltune-theta.vercel.app/). As it is a free service, backend may not work.
+
+
+
+You can find the live link [here](https://pixeltune-theta.vercel.app/). As hosted on free tier, initial requests might experience cold starts and resource heavy AI features might fail to run.
 
 ---
 
@@ -71,7 +81,11 @@ You can find the project demo [here](https://pixeltune-theta.vercel.app/). As it
 ### 📸 Gallery
 
 - Share edited images with the community
-- Search images through semantic search with text input
+- Search images through semantic search with text input, powered by **Voyage AI** embeddings
+- **Asynchronous embedding pipeline with RabbitMQ**: publishing an image returns instantly while a background worker calls the Voyage AI API and stores the embedding for search
+  - Keeps slow external API calls off the Flask request path, so requests stay fast
+  - Handles Voyage API rate limits and transient failures with retries instead of lost jobs
+  - Workers scale independently of the web server
 - Sort by **bookmarks** and **views**
 - **Like** / **rate** images
 - **Report** inappropriate content
@@ -129,6 +143,8 @@ You can find the project demo [here](https://pixeltune-theta.vercel.app/). As it
 
 - **Frontend:** React (Vite), TailwindCSS, Fabric.js, WebGL
 - **Backend:** Flask
+- **Message Queue:** RabbitMQ (producer/consumer workers for async embedding generation)
+- **Embeddings:** Voyage AI
 - **Database:** MongoDB
 - **Storage:** Cloudinary
 - **Auth:** JWT + Google OAuth

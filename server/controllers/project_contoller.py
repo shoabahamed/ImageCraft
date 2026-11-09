@@ -8,9 +8,13 @@ from dotenv import load_dotenv
 from bson import ObjectId
 import datetime
 from utils.common import get_user_paths
-from utils.image_embedding import embed_pil_image, embed_text_query
 from cloudinary.uploader import upload, destroy
 from PIL import Image
+import uuid
+
+from utils.embedding_queue import publish_embedding_task
+from utils.image_embedding import embed_text_query
+
 
 load_dotenv()
 
@@ -28,9 +32,9 @@ SEARCH_POOL_SIZE = 200
 
 def save_project():
     try:
-        print("skdjf")
+     
         user_id = str(g._id)  # Extracted by the middleware
-        print(request.files)     
+        job_id = uuid.uuid4().hex
         
         usename = request.form.get("username")
         canvas_id = request.form.get('canvasId')
@@ -46,7 +50,7 @@ def save_project():
         canvas_image_file = request.files.get('canvasImage')
         inter_image_file = request.files.get("interImage")
         project_name = request.form.get("projectName")
-        print("fetched all")
+        
         # Retrieve JSON-like data from form fields
         original_image_shape = request.form.get('originalImageShape')
         final_image_shape = request.form.get('finalImageShape')
@@ -54,7 +58,7 @@ def save_project():
         filter_names = request.form.get("filterNames", "[]")
         all_filters_applied = request.form.get('allFiltersApplied', '[]')
 
-        print("eval")
+       
         filter_names = eval(filter_names)
         all_filters_applied = eval(all_filters_applied)
 
@@ -76,15 +80,8 @@ def save_project():
         except json.JSONDecodeError:
             return jsonify({"success": False, "message": "Invalid canvas data format"}), 400
         
-        print("after converting string to json")
 
-        # Embed the canvas render for semantic search. Synchronous for now — this
-        # will move to a background task once the pipeline is complete. Done before
-        # any .save()/upload() below consumes the upload stream.
-        canvas_image_file.stream.seek(0)
-        canvas_image = Image.open(canvas_image_file.stream).convert("RGB")
-        canvas_embedding = embed_pil_image(canvas_image).tolist()
-        canvas_image_file.stream.seek(0)  # reset so .save()/upload() below still work
+        
 
         # Secure the filename and save it
         image_filename = secure_filename(f"{canvas_id}.png")
@@ -131,7 +128,10 @@ def save_project():
                         "filter_names": filter_names,
                         "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
-                        "embedding": canvas_embedding,
+                        "embedding_job_id": job_id,
+                        "embedding_status": "pending",
+                        "embedding_retry_count": 0,
+                        "embedding_error": None,
                         # Cloudinary issues a NEW versioned secure_url on overwrite, so the
                         # url stored at creation keeps resolving to the pre-update render.
                         # Dev doesn't need this because its static path is overwritten in place.
@@ -168,7 +168,10 @@ def save_project():
                         "filter_names": filter_names,
                         "all_filters_applied": all_filters_applied,
                         "project_name": project_name,
-                        "embedding": canvas_embedding,
+                        "embedding_job_id": job_id,
+                        "embedding_status": "pending",
+                        "embedding_retry_count": 0,
+                        "embedding_error": None,
                         "updated_at": datetime.datetime.utcnow()  # ✅ Update timestamp
                     }}
                 )
@@ -185,7 +188,7 @@ def save_project():
                 inter_image_path = f"{INTER_IMG_FOLDER}{filename}"
                 canvas_image_path = f"{CANVAS_IMG_FOLDER}{filename}"
 
-                print('canvas id', original_image_path)
+                
                 cloud_org_result = upload(
                     original_image_file,
                     public_id=original_image_path,  # This sets the folder and filename
@@ -230,7 +233,10 @@ def save_project():
                     "filter_names": filter_names,
                     "all_filters_applied": all_filters_applied,
                     "project_name": project_name,
-                    "embedding": canvas_embedding,
+                    "embedding_job_id": job_id,
+                    "embedding_status": "pending",
+                    "embedding_retry_count": 0,
+                    "embedding_error": None,
                     "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                     "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
                     
@@ -273,7 +279,10 @@ def save_project():
                     "filter_names": filter_names,
                     "all_filters_applied": all_filters_applied,
                     "project_name": project_name,
-                    "embedding": canvas_embedding,
+                    "embedding_job_id": job_id,
+                    "embedding_status": "pending",
+                    "embedding_retry_count": 0,
+                    "embedding_error": None,
                     "created_at": datetime.datetime.utcnow(),  # ✅ Store creation timestamp
                     "updated_at": datetime.datetime.utcnow()   # ✅ Store updated timestamp
                     
@@ -285,6 +294,36 @@ def save_project():
             response_message = "Project created successfully"
             status_code = 201
 
+
+        
+        try:
+            publish_embedding_task({
+                "user_id": user_id,
+                "project_id": canvas_id,
+                "job_id": job_id,
+            })
+        except Exception as exc:
+            # The project has already been saved, so don't report the whole save as failed.
+            embedding_status = "queue_failed"
+
+            try:
+                projects_collection.update_one(
+                    {
+                        "user_id": user_id,
+                        "project_id": canvas_id,
+                        "embedding_job_id": job_id,
+                    },
+                    {
+                        "$set": {
+                            "embedding_status": embedding_status,
+                            "embedding_error": str(exc)[:1000],
+                        }
+                    },
+                )
+            except Exception:
+                print("Could not record embedding queue failure:", exc)
+
+            print("Could not publish embedding job:", exc)
 
         # Prepare the response
         response = {"user_id": user_id, "project_id": canvas_id, "project_data": canvas_data}
@@ -317,7 +356,7 @@ def get_projects(user_id):
 
 
     response = {"projects": projects}
-    print(len(projects))
+  
     return jsonify({"success": True, "message": "Projects retrieved successfully", "data": response}), 201
   
   except Exception as e:
@@ -420,7 +459,7 @@ def get_all_projects():
 
 def query_projects():
     try:
-        print("ksdjflkdsj")
+    
         # Anonymous visitors are allowed here; they just have no bookmarks.
         user_id = getattr(g, "_id", None)
         bookmarked_projects = []
@@ -453,7 +492,7 @@ def query_projects():
                 },
                 {"$project": {"project_id": 1, "score": {"$meta": "vectorSearchScore"}}},
             ]))
-            print(candidates)
+         
             matched_ids = [c["project_id"] for c in candidates]
             
             total_count = len(matched_ids)  # capped at SEARCH_POOL_SIZE
@@ -552,8 +591,7 @@ def delete_project(project_id):
             original_image_path = f"{ORG_IMG_FOLDER}{filename}"
             inter_image_path = f"{INTER_IMG_FOLDER}{filename}"
             canvas_image_path = f"{CANVAS_IMG_FOLDER}{filename}"
-            print('canvas id', original_image_path)
-
+          
     
             destroy(original_image_path, resource_type = "image")
             destroy(inter_image_path, resource_type = "image")
@@ -571,7 +609,6 @@ def delete_project(project_id):
         return jsonify({"success": True, "message": "Project deleted successfully"}), 200
 
     except Exception as e:
-        print("error", str(e))
         return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
  
 
@@ -641,7 +678,7 @@ def update_project_bookmark():
         # get the the project
         project = projects_collection.find_one({"project_id": project_id})
         
-        print("dsjf")
+   
         # get current bookmark count
         current_bookmark_count = int(project.get("total_bookmark", 1))
 
@@ -652,7 +689,7 @@ def update_project_bookmark():
             bookmarked_projects = bookmarked_projects.difference({project_id})
             current_bookmark_count -= 1
 
-        print("dkfj")
+      
         
         # Update the project's bookmark count
         result_project = projects_collection.update_one(
@@ -740,7 +777,7 @@ def update_project_view_count():
 
             
             total_views = int(project.get("total_views", 0)) + 1
-            print(total_views, "dskfdslkfjlskdj")
+         
     
         
             # Update the project's visibility

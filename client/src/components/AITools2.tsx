@@ -206,6 +206,7 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
         }
       } else if (response.status === 201 || response.status == 202) {
         // that means user is in free version
+        setLoadSate(false);
         toast({
           title: "Upgrade",
           description: response.data.message,
@@ -241,6 +242,8 @@ const AITools2 = ({ canvas, imageUrl, imageRef, setLoadSate }: Props) => {
       });
       console.error("Error sending image to backend:", error);
     }
+
+    setLoadSate(false);
   };
 
   const showStylizeImagePreview = (base64Image: string) => {

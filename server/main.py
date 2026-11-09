@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from config.db_config import ensure_vector_search_index
 import os
 import cloudinary
+from workers.embedding_worker import start_embedding_worker
 
 
 load_dotenv()
@@ -39,6 +40,13 @@ CORS(app, resources={
     r"/*": {"origins": [os.getenv("FRONTEND_SERVER", "https://pixeltune-theta.vercel.app")]}  # Restrict all other routes (e.g., /api/*)
 }, supports_credentials=True)
 
+
+
+@app.before_request
+def start_embedding_consumer_if_enabled():
+    print("Starting embebdding server")
+    if os.getenv("START_EMBEDDING_WORKER", "false").lower() == "true":
+        start_embedding_worker()
 
 @app.route('/')
 def index():

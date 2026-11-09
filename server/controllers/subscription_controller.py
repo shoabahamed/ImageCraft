@@ -16,6 +16,9 @@ load_dotenv()
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 FRONTEND_SERVER = os.getenv("FRONTEND_SERVER", "http://localhost:5000")
 
+PRO_PRICE_ID = "price_1UZoliRC76RF6jPtUv9SuCZb"
+ULTIMATE_PRICE_ID = "price_1UZom9RC76RF6jPt52IWV5M3"
+
 # May be I should have added a password too for creating jwt token
 
 db = get_db()
@@ -28,12 +31,12 @@ def subscribe_user():
   user_id = g._id
   
   if(plan == 'pro'):
-    price_id = "price_1RlSJCRC76RF6jPtueCAGdkW"
+    price_id = PRO_PRICE_ID
   elif(plan == 'ultimate'):
-    price_id = "price_1RlSK0RC76RF6jPt0Hs2vofc"
+    price_id = ULTIMATE_PRICE_ID
   else:
     return jsonify({"success": False, "message": "Invalid plan"}), 400
-
+  
   try:
     
     
@@ -140,46 +143,63 @@ def stripe_webhook():
             print(f"Updated user {user_id} with plan {plan} from {subscription_start} to {subscription_end}")
 
     elif event['type'] == "customer.subscription.updated":
-      print("how to handle this though")
-      new_subscription = event['data']['object']
-      previous_subscription = event['data'].get('previous_attributes', {})
+        subscription = event['data']['object']
+        subscription_id = subscription['id']
 
-      new_price_id = new_subscription['items']['data'][0]['price']['id']
-      previous_price_id = previous_subscription['items']['data'][0]['price']['id']
-      
-  
-      subscription_id = new_subscription['id']
-      subscription = stripe.Subscription.retrieve(subscription_id)
-      
-      
-      metadata = subscription.get('metadata', {})
-      user_id = metadata.get('user_id')
-      
-      print(previous_price_id, new_price_id)
-      
-      if previous_price_id != new_price_id:
-        users_collection.update_one(
-                {"_id": ObjectId(user_id)},
-                {"$set": {
-                    "subscription_plan": "ultimate",
-                }}
-            )
+        # Which price is the subscription on right now?
+        price_id = subscription['items']['data'][0]['price']['id']
+        if price_id == PRO_PRICE_ID:
+            plan = "pro"
+        elif price_id == ULTIMATE_PRICE_ID:
+            plan = "ultimate"
+        else:
+            plan = None
 
-    elif event['type'] == 'customer.subscription.deleted': 
-        print("usbscription deleted")   
-        invoice = event['data']['object']
-        subscription_id = invoice.get("id")
-        
-     
-        # find the person with the deleted subscription id 
-        user = users_collection.find_one({"subscription_id": subscription_id}, {})
-        
-        user_id = str(user.get('_id'))
+        # Did the user schedule a cancellation?
+        is_canceling = bool(subscription.get('cancel_at_period_end')) or subscription.get('cancel_at') is not None
+
+        update = {
+            "subscription_status": subscription['status'],
+            "cancel_at_period_end": is_canceling,
+        }
+        if plan:
+            update["subscription_plan"] = plan
+
         users_collection.update_one(
-          {"_id": ObjectId(user_id)},       # Filter to match one document
-          {"$set": {"subscription_plan": "free", "subscription_id": ""}}  # Remove the 'email' field
+            {"subscription_id": subscription_id},
+            {"$set": update}
         )
-        print("Subscription Canceled")
+        print(f"Subscription {subscription_id} updated. Canceling: {is_canceling}")
+
+    elif event['type'] == "customer.subscription.updated":
+        
+        subscription = event['data']['object']
+        subscription_id = subscription['id']
+
+        # Which price is the subscription on right now?
+        price_id = subscription['items']['data'][0]['price']['id']
+        if price_id == PRO_PRICE_ID:
+            plan = "pro"
+        elif price_id == ULTIMATE_PRICE_ID:
+            plan = "ultimate"
+        else:
+            plan = None
+
+        # Did the user schedule a cancellation?
+        is_canceling = bool(subscription.get('cancel_at_period_end')) or subscription.get('cancel_at') is not None
+
+        update = {
+            "subscription_status": subscription['status'],
+            "cancel_at_period_end": is_canceling,
+        }
+        if plan:
+            update["subscription_plan"] = plan
+
+        users_collection.update_one(
+            {"subscription_id": subscription_id},
+            {"$set": update}
+        )
+        print(f"Subscription {subscription_id} updated. Canceling: {is_canceling}")
         
     else:
         print(f'Unhandled event type {event["type"]}')

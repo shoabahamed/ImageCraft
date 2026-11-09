@@ -10,7 +10,7 @@
 
 
 An advanced real time web application using **GPU** for editing, enhancing, and sharing images.  
-Built with **React (Vite)** on the frontend and **Flask** on the backend, with cloud storage using Cloudinary, subscription-based payment with **Stripe**, and an event-driven **RabbitMQ(CloudAMQP)** pipeline that generates **Voyage AI** embeddings asynchronously for semantic search.
+Built with **React**, **Fabric Js** on the frontend and **Flask** on the backend, with cloud storage using Cloudinary, subscription-based payment with **Stripe**, and an event-driven **RabbitMQ(CloudAMQP)** pipeline that generates **Voyage AI** embeddings asynchronously for semantic search.
 
 
 
